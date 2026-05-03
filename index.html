@@ -273,8 +273,15 @@
     <div id="warnings" class="hidden"></div>
 
     <div class="actions" style="margin-top:1.25rem">
-      <button class="btn btn-green" id="shareBtn" onclick="shareCSV()">⬆ Abrir en PilotLog</button>
-      <button class="btn btn-ghost" id="dlBtn" onclick="downloadCSV()">⬇ Descargar CSV</button>
+      <button class="btn btn-green" onclick="exportToPilotLog()">⬆ Exportar a PilotLog</button>
+      <button class="btn btn-ghost" onclick="downloadCSV()">⬇ Descargar CSV</button>
+    </div>
+    <div id="piw-banner" class="hidden" style="margin-top:.85rem;padding:.75rem 1rem;background:rgba(47,129,247,.08);border:1px solid rgba(47,129,247,.3);border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+      <span style="font-size:.85rem;color:var(--muted)">CSV guardado en Archivos. Ábrelo en el Import Wizard:</span>
+      <a id="piw-link" href="https://my.crewlounge.center/pilotlog-import-wizard" target="_blank"
+         style="display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.1rem;background:var(--accent);color:#fff;border-radius:8px;font-size:.85rem;font-weight:600;text-decoration:none;white-space:nowrap;">
+        Abrir Import Wizard ↗
+      </a>
     </div>
   </div>
 
@@ -503,6 +510,13 @@ function convert() {
   showStatus('ok', `${flights.length} vuelo${flights.length > 1 ? 's' : ''} procesado${flights.length > 1 ? 's' : ''} correctamente.`);
 }
 
+async function exportToPilotLog() {
+  if (!_csv) return;
+  await shareCSV();
+  document.getElementById('piw-banner').classList.remove('hidden');
+  document.getElementById('piw-banner').style.display = 'flex';
+}
+
 async function shareCSV() {
   if (!_csv) return;
   const filename = `pilotlog_${new Date().toISOString().slice(0,10)}.csv`;
@@ -537,6 +551,7 @@ function clearAll() {
   document.getElementById('input').value = '';
   document.getElementById('status').classList.add('hidden');
   document.getElementById('results').classList.add('hidden');
+  document.getElementById('piw-banner').classList.add('hidden');
   _flights = [];
   _csv = '';
 }

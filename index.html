@@ -375,15 +375,13 @@ function parseText(text) {
 }
 
 // ─── CSV ──────────────────────────────────────────────────────────────────────
-const HEADER = 'PILOTLOG_DATE,IS_PREVEXP,AC_ISSIM,FLIGHTNUMBER,AF_DEP,AF_ARR,' +
+const HEADER =
+  'PILOTLOG_DATE,FLIGHTNUMBER,AF_DEP,AF_ARR,' +
   'TIME_DEPSCH,TIME_ARRSCH,TIME_DEP,TIME_TO,TIME_LDG,TIME_ARR,' +
-  'PILOT1_NAME,PILOT1_ID,PILOT1_EMAIL,PILOT2_NAME,PILOT2_ID,PILOT2_EMAIL,' +
-  'PILOT3_NAME,PILOT3_ID,PILOT3_EMAIL,PILOT4_NAME,PILOT4_ID,PILOT4_EMAIL,' +
-  'CREWLIST,ROUTE,TIME_AIR,TIME_TOTAL,TIME_PIC,TIME_SIC,TIME_PICUS,' +
-  'TIME_NIGHT,TIME_XC,TIME_ACTUAL,TIME_HOOD,TIME_DUAL,TIME_TOTALSIM,' +
-  'TIME_SOLO,TIME_RELIEF,AC_MP,TIME_IFR,LDG_DAY,TO_DAY,LDG_NIGHT,TO_NIGHT,' +
-  'APP_1,APP_2,APP_3,HOLDING,PF,AC_REG,OPERATOR,AC_COMPLEX,AC_HIGHPERF,' +
-  'AC_MODEL,AC_MAKE,AC_ENGTYPE,AC_SPSE,AC_SPME,PAX,FUEL,FUELUSED,REMARKS';
+  'PILOT1_NAME,PILOT2_NAME,' +
+  'TIME_AIR,TIME_TOTAL,TIME_PIC,TIME_SIC,TIME_IFR,' +
+  'LDG_DAY,TO_DAY,LDG_NIGHT,TO_NIGHT,' +
+  'PF,AC_REG,AC_MODEL,PAX,REMARKS';
 
 function csv(v) {
   const s = String(v ?? '');
@@ -411,25 +409,18 @@ function toRow(f, r) {
                   ? '' : (d['Captain Remarks'] || '');
 
   const vals = [
-    date, '0', '0', d['FlightNumber'] || '',
+    date, d['FlightNumber'] || '',
     dep || '', arr || '',
     d['STD'] || '', d['STA'] || '',
     d['Off Block'] || '', d['Airborne'] || '', d['Landed'] || '', d['On Block'] || '',
-    pilot1, '', '', pilot2, '', '',
-    '', '', '', '', '', '',
+    pilot1, pilot2,
+    air, block, timePic, timeSic, block,
+    isMyLDG ? '1' : '0',
+    isMyTO  ? '1' : '0',
     '', '',
-    air, block, timePic, timeSic,
-    '', '', '', '', '', '', '', '', '',
-    '1',                       // AC_MP  (B737 = multi-pilot)
-    block,                     // TIME_IFR
-    isMyLDG ? '1' : '0',       // LDG_DAY
-    isMyTO  ? '1' : '0',       // TO_DAY
-    '', '',                    // LDG_NIGHT, TO_NIGHT
-    '', '', '', '',            // APP_1-3, HOLDING
-    isMyTO ? 'TRUE' : 'FALSE', // PF
-    reg, 'RYANAIR', '1', '1',  // AC_COMPLEX, AC_HIGHPERF
-    model, 'BOEING', 'JET', '0', '0',
-    d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '',
+    isMyTO ? '1' : '0',
+    reg, model,
+    d['Actual Pax'] || '',
     remarks
   ];
 

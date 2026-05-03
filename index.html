@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EasyLog — Ryanair → PilotLog</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f81f7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EasyLog">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+  :root {
+    --bg:       #0d1117;
+    --surface:  #161b22;
+    --surface2: #1c2128;
+    --border:   #30363d;
+    --accent:   #2f81f7;
+    --acc-dim:  rgba(47,129,247,.12);
+    --text:     #e6edf3;
+    --muted:    #7d8590;
+    --green:    #3fb950;
+    --amber:    #d29922;
+    --red:      #f85149;
+    --radius:   10px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .wrap { max-width: 1100px; margin: 0 auto; }
+
+  /* ── Header ── */
+  header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem; }
+  .logo  { font-size: 1.75rem; font-weight: 800; letter-spacing: -.5px; }
+  .logo span { color: var(--accent); }
+  .tagline { color: var(--muted); font-size: .9rem; }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .card-title {
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  /* ── Role selector ── */
+  .roles { display: flex; gap: .75rem; }
+  .role {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .75rem;
+    padding: .85rem 1rem;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    user-select: none;
+  }
+  .role:hover    { border-color: var(--accent); }
+  .role.active   { border-color: var(--accent); background: var(--acc-dim); }
+  .role input    { display: none; }
+  .role-label    { font-weight: 600; font-size: .95rem; }
+  .role-sub      { font-size: .78rem; color: var(--muted); }
+  .badge {
+    padding: .2rem .55rem;
+    border-radius: 5px;
+    font-size: .7rem;
+    font-weight: 700;
+    background: var(--border);
+    color: var(--muted);
+  }
+  .role.active .badge { background: var(--accent); color: #fff; }
+
+  /* ── Textarea ── */
+  textarea {
+    width: 100%;
+    height: 220px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    font-size: .8rem;
+    line-height: 1.5;
+    padding: .85rem 1rem;
+    resize: vertical;
+    outline: none;
+    transition: border-color .15s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .65rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter .15s, opacity .15s;
+  }
+  .btn:hover  { filter: brightness(1.12); }
+  .btn:active { filter: brightness(.92); }
+  .btn-blue   { background: var(--accent); color: #fff; }
+  .btn-green  { background: var(--green); color: #fff; }
+  .btn-ghost  { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; filter: none; }
+
+  .actions { display: flex; gap: .75rem; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
+
+  /* ── Status pill ── */
+  .status {
+    padding: .45rem 1rem;
+    border-radius: 20px;
+    font-size: .82rem;
+    font-weight: 500;
+  }
+  .status-ok  { background: rgba(63,185,80,.12); color: var(--green); border: 1px solid rgba(63,185,80,.3); }
+  .status-err { background: rgba(248,81,73,.12); color: var(--red);   border: 1px solid rgba(248,81,73,.3); }
+
+  /* ── Stats row ── */
+  .stats { display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .stat {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .6rem 1.1rem;
+    min-width: 100px;
+    text-align: center;
+  }
+  .stat-val  { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
+  .stat-lbl  { font-size: .7rem; color: var(--muted); margin-top: .15rem; }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+  th {
+    text-align: left;
+    padding: .5rem .75rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  td {
+    padding: .45rem .75rem;
+    border-bottom: 1px solid rgba(48,54,61,.6);
+    white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(47,129,247,.04); }
+
+  /* ── Tags ── */
+  .tag {
+    display: inline-block;
+    padding: .1rem .4rem;
+    border-radius: 4px;
+    font-size: .68rem;
+    font-weight: 700;
+  }
+  .tag-800  { background: rgba(63,185,80,.14); color: var(--green); }
+  .tag-8200 { background: rgba(47,129,247,.14); color: var(--accent); }
+  .tag-pf   { background: rgba(210,153,34,.14); color: var(--amber); }
+
+  .hidden { display: none !important; }
+
+  .warn-list {
+    margin-top: .75rem;
+    padding: .75rem 1rem;
+    background: rgba(210,153,34,.08);
+    border: 1px solid rgba(210,153,34,.3);
+    border-radius: 8px;
+    font-size: .82rem;
+    color: var(--amber);
+  }
+  .warn-list li { margin-left: 1.2rem; margin-top: .25rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="logo">Easy<span>Log</span></div>
+      <div class="tagline">Convierte emails de vuelos Ryanair al formato CSV de PilotLog</div>
+    </div>
+  </header>
+
+  <!-- Rol -->
+  <div class="card">
+    <div class="card-title">Tu rol en este período</div>
+    <div class="roles">
+      <label class="role active" id="lbl-fo">
+        <input type="radio" name="role" value="FO" checked>
+        <div>
+          <div class="role-label">Primer Oficial</div>
+          <div class="role-sub">Horas como SIC</div>
+        </div>
+        <span class="badge">FO / SIC</span>
+      </label>
+      <label class="role" id="lbl-cpt">
+        <input type="radio" name="role" value="CPT">
+        <div>
+          <div class="role-label">Comandante</div>
+          <div class="role-sub">Horas como PIC</div>
+        </div>
+        <span class="badge">CPT / PIC</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="card">
+    <div class="card-title">Emails de vuelos (pega aquí uno o varios meses)</div>
+    <textarea id="input" placeholder="Pega aquí el contenido de los emails...&#10;&#10;Puedes pegar varios días o meses juntos, el sistema los separará automáticamente."></textarea>
+    <div class="actions">
+      <button class="btn btn-blue" onclick="convert()">Convertir</button>
+      <button class="btn btn-ghost" onclick="clearAll()">Limpiar</button>
+      <span id="status" class="status hidden"></span>
+    </div>
+  </div>
+
+  <!-- Resultados -->
+  <div class="card hidden" id="results">
+    <div class="card-title">Vuelos procesados</div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Vuelo</th>
+            <th>Ruta</th>
+            <th>Off→On Block</th>
+            <th>Bloque</th>
+            <th>Vuelo</th>
+            <th>Matrícula</th>
+            <th>Modelo</th>
+            <th>Capitán</th>
+            <th>PF</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div id="warnings" class="hidden"></div>
+
+    <div class="actions" style="margin-top:1.25rem">
+      <button class="btn btn-green" onclick="exportToPilotLog()">⬆ Exportar a PilotLog</button>
+      <button class="btn btn-ghost" onclick="downloadCSV()">⬇ Descargar CSV</button>
+    </div>
+    <div id="piw-banner" class="hidden" style="margin-top:.85rem;padding:.75rem 1rem;background:rgba(47,129,247,.08);border:1px solid rgba(47,129,247,.3);border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+      <span style="font-size:.85rem;color:var(--muted)">CSV guardado en Archivos. Ábrelo en el Import Wizard:</span>
+      <a id="piw-link" href="https://my.crewlounge.center/pilotlog-import-wizard" target="_blank"
+         style="display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.1rem;background:var(--accent);color:#fff;border-radius:8px;font-size:.85rem;font-weight:600;text-decoration:none;white-space:nowrap;">
+        Abrir Import Wizard ↗
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── Role toggle ──────────────────────────────────────────────────────────────
+document.querySelectorAll('input[name="role"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.getElementById('lbl-fo').classList.toggle('active', r.value === 'FO');
+    document.getElementById('lbl-cpt').classList.toggle('active', r.value === 'CPT');
+  });
+});
+const role = () => document.querySelector('input[name="role"]:checked').value;
+
+// ─── Aircraft model ───────────────────────────────────────────────────────────
+// Registrations >= threshold (alphabetical suffix comparison) are B737-8200 MAX
+const THRESHOLDS = { EI: 'HEN', '9H': 'VUE', SP: 'RZC' };
+
+function formatReg(raw) {
+  const r = raw.trim().toUpperCase().replace(/\s/g, '');
+  return r.slice(0, 2) + '-' + r.slice(2);
+}
+
+function getModel(raw) {
+  const r = raw.trim().toUpperCase().replace(/\s/g, '');
+  const prefix = r.slice(0, 2);
+  const suffix = r.slice(2);
+  const thr = THRESHOLDS[prefix];
+  if (!thr) return 'B737-800';
+  return suffix >= thr ? 'B38M' : 'B738';
+}
+
+// ─── Parser ───────────────────────────────────────────────────────────────────
+function parseText(text) {
+  const DATE_RE = /^\d{4}\/\d{2}\/\d{2}$/;
+  const lines   = text.split('\n').map(l => l.trim());
+
+  // Locate date-block starts
+  const dateIdx = lines.reduce((acc, l, i) => {
+    if (DATE_RE.test(l)) acc.push(i);
+    return acc;
+  }, []);
+
+  if (!dateIdx.length)
+    return { flights: [], warnings: ['No se encontraron fechas con formato YYYY/MM/DD.'] };
+
+  const flights  = [];
+  const warnings = [];
+
+  dateIdx.forEach((start, di) => {
+    const end      = di + 1 < dateIdx.length ? dateIdx[di + 1] : lines.length;
+    const dayRaw   = lines.slice(start, end);
+    const dayLines = dayRaw.filter(l => l !== '');
+    const date     = dayLines[0];
+
+    // Captain from "Flight Deck Crew" section
+    const crewAt = dayLines.findIndex(l => l === 'Flight Deck Crew');
+    let captain  = '';
+    if (crewAt !== -1) {
+      for (let i = crewAt + 1; i < dayLines.length; i++) {
+        const m = dayLines[i].match(/^\S+\s*:\s*CP\s*:\s*(.+)$/);
+        if (m) { captain = m[1].trim(); break; }
+      }
+    } else {
+      warnings.push(`Sin sección "Flight Deck Crew" — ${date}`);
+    }
+
+    // Flight block starts
+    const flightAt = dayLines.reduce((acc, l, i) => {
+      if (l.startsWith('FlightNumber :')) acc.push(i);
+      return acc;
+    }, []);
+
+    flightAt.forEach((fStart, fi) => {
+      const fEnd   = fi + 1 < flightAt.length
+                       ? flightAt[fi + 1]
+                       : (crewAt !== -1 ? crewAt : dayLines.length);
+      const fLines = dayLines.slice(fStart, fEnd);
+
+      // Parse all key : value pairs
+      const d = {};
+      fLines.forEach(line => {
+        const m = line.match(/^(.+?)\s*:\s*(.*)$/);
+        if (m) d[m[1].trim()] = m[2].trim();
+      });
+
+      if (!d['FlightNumber']) {
+        warnings.push(`Vuelo sin número en ${date}`);
+        return;
+      }
+
+      flights.push({ date, captain, d });
+    });
+  });
+
+  return { flights, warnings };
+}
+
+// ─── CSV ──────────────────────────────────────────────────────────────────────
+const HEADER =
+  'PILOTLOG_DATE,FLIGHTNUMBER,AF_DEP,AF_ARR,' +
+  'TIME_DEPSCH,TIME_ARRSCH,TIME_DEP,TIME_TO,TIME_LDG,TIME_ARR,' +
+  'PILOT1_NAME,PILOT2_NAME,' +
+  'TIME_AIR,TIME_TOTAL,TIME_PIC,TIME_SIC,TIME_IFR,' +
+  'LDG_DAY,TO_DAY,LDG_NIGHT,TO_NIGHT,' +
+  'PF,AC_REG,AC_MODEL,PAX,REMARKS';
+
+function csv(v) {
+  const s = String(v ?? '');
+  return (s.includes(',') || s.includes('"') || s.includes('\n'))
+    ? '"' + s.replace(/"/g, '""') + '"'
+    : s;
+}
+
+function toRow(f, r) {
+  const isCPT   = r === 'CPT';
+  const d       = f.d;
+  const date    = f.date.replace(/\//g, '-');
+  const [dep, arr] = (d['City Pair'] || '').split(' - ');
+  const reg     = formatReg(d['Registration'] || '');
+  const model   = getModel(d['Registration'] || '');
+  const block   = d['Total Block'] || '';
+  const air     = d['Total flight'] || '';
+  const isMyTO  = (d['Take Off']  || '') === 'VEGRIC';
+  const isMyLDG = (d['Landing']   || '') === 'VEGRIC';
+  const pilot1  = isCPT ? 'RICARDO VEGA BURGUENO' : f.captain;
+  const pilot2  = isCPT ? '' : 'RICARDO VEGA BURGUENO';
+  const timePic = isCPT ? block : '';
+  const timeSic = isCPT ? '' : block;
+  const remarks = (d['Captain Remarks'] || '') === 'No Data Available'
+                  ? '' : (d['Captain Remarks'] || '');
+
+  const vals = [
+    date, d['FlightNumber'] || '',
+    dep || '', arr || '',
+    d['STD'] || '', d['STA'] || '',
+    d['Off Block'] || '', d['Airborne'] || '', d['Landed'] || '', d['On Block'] || '',
+    pilot1, pilot2,
+    air, block, timePic, timeSic, block,
+    isMyLDG ? '1' : '0',
+    isMyTO  ? '1' : '0',
+    '', '',
+    isMyTO ? '1' : '0',
+    reg, model,
+    d['Actual Pax'] || '',
+    remarks
+  ];
+
+  return vals.map(csv).join(',');
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let _flights = [];
+let _csv     = '';
+
+// ─── Actions ─────────────────────────────────────────────────────────────────
+function convert() {
+  const text = document.getElementById('input').value;
+  if (!text.trim()) { showStatus('err', 'Pega el contenido de los emails primero.'); return; }
+
+  const { flights, warnings } = parseText(text);
+
+  if (!flights.length) {
+    showStatus('err', 'No se encontraron vuelos. Comprueba el formato del texto.');
+    document.getElementById('results').classList.add('hidden');
+    return;
+  }
+
+  _flights = flights;
+  const r  = role();
+  const rows = flights.map(f => toRow(f, r));
+  _csv = '﻿' + HEADER + '\r\n' + rows.join('\r\n');
+
+  // Preview table
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  flights.forEach(f => {
+    const d       = f.d;
+    const reg     = formatReg(d['Registration'] || '');
+    const model   = getModel(d['Registration'] || '');
+    const [dep, arr] = (d['City Pair'] || '').split(' - ');
+    const isMyTO  = (d['Take Off']  || '') === 'VEGRIC';
+    const isMyLDG = (d['Landing']   || '') === 'VEGRIC';
+    const isPF    = isMyTO || isMyLDG;
+    const noCapt  = !f.captain;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      `<td>${f.date.replace(/\//g, '-')}</td>` +
+      `<td><strong>${d['FlightNumber'] || ''}</strong></td>` +
+      `<td>${dep || '?'} → ${arr || '?'}</td>` +
+      `<td style="color:var(--muted);font-size:.75rem">${d['Off Block'] || ''} → ${d['On Block'] || ''}</td>` +
+      `<td><strong>${d['Total Block'] || ''}</strong></td>` +
+      `<td>${d['Total flight'] || ''}</td>` +
+      `<td style="font-family:monospace">${reg}</td>` +
+      `<td><span class="tag ${model === 'B38M' ? 'tag-8200' : 'tag-800'}">${model}</span></td>` +
+      `<td style="${noCapt ? 'color:var(--red)' : ''}">${f.captain || '—'}</td>` +
+      `<td>${isPF ? '<span class="tag tag-pf">PF</span>' : ''}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Stats
+  const days    = new Set(flights.map(f => f.date)).size;
+  const blkMins = flights.reduce((s, f) => s + toMins(f.d['Total Block']), 0);
+  const airMins = flights.reduce((s, f) => s + toMins(f.d['Total flight']), 0);
+  const pfCount = flights.filter(f => (f.d['Take Off'] || '') === 'VEGRIC').length;
+
+  document.getElementById('stats').innerHTML =
+    stat(flights.length, 'Vuelos') +
+    stat(days, 'Días') +
+    stat(fmtMins(blkMins), 'Horas bloque') +
+    stat(fmtMins(airMins), 'Horas vuelo') +
+    stat(pfCount, 'Como PF');
+
+  // Warnings
+  const wDiv = document.getElementById('warnings');
+  if (warnings.length) {
+    wDiv.innerHTML = `<ul class="warn-list">${warnings.map(w => `<li>${w}</li>`).join('')}</ul>`;
+    wDiv.classList.remove('hidden');
+  } else {
+    wDiv.classList.add('hidden');
+  }
+
+  document.getElementById('results').classList.remove('hidden');
+  showStatus('ok', `${flights.length} vuelo${flights.length > 1 ? 's' : ''} procesado${flights.length > 1 ? 's' : ''} correctamente.`);
+}
+
+async function exportToPilotLog() {
+  if (!_csv) return;
+  await shareCSV();
+  document.getElementById('piw-banner').classList.remove('hidden');
+  document.getElementById('piw-banner').style.display = 'flex';
+}
+
+async function shareCSV() {
+  if (!_csv) return;
+  const filename = `pilotlog_${new Date().toISOString().slice(0,10)}.csv`;
+  const blob = new Blob([_csv], { type: 'text/csv;charset=utf-8;' });
+  const file = new File([blob], filename, { type: 'text/csv' });
+
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'PilotLog CSV' });
+    } catch (e) {
+      if (e.name !== 'AbortError') downloadCSV();
+    }
+  } else {
+    // En desktop o navegadores sin Web Share API → descarga directa
+    downloadCSV();
+  }
+}
+
+function downloadCSV() {
+  if (!_csv) return;
+  const blob = new Blob([_csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), {
+    href: url,
+    download: `pilotlog_${new Date().toISOString().slice(0,10)}.csv`
+  });
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function clearAll() {
+  document.getElementById('input').value = '';
+  document.getElementById('status').classList.add('hidden');
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('piw-banner').classList.add('hidden');
+  _flights = [];
+  _csv = '';
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function showStatus(type, msg) {
+  const el = document.getElementById('status');
+  el.className = `status status-${type}`;
+  el.textContent = msg;
+}
+
+function stat(val, lbl) {
+  return `<div class="stat"><div class="stat-val">${val}</div><div class="stat-lbl">${lbl}</div></div>`;
+}
+
+function toMins(s) {
+  if (!s) return 0;
+  const [h, m] = s.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+function fmtMins(m) {
+  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+}
+</script>
+</body>
+</html>

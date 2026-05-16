@@ -340,11 +340,12 @@ function parseText(text) {
 
     // Captain from "Flight Deck Crew" section
     const crewAt = dayLines.findIndex(l => /^flight deck crew\s*:?\s*$/i.test(l));
-    let captain  = '';
+    let captain     = '';
+    let captainCode = '';
     if (crewAt !== -1) {
       for (let i = crewAt + 1; i < dayLines.length; i++) {
-        const m = dayLines[i].match(/^\S+\s*:\s*CP\s*:\s*(.+)$/);
-        if (m) { captain = m[1].trim(); break; }
+        const m = dayLines[i].match(/^(\S+)\s*:\s*CP\s*:\s*(.+)$/);
+        if (m) { captainCode = m[1].trim(); captain = m[2].trim(); break; }
       }
     } else {
       warnings.push(`Sin sección "Flight Deck Crew" — ${date}`);
@@ -374,7 +375,7 @@ function parseText(text) {
         return;
       }
 
-      flights.push({ date, captain, d });
+      flights.push({ date, captain, captainCode, d });
     });
   });
 
@@ -385,7 +386,7 @@ function parseText(text) {
 const HEADER =
   'PILOTLOG_DATE,FLIGHTNUMBER,AF_DEP,AF_ARR,' +
   'TIME_DEPSCH,TIME_ARRSCH,TIME_DEP,TIME_TO,TIME_LDG,TIME_ARR,' +
-  'PILOT1_NAME,PILOT2_NAME,' +
+  'PILOT1_NAME,PILOT1_ID,PILOT2_NAME,PILOT2_ID,CREWLIST,' +
   'TIME_AIR,TIME_TOTAL,TIME_PIC,TIME_SIC,TIME_IFR,' +
   'LDG_DAY,TO_DAY,LDG_NIGHT,TO_NIGHT,' +
   'PF,AC_REG,AC_MODEL,PAX,REMARKS';
@@ -408,8 +409,13 @@ function toRow(f, r) {
   const air     = d['Total flight'] || '';
   const isMyTO  = (d['Take Off']  || '') === 'VEGRIC';
   const isMyLDG = (d['Landing']   || '') === 'VEGRIC';
-  const pilot1  = isCPT ? 'RICARDO VEGA BURGUENO' : f.captain;
-  const pilot2  = isCPT ? '' : 'RICARDO VEGA BURGUENO';
+  const pilot1     = isCPT ? 'RICARDO VEGA BURGUENO' : f.captain;
+  const pilot1Id   = isCPT ? 'VEGRIC' : f.captainCode;
+  const pilot2     = isCPT ? '' : 'RICARDO VEGA BURGUENO';
+  const pilot2Id   = isCPT ? '' : 'VEGRIC';
+  const crewList   = f.captainCode
+    ? `(${f.captainCode}) CP: ${f.captain}, (VEGRIC) FO: RICARDO VEGA BURGUENO`
+    : '';
   const timePic = isCPT ? block : '';
   const timeSic = isCPT ? '' : block;
   const remarks = (d['Captain Remarks'] || '') === 'No Data Available'
@@ -420,7 +426,7 @@ function toRow(f, r) {
     dep || '', arr || '',
     d['STD'] || '', d['STA'] || '',
     d['Off Block'] || '', d['Airborne'] || '', d['Landed'] || '', d['On Block'] || '',
-    pilot1, pilot2,
+    pilot1, pilot1Id, pilot2, pilot2Id, crewList,
     air, block, timePic, timeSic, block,
     isMyLDG ? '1' : '0',
     isMyTO  ? '1' : '0',

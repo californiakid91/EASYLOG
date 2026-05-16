@@ -389,7 +389,7 @@ const HEADER =
   'PILOT1_NAME,PILOT1_ID,PILOT2_NAME,PILOT2_ID,CREWLIST,' +
   'TIME_AIR,TIME_TOTAL,TIME_PIC,TIME_SIC,TIME_IFR,' +
   'LDG_DAY,TO_DAY,LDG_NIGHT,TO_NIGHT,' +
-  'PF,AC_REG,AC_MODEL,PAX,REMARKS';
+  'PF,AC_REG,AC_MODEL,PAX,FUEL,FUELUSED,REMARKS,DELAY,JOURNEY_LOG';
 
 function csv(v) {
   const s = String(v ?? '');
@@ -418,8 +418,36 @@ function toRow(f, r) {
     : '';
   const timePic = isCPT ? block : '';
   const timeSic = isCPT ? '' : block;
-  const remarks = (d['Captain Remarks'] || '') === 'No Data Available'
-                  ? '' : (d['Captain Remarks'] || '');
+  const remarks = d['FlightNumber'] || '';
+
+  const fuelDep  = d['Dep'] || '';
+  const fuelBurn = d['Burn Off'] || '';
+
+  const delayParts = [];
+  for (let n = 1; n <= 9; n++) {
+    const t = d[`Delay Time ${n}`];
+    const c = d[`Delay Code ${n}`];
+    if (t && c) delayParts.push(`${c}(${t})`);
+  }
+  const delayStr = delayParts.join(', ');
+
+  const captRem = d['Captain Remarks'] || 'No Data Available';
+  const journeyLog = [
+    `F/Block: ${d['Block'] || ''}`,
+    `F/Trip: ${d['Trip+Taxi'] || ''}`,
+    `F/Res: ${d['Reserves'] || ''}`,
+    `F/Uplift: ${d['Uplift'] || ''}`,
+    `F/Arr: ${d['Arr'] || ''}`,
+    `F/Diff: ${d['Burn Diff'] || ''}`,
+    `F/Info: ${d['Reason For Extra Fuel'] || ''}`,
+    `F/Uplift: ${d['Reason for 0 Uplift'] || ''}`,
+    `Pax/A: ${d['Adult'] || ''}`,
+    `Pax/C: ${d['Child'] || ''}`,
+    `Pax/I: ${d['Infant'] || ''}`,
+    `Cargo: ${d['Freight'] || ''}`,
+    `PW: ${d['Placard Weight'] || ''}`,
+    `Report: ${captRem}`,
+  ].join('\n');
 
   const vals = [
     date, d['FlightNumber'] || '',
@@ -434,7 +462,11 @@ function toRow(f, r) {
     (isMyTO || isMyLDG) ? '1' : '0',
     reg, model,
     d['Actual Pax'] || '',
-    remarks
+    fuelDep,
+    fuelBurn,
+    remarks,
+    delayStr,
+    journeyLog,
   ];
 
   return vals.map(csv).join(',');

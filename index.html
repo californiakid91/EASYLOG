@@ -288,6 +288,21 @@
 </div>
 
 <script>
+// ─── IATA AHM730 delay code abbreviations ────────────────────────────────────
+const DELAY_CODES = {
+  6:'OA', 9:'SG',
+  11:'PD',12:'PL',13:'PE',14:'PO',15:'PH',16:'PS',17:'PC',18:'PB',19:'PW',
+  21:'CD',22:'CP',23:'CC',24:'CI',25:'CO',26:'CU',27:'CE',28:'CL',29:'CA',
+  31:'GD',32:'GL',33:'GE',34:'GS',35:'GC',36:'GF',37:'GB',38:'GU',39:'GT',
+  41:'TD',42:'TM',43:'TN',44:'TS',45:'TA',46:'TC',47:'TL',48:'TV',
+  51:'DF',52:'DG',55:'ED',56:'EC',57:'EF',58:'EO',
+  61:'FP',62:'FF',63:'FT',64:'FS',65:'FR',66:'FL',67:'FC',68:'FA',69:'FB',
+  71:'WO',72:'WT',73:'WR',75:'WI',76:'WS',77:'WG',
+  81:'AT',82:'AX',83:'AE',84:'AW',85:'AS',86:'AG',87:'AF',88:'AD',89:'AM',
+  91:'RL',92:'RT',93:'RA',94:'RS',95:'RC',96:'RO',
+  97:'MI',98:'MO',99:'MX',
+};
+
 // ─── Role toggle ──────────────────────────────────────────────────────────────
 document.querySelectorAll('input[name="role"]').forEach(r => {
   r.addEventListener('change', () => {
@@ -427,7 +442,10 @@ function toRow(f, r) {
   for (let n = 1; n <= 9; n++) {
     const t = d[`Delay Time ${n}`];
     const c = d[`Delay Code ${n}`];
-    if (t && c) delayParts.push(`${c}(${t})`);
+    if (t && c) {
+      const abbr = DELAY_CODES[Number(c)] || c;
+      delayParts.push(`${c}(${abbr})`);
+    }
   }
   const delayStr = delayParts.join(', ');
 

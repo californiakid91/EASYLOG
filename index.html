@@ -339,7 +339,7 @@ function parseText(text) {
     const date     = dayLines[0];
 
     // Captain from "Flight Deck Crew" section
-    const crewAt = dayLines.findIndex(l => l === 'Flight Deck Crew');
+    const crewAt = dayLines.findIndex(l => /^flight deck crew\s*:?\s*$/i.test(l));
     let captain  = '';
     if (crewAt !== -1) {
       for (let i = crewAt + 1; i < dayLines.length; i++) {
@@ -425,7 +425,7 @@ function toRow(f, r) {
     isMyLDG ? '1' : '0',
     isMyTO  ? '1' : '0',
     '', '',
-    isMyTO ? '1' : '0',
+    (isMyTO || isMyLDG) ? '1' : '0',
     reg, model,
     d['Actual Pax'] || '',
     remarks

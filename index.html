@@ -273,15 +273,9 @@
     <div id="warnings" class="hidden"></div>
 
     <div class="actions" style="margin-top:1.25rem">
-      <button class="btn btn-green" onclick="exportToPilotLog()">⬆ Exportar a PilotLog</button>
-      <button class="btn btn-ghost" onclick="downloadCSV()">⬇ Descargar CSV</button>
-    </div>
-    <div id="piw-banner" class="hidden" style="margin-top:.85rem;padding:.75rem 1rem;background:rgba(47,129,247,.08);border:1px solid rgba(47,129,247,.3);border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
-      <span style="font-size:.85rem;color:var(--muted)">CSV guardado en Archivos. Ábrelo en el Import Wizard:</span>
-      <a id="piw-link" href="https://my.crewlounge.center/pilotlog-import-wizard" target="_blank"
-         style="display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.1rem;background:var(--accent);color:#fff;border-radius:8px;font-size:.85rem;font-weight:600;text-decoration:none;white-space:nowrap;">
-        Abrir Import Wizard ↗
-      </a>
+      <button class="btn btn-green" onclick="downloadCSV()">⬇ Descargar CSV</button>
+      <a class="btn btn-blue" href="https://my.crewlounge.center/pilotlog-import-wizard" target="_blank"
+         style="text-decoration:none;">Abrir Import Wizard ↗</a>
     </div>
   </div>
 
@@ -314,20 +308,20 @@ const role = () => document.querySelector('input[name="role"]:checked').value;
 
 // ─── Aircraft model ───────────────────────────────────────────────────────────
 // Registrations >= threshold (alphabetical suffix comparison) are B737-8200 MAX
-const THRESHOLDS = { EI: 'HEN', '9H': 'VUE', SP: 'RZC' };
+const THRESHOLDS = { EI: 'HAA', '9H': 'VUA', SP: 'RZA' };
 
 function formatReg(raw) {
   const r = raw.trim().toUpperCase().replace(/\s/g, '');
   return r.slice(0, 2) + '-' + r.slice(2);
 }
 
-function getModel(raw) {
+function getVariant(raw) {
   const r = raw.trim().toUpperCase().replace(/\s/g, '');
   const prefix = r.slice(0, 2);
   const suffix = r.slice(2);
   const thr = THRESHOLDS[prefix];
-  if (!thr) return 'B737-800';
-  return suffix >= thr ? 'B38M' : 'B738';
+  if (!thr) return '800';
+  return suffix >= thr ? '8200' : '800';
 }
 
 // ─── Parser ───────────────────────────────────────────────────────────────────
@@ -353,18 +347,30 @@ function parseText(text) {
     const dayLines = dayRaw.filter(l => l !== '');
     const date     = dayLines[0];
 
-    // Captain from "Flight Deck Crew" section
+    // Crew + captain selection
     const crewAt = dayLines.findIndex(l => /^flight deck crew\s*:?\s*$/i.test(l));
-    let captain     = '';
-    let captainCode = '';
+    const allCrew = [];
     if (crewAt !== -1) {
       for (let i = crewAt + 1; i < dayLines.length; i++) {
-        const m = dayLines[i].match(/^(\S+)\s*:\s*CP\s*:\s*(.+)$/);
-        if (m) { captainCode = m[1].trim(); captain = m[2].trim(); break; }
+        const m = dayLines[i].match(/^(\S+)\s*:\s*([A-Z]{2,3})\s*:\s*(.+)$/);
+        if (m) allCrew.push({ code: m[1].trim(), role: m[2].trim(), name: m[3].trim() });
       }
     } else {
       warnings.push(`Sin sección "Flight Deck Crew" — ${date}`);
     }
+
+    // "Verified By : CODE , ROLE , ..." → captain priority
+    let verifiedCode = '';
+    for (const l of dayLines) {
+      const m = l.match(/^verified by\s*:\s*(\S+)\s*,/i);
+      if (m) { verifiedCode = m[1].trim(); break; }
+    }
+
+    const cps = allCrew.filter(c => c.role === 'CP');
+    let captain = '', captainCode = '';
+    const v = verifiedCode && cps.find(c => c.code === verifiedCode);
+    if (v) { captain = v.name; captainCode = v.code; }
+    else if (cps.length) { captain = cps[0].name; captainCode = cps[0].code; }
 
     // Flight block starts
     const flightAt = dayLines.reduce((acc, l, i) => {
@@ -390,7 +396,7 @@ function parseText(text) {
         return;
       }
 
-      flights.push({ date, captain, captainCode, d });
+      flights.push({ date, captain, captainCode, allCrew, d });
     });
   });
 
@@ -398,96 +404,124 @@ function parseText(text) {
 }
 
 // ─── CSV ──────────────────────────────────────────────────────────────────────
-const HEADER =
-  'PILOTLOG_DATE,FLIGHTNUMBER,AF_DEP,AF_ARR,' +
-  'TIME_DEPSCH,TIME_ARRSCH,TIME_DEP,TIME_TO,TIME_LDG,TIME_ARR,' +
-  'PILOT1_NAME,PILOT1_ID,PILOT2_NAME,PILOT2_ID,CREWLIST,' +
-  'TIME_AIR,TIME_TOTAL,TIME_PIC,TIME_SIC,TIME_IFR,' +
-  'LDG_DAY,TO_DAY,LDG_NIGHT,TO_NIGHT,' +
-  'PF,AC_REG,AC_MODEL,PAX,FUEL,FUELUSED,REMARKS,DELAY,JOURNEY_LOG';
+const SEP = ';';
+const HEADER = [
+  'PILOTLOG_DATE','FLIGHTNUMBER','AF_DEP','AF_ARR',
+  'TIME_DEPSCH','TIME_ARRSCH','TIME_DEP','TIME_TO','TIME_LDG','TIME_ARR',
+  'TIME_AIR','TIME_MODE','TIME_TOTAL','TIME_PIC','TIME_SIC','TIME_IFR',
+  'OPERATOR',
+  'PILOT1_ID','PILOT1_NAME','PILOT2_ID','PILOT2_NAME','CREWLIST',
+  'TO_DAY','LDG_DAY','PF',
+  'REMARKS','FLIGHTLOG',
+  'PAX','FUEL','FUELUSED','TAG_DELAY',
+  'AC_MAKE','AC_MODEL','AC_VARIANT','AC_REG','AC_ENGTYPE',
+].join(SEP);
 
 function csv(v) {
   const s = String(v ?? '');
-  return (s.includes(',') || s.includes('"') || s.includes('\n'))
+  return (s.includes(SEP) || s.includes('"') || s.includes('\n'))
     ? '"' + s.replace(/"/g, '""') + '"'
     : s;
+}
+
+// "01:15" → 75 minutes; "1:00" → 60
+function hmToMin(s) {
+  if (!s) return '';
+  const m = s.trim().match(/^(\d+):(\d{1,2})$/);
+  if (!m) return '';
+  return Number(m[1]) * 60 + Number(m[2]);
+}
+
+// "01:00" → "1:00"
+function stripLeadingZero(s) {
+  if (!s) return '';
+  return s.replace(/^0(\d:\d{2})$/, '$1');
 }
 
 function toRow(f, r) {
   const isCPT   = r === 'CPT';
   const d       = f.d;
-  const date    = f.date.replace(/\//g, '-');
+  // 2026/05/15 → 15/05/2026
+  const [yy, mm, dd] = f.date.split('/');
+  const date    = `${dd}/${mm}/${yy}`;
   const [dep, arr] = (d['City Pair'] || '').split(' - ');
   const reg     = formatReg(d['Registration'] || '');
-  const model   = getModel(d['Registration'] || '');
-  const block   = d['Total Block'] || '';
-  const air     = d['Total flight'] || '';
+  const variant = getVariant(d['Registration'] || '');
+  const blockMin = hmToMin(d['Total Block']);
+  const airHM    = stripLeadingZero(d['Total flight'] || '');
+  const flightNo = (d['FlightNumber'] || '').replace(/\s+/g, '');
   const isMyTO  = (d['Take Off']  || '') === 'VEGRIC';
   const isMyLDG = (d['Landing']   || '') === 'VEGRIC';
-  const pilot1     = isCPT ? 'RICARDO VEGA BURGUENO' : f.captain;
-  const pilot1Id   = isCPT ? 'VEGRIC' : f.captainCode;
-  const pilot2     = isCPT ? '' : 'RICARDO VEGA BURGUENO';
-  const pilot2Id   = isCPT ? '' : 'VEGRIC';
-  const crewList   = f.captainCode
-    ? `(${f.captainCode}) CP: ${f.captain}, (VEGRIC) FO: RICARDO VEGA BURGUENO`
-    : '';
-  const timePic = isCPT ? block : '';
-  const timeSic = isCPT ? '' : block;
-  const remarks = d['FlightNumber'] || '';
 
-  const fuelDep  = d['Dep'] || '';
-  const fuelBurn = d['Burn Off'] || '';
+  // Crew list — all CP + me as FO/CPT
+  const meRole = isCPT ? 'CPT' : 'FO';
+  const crewParts = [];
+  (f.allCrew || []).forEach(c => {
+    if (c.code === 'VEGRIC') return;
+    crewParts.push(`(${c.code}) ${c.role}: ${c.name}`);
+  });
+  crewParts.push(`(VEGRIC) ${meRole}: RICARDO VEGA BURGUENO`);
+  const crewList = crewParts.join(', ');
 
+  // Pilot1 / Pilot2
+  const pilot1Id   = isCPT ? 'VEGRIC'        : f.captainCode;
+  const pilot1Name = isCPT ? 'SELF'          : f.captain;
+  const pilot2Id   = isCPT ? ''              : 'VEGRIC';
+  const pilot2Name = isCPT ? ''              : 'SELF';
+
+  const timePic = isCPT ? blockMin : '';
+  const timeSic = isCPT ? ''       : blockMin;
+
+  // Delay codes
   const delayParts = [];
   for (let n = 1; n <= 9; n++) {
     const t = d[`Delay Time ${n}`];
     const c = d[`Delay Code ${n}`];
     if (t && c) {
       const abbr = DELAY_CODES[Number(c)] || c;
-      delayParts.push(`${c}(${abbr})`);
+      delayParts.push(`${c} (${abbr})`);
     }
   }
   const delayStr = delayParts.join(', ');
 
-  const captRem = d['Captain Remarks'] || 'No Data Available';
-  const journeyLog = [
+  // FLIGHTLOG (max 250 chars)
+  const captRem  = d['Captain Remarks'] || 'No Data Available';
+  const fInfoRaw = d['Reason For Extra Fuel'] || '';
+  const fInfo    = fInfoRaw.split('(')[0].trim().replace(/\s*-\s*$/, '');
+  let flightLog = [
     `F/Block: ${d['Block'] || ''}`,
     `F/Trip: ${d['Trip+Taxi'] || ''}`,
     `F/Res: ${d['Reserves'] || ''}`,
     `F/Uplift: ${d['Uplift'] || ''}`,
     `F/Arr: ${d['Arr'] || ''}`,
     `F/Diff: ${d['Burn Diff'] || ''}`,
-    `F/Info: ${d['Reason For Extra Fuel'] || ''}`,
-    `F/Uplift: ${d['Reason for 0 Uplift'] || ''}`,
+    `F/Info: ${fInfo}`,
     `Pax/A: ${d['Adult'] || ''}`,
     `Pax/C: ${d['Child'] || ''}`,
     `Pax/I: ${d['Infant'] || ''}`,
     `Cargo: ${d['Freight'] || ''}`,
     `PW: ${d['Placard Weight'] || ''}`,
     `Report: ${captRem}`,
-  ].join('\n');
+  ].join(', ');
+  if (flightLog.length > 250) flightLog = flightLog.slice(0, 249) + '…';
 
   const vals = [
-    date, d['FlightNumber'] || '',
+    date, flightNo,
     dep || '', arr || '',
     d['STD'] || '', d['STA'] || '',
     d['Off Block'] || '', d['Airborne'] || '', d['Landed'] || '', d['On Block'] || '',
-    pilot1, pilot1Id, pilot2, pilot2Id, crewList,
-    air, block, timePic, timeSic, block,
-    isMyLDG ? '1' : '0',
+    airHM, 'UTC', blockMin, timePic, timeSic, blockMin,
+    'RYANAIR',
+    pilot1Id, pilot1Name, pilot2Id, pilot2Name, crewList,
     isMyTO  ? '1' : '0',
-    '', '',
-    (isMyTO || isMyLDG) ? '1' : '0',
-    reg, model,
-    d['Actual Pax'] || '',
-    fuelDep,
-    fuelBurn,
-    remarks,
-    delayStr,
-    journeyLog,
+    isMyLDG ? '1' : '0',
+    (isMyTO || isMyLDG) ? 'TRUE' : 'FALSE',
+    flightNo, flightLog,
+    d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '', delayStr,
+    'Boeing', 'B737', variant, reg, 'Turbine (jet-fan)',
   ];
 
-  return vals.map(csv).join(',');
+  return vals.map(csv).join(SEP);
 }
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -518,23 +552,25 @@ function convert() {
   flights.forEach(f => {
     const d       = f.d;
     const reg     = formatReg(d['Registration'] || '');
-    const model   = getModel(d['Registration'] || '');
+    const variant = getVariant(d['Registration'] || '');
+    const model   = `B737-${variant}`;
     const [dep, arr] = (d['City Pair'] || '').split(' - ');
     const isMyTO  = (d['Take Off']  || '') === 'VEGRIC';
     const isMyLDG = (d['Landing']   || '') === 'VEGRIC';
     const isPF    = isMyTO || isMyLDG;
     const noCapt  = !f.captain;
+    const [yy, mm, dd] = f.date.split('/');
 
     const tr = document.createElement('tr');
     tr.innerHTML =
-      `<td>${f.date.replace(/\//g, '-')}</td>` +
-      `<td><strong>${d['FlightNumber'] || ''}</strong></td>` +
+      `<td>${dd}/${mm}/${yy}</td>` +
+      `<td><strong>${(d['FlightNumber'] || '').replace(/\s+/g, '')}</strong></td>` +
       `<td>${dep || '?'} → ${arr || '?'}</td>` +
       `<td style="color:var(--muted);font-size:.75rem">${d['Off Block'] || ''} → ${d['On Block'] || ''}</td>` +
       `<td><strong>${d['Total Block'] || ''}</strong></td>` +
       `<td>${d['Total flight'] || ''}</td>` +
       `<td style="font-family:monospace">${reg}</td>` +
-      `<td><span class="tag ${model === 'B38M' ? 'tag-8200' : 'tag-800'}">${model}</span></td>` +
+      `<td><span class="tag ${variant === '8200' ? 'tag-8200' : 'tag-800'}">${model}</span></td>` +
       `<td style="${noCapt ? 'color:var(--red)' : ''}">${f.captain || '—'}</td>` +
       `<td>${isPF ? '<span class="tag tag-pf">PF</span>' : ''}</td>`;
     tbody.appendChild(tr);
@@ -566,31 +602,6 @@ function convert() {
   showStatus('ok', `${flights.length} vuelo${flights.length > 1 ? 's' : ''} procesado${flights.length > 1 ? 's' : ''} correctamente.`);
 }
 
-async function exportToPilotLog() {
-  if (!_csv) return;
-  await shareCSV();
-  document.getElementById('piw-banner').classList.remove('hidden');
-  document.getElementById('piw-banner').style.display = 'flex';
-}
-
-async function shareCSV() {
-  if (!_csv) return;
-  const filename = `pilotlog_${new Date().toISOString().slice(0,10)}.csv`;
-  const blob = new Blob([_csv], { type: 'text/csv;charset=utf-8;' });
-  const file = new File([blob], filename, { type: 'text/csv' });
-
-  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: 'PilotLog CSV' });
-    } catch (e) {
-      if (e.name !== 'AbortError') downloadCSV();
-    }
-  } else {
-    // En desktop o navegadores sin Web Share API → descarga directa
-    downloadCSV();
-  }
-}
-
 function downloadCSV() {
   if (!_csv) return;
   const blob = new Blob([_csv], { type: 'text/csv;charset=utf-8;' });
@@ -607,7 +618,6 @@ function clearAll() {
   document.getElementById('input').value = '';
   document.getElementById('status').classList.add('hidden');
   document.getElementById('results').classList.add('hidden');
-  document.getElementById('piw-banner').classList.add('hidden');
   _flights = [];
   _csv = '';
 }

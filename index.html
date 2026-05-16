@@ -408,12 +408,12 @@ const SEP = ';';
 const HEADER = [
   'PILOTLOG_DATE','FLIGHTNUMBER','AF_DEP','AF_ARR',
   'TIME_DEPSCH','TIME_ARRSCH','TIME_DEP','TIME_TO','TIME_LDG','TIME_ARR',
-  'TIME_AIR','TIME_MODE','TIME_TOTAL','TIME_PIC','TIME_SIC','TIME_IFR',
+  'TIME_AIR','TIME_TOTAL','TIME_PIC','TIME_SIC','TIME_IFR',
   'OPERATOR',
   'PILOT1_ID','PILOT1_NAME','PILOT2_ID','PILOT2_NAME','CREWLIST',
   'TO_DAY','LDG_DAY','PF',
   'REMARKS','FLIGHTLOG',
-  'PAX','FUEL','FUELUSED','TAG_DELAY',
+  'PAX','FUEL','FUELUSED',
   'AC_MAKE','AC_MODEL','AC_VARIANT','AC_REG','AC_ENGTYPE',
 ].join(SEP);
 
@@ -484,11 +484,11 @@ function toRow(f, r) {
   }
   const delayStr = delayParts.join(', ');
 
-  // FLIGHTLOG (max 250 chars)
+  // FLIGHTLOG (max 250 chars) — includes Delay info since TAG_DELAY isn't an import column
   const captRem  = d['Captain Remarks'] || 'No Data Available';
   const fInfoRaw = d['Reason For Extra Fuel'] || '';
   const fInfo    = fInfoRaw.split('(')[0].trim().replace(/\s*-\s*$/, '');
-  let flightLog = [
+  const parts = [
     `F/Block: ${d['Block'] || ''}`,
     `F/Trip: ${d['Trip+Taxi'] || ''}`,
     `F/Res: ${d['Reserves'] || ''}`,
@@ -501,8 +501,10 @@ function toRow(f, r) {
     `Pax/I: ${d['Infant'] || ''}`,
     `Cargo: ${d['Freight'] || ''}`,
     `PW: ${d['Placard Weight'] || ''}`,
-    `Report: ${captRem}`,
-  ].join(', ');
+  ];
+  if (delayStr) parts.push(`Delay: ${delayStr}`);
+  parts.push(`Report: ${captRem}`);
+  let flightLog = parts.join(', ');
   if (flightLog.length > 250) flightLog = flightLog.slice(0, 249) + '…';
 
   const vals = [
@@ -510,14 +512,14 @@ function toRow(f, r) {
     dep || '', arr || '',
     d['STD'] || '', d['STA'] || '',
     d['Off Block'] || '', d['Airborne'] || '', d['Landed'] || '', d['On Block'] || '',
-    airHM, 'UTC', blockMin, timePic, timeSic, blockMin,
+    airHM, blockMin, timePic, timeSic, blockMin,
     'RYANAIR',
     pilot1Id, pilot1Name, pilot2Id, pilot2Name, crewList,
     isMyTO  ? '1' : '0',
     isMyLDG ? '1' : '0',
     (isMyTO || isMyLDG) ? 'TRUE' : 'FALSE',
     flightNo, flightLog,
-    d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '', delayStr,
+    d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '',
     'Boeing', 'B737', variant, reg, 'Turbine (jet-fan)',
   ];
 

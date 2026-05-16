@@ -441,9 +441,9 @@ function stripLeadingZero(s) {
 function toRow(f, r) {
   const isCPT   = r === 'CPT';
   const d       = f.d;
-  // 2026/05/15 → 15/05/2026
+  // 2026/05/15 → 2026-05-15 (ISO, what the Import Wizard accepts)
   const [yy, mm, dd] = f.date.split('/');
-  const date    = `${dd}/${mm}/${yy}`;
+  const date    = `${yy}-${mm}-${dd}`;
   const [dep, arr] = (d['City Pair'] || '').split(' - ');
   const reg     = formatReg(d['Registration'] || '');
   const variant = getVariant(d['Registration'] || '');
@@ -520,7 +520,7 @@ function toRow(f, r) {
     (isMyTO || isMyLDG) ? 'TRUE' : 'FALSE',
     flightNo, flightLog,
     d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '',
-    'Boeing', 'B737', variant, reg, 'Turbine (jet-fan)',
+    'Boeing', 'B737', variant, reg, 'Jet',
   ];
 
   return vals.map(csv).join(SEP);

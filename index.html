@@ -539,7 +539,7 @@ function toRow(f, r) {
     if (t) logLines.push(`DT/${n}: ${t}`);
   }
   logLines.push(`Report: ${captRem}`);
-  const flightLog = logLines.join('\n');
+  const flightLog = logLines.join('\r\n');
 
   const vals = [
     date, flightNo,

@@ -479,8 +479,9 @@ function toRow(f, r) {
   const isMyTO  = (d['Take Off']  || '') === 'VEGRIC';
   const isMyLDG = (d['Landing']   || '') === 'VEGRIC';
 
-  // Crew list — CrewLounge format: "ROLE - CODE - NAME" joined by "|"
-  // (Header "Flight Deck Crew" + newlines breaks the importer)
+  // Crew list — multi-line "ROLE - CODE - NAME" (no header).
+  // Multi-line CREWLIST + multi-line FLIGHTLOG keeps PilotLog parser in
+  // permissive mode so both fields import correctly.
   const meRole = isCPT ? 'CP' : 'FO';
   const crewParts = [];
   (f.allCrew || []).forEach(c => {
@@ -489,7 +490,7 @@ function toRow(f, r) {
     crewParts.push(`${role} - ${c.code} - ${c.name}`);
   });
   crewParts.push(`${meRole} - VEGRIC - RICARDO VEGA BURGUENO`);
-  const crewList = crewParts.join('|');
+  const crewList = crewParts.join('\r\n');
 
   // Pilot1 / Pilot2
   const pilot1Id   = isCPT ? 'VEGRIC'        : f.captainCode;

@@ -479,16 +479,17 @@ function toRow(f, r) {
   const isMyTO  = (d['Take Off']  || '') === 'VEGRIC';
   const isMyLDG = (d['Landing']   || '') === 'VEGRIC';
 
-  // Crew list — "Flight Deck Crew" header + lines "CODE : ROLE : NAME"
+  // Crew list — CrewLounge format: "ROLE - CODE - NAME" joined by "|"
+  // (Header "Flight Deck Crew" + newlines breaks the importer)
   const meRole = isCPT ? 'CP' : 'FO';
-  const crewLines = ['Flight Deck Crew'];
+  const crewParts = [];
   (f.allCrew || []).forEach(c => {
     if (c.code === 'VEGRIC') return;
     const role = c.role === 'CPT' ? 'CP' : c.role;
-    crewLines.push(`${c.code} : ${role} : ${c.name}`);
+    crewParts.push(`${role} - ${c.code} - ${c.name}`);
   });
-  crewLines.push(`VEGRIC : ${meRole} : RICARDO VEGA BURGUENO`);
-  const crewList = crewLines.join('\n');
+  crewParts.push(`${meRole} - VEGRIC - RICARDO VEGA BURGUENO`);
+  const crewList = crewParts.join('|');
 
   // Pilot1 / Pilot2
   const pilot1Id   = isCPT ? 'VEGRIC'        : f.captainCode;

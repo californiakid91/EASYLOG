@@ -439,7 +439,7 @@ const HEADER = [
   'PILOT1_ID','PILOT1_NAME','PILOT2_ID','PILOT2_NAME',
   'TO_DAY','LDG_DAY','PF',
   'REMARKS','CREWLIST','FLIGHTLOG',
-  'PAX','FUEL','FUELUSED','DELAY',
+  'PAX','FUEL','FUELUSED','TAG_DELAY',
   'AC_MAKE','AC_MODEL','AC_VARIANT','AC_REG','AC_ENGTYPE',
 ].join(SEP);
 
@@ -499,18 +499,18 @@ function toRow(f, r) {
   const timePic = isCPT ? blockMin : '';
   const timeSic = isCPT ? ''       : blockMin;
 
-  // Delay codes — DELAY field expects numeric IATA codes per official docs.
-  // CrewLounge web importer accepts DELAY (not TAG_DELAY).
-  const delayNums = [];
+  // Delay codes — TAG_DELAY uses canonical CrewLounge category names joined by "|"
+  // FLIGHTLOG keeps the human-readable form "93 (AIRCRAFT ROTATION), ..."
+  const delayNames = [];
   const delayParts = [];
   for (let n = 1; n <= 9; n++) {
     const c = d[`Delay Code ${n}`];
     if (!c) continue;
     const name = DELAY_CODES[Number(c)];
-    delayNums.push(String(c).trim());
+    if (name && !delayNames.includes(name)) delayNames.push(name);
     delayParts.push(`${c}${name ? ' (' + name + ')' : ''}`);
   }
-  const delayCode = delayNums.join('|');
+  const delayCode = delayNames.join('|');
   const delayStr  = delayParts.join(', ');
 
   // FLIGHTLOG — multi-line format, auto-imports in PilotLog
@@ -553,7 +553,7 @@ function toRow(f, r) {
     (isMyTO || isMyLDG) ? 'TRUE' : 'FALSE',
     flightNo, crewList, flightLog,
     d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '', delayCode,
-    'Boeing', 'B737', variant, reg, 'Jet',
+    'Boeing', 'B737', variant, reg, 'Turbine (jet-fan)',
   ];
 
   return vals.map(csv).join(SEP);

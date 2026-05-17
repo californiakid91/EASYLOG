@@ -490,7 +490,7 @@ function toRow(f, r) {
     crewParts.push(`${role} - ${c.code} - ${c.name}`);
   });
   crewParts.push(`${meRole} - VEGRIC - RICARDO VEGA BURGUENO`);
-  const crewList = crewParts.join('\n');
+  const crewList = crewParts.join('|');
 
   // Pilot1 / Pilot2
   const pilot1Id   = isCPT ? 'VEGRIC'        : f.captainCode;
@@ -540,7 +540,7 @@ function toRow(f, r) {
     if (t) logLines.push(`DT/${n}: ${t}`);
   }
   logLines.push(`Report: ${captRem}`);
-  const flightLog = logLines.join('\n');
+  const flightLog = logLines.join(' | ');
 
   const vals = [
     date, flightNo,

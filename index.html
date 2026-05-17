@@ -282,19 +282,45 @@
 </div>
 
 <script>
-// ─── IATA AHM730 delay code abbreviations ────────────────────────────────────
+// ─── IATA AHM730 delay codes → CrewLounge PILOTLOG enum names ────────────────
+// CrewLounge import expects the category NAME (uppercase), not the IATA number.
+// Multi-delay rows use "|" as separator and only enum names are accepted.
 const DELAY_CODES = {
-  6:'OA', 9:'SG',
-  11:'PD',12:'PL',13:'PE',14:'PO',15:'PH',16:'PS',17:'PC',18:'PB',19:'PW',
-  21:'CD',22:'CP',23:'CC',24:'CI',25:'CO',26:'CU',27:'CE',28:'CL',29:'CA',
-  31:'GD',32:'GL',33:'GE',34:'GS',35:'GC',36:'GF',37:'GB',38:'GU',39:'GT',
-  41:'TD',42:'TM',43:'TN',44:'TS',45:'TA',46:'TC',47:'TL',48:'TV',
-  51:'DF',52:'DG',55:'ED',56:'EC',57:'EF',58:'EO',
-  61:'FP',62:'FF',63:'FT',64:'FS',65:'FR',66:'FL',67:'FC',68:'FA',69:'FB',
-  71:'WO',72:'WT',73:'WR',75:'WI',76:'WS',77:'WG',
-  81:'AT',82:'AX',83:'AE',84:'AW',85:'AS',86:'AG',87:'AF',88:'AD',89:'AM',
-  91:'RL',92:'RT',93:'RA',94:'RS',95:'RC',96:'RO',
-  97:'MI',98:'MO',99:'MX',
+  11:'BOARDING', 12:'BOARDING', 13:'BOARDING', 14:'OVERSALES', 15:'BOARDING',
+  16:'BOARDING', 17:'BOARDING', 18:'BOARDING', 19:'REDUCED MOBILITY',
+  21:'CARGO DOCUMENTATION', 22:'CARGO DOCUMENTATION', 23:'CARGO DOCUMENTATION',
+  24:'CARGO DOCUMENTATION', 25:'OVERSALES', 26:'CARGO DOCUMENTATION',
+  27:'CARGO DOCUMENTATION', 28:'LATE / INACCURATE AIRCRAFT DOCUMENTATION',
+  29:'CARGO DOCUMENTATION',
+  31:'LATE / INACCURATE AIRCRAFT DOCUMENTATION', 32:'LOADING / UNLOADING',
+  33:'TECHNICAL EQUIPMENT', 34:'TECHNICAL EQUIPMENT', 35:'AIRCRAFT CLEANING',
+  36:'FUELLING / DEFUELLING', 37:'LOADING / UNLOADING', 38:'LOADING / UNLOADING',
+  39:'TECHNICAL EQUIPMENT',
+  41:'TECHNICAL DEFECTS', 42:'SCHEDULED MAINTENANCE', 43:'NON-SCHEDULED MAINTENANCE',
+  44:'TECHNICAL EQUIPMENT', 45:'TECHNICAL EQUIPMENT', 46:'AIRCRAFT CHANGE',
+  47:'AIRCRAFT CHANGE', 48:'AIRCRAFT CHANGE',
+  51:'TECHNICAL DEFECTS', 52:'TECHNICAL DEFECTS',
+  55:'OPERATIONS CONTROL', 56:'CARGO DOCUMENTATION', 57:'FLIGHT PLANS',
+  58:'OPERATIONS CONTROL',
+  61:'FLIGHT PLANS', 62:'OPERATIONAL REQUIREMENT', 63:'OPERATIONAL REQUIREMENT',
+  64:'OPERATIONAL REQUIREMENT', 65:'OPERATIONAL REQUIREMENT',
+  66:'CABIN CREW ERROR OR SPECIAL REQUEST', 67:'CABIN CREW ERROR OR SPECIAL REQUEST',
+  68:'CABIN CREW ERROR OR SPECIAL REQUEST', 69:'MANDATORY SECURITY',
+  71:'OPERATIONAL REQUIREMENT', 72:'OPERATIONAL REQUIREMENT',
+  73:'OPERATIONAL REQUIREMENT', 75:'DE-ICING OF AIRCRAFT',
+  76:'REMOVAL OF SNOW, ICE, WATER OR SAND FROM AIRPORT',
+  77:'GROUND HANDLING IMPAIRED BY ADVERSE WEATHER CONDITIONS',
+  81:'ATFM DUE TO ATC EN-ROUTE DEMAND / CAPACITY',
+  82:'ATFM DUE TO ATC STAFF / EQUIPMENT ENROUTE',
+  83:'RESTRICTIONS AT AIRPORT OF DEPARTURE',
+  84:'OPERATIONAL REQUIREMENT', 85:'MANDATORY SECURITY',
+  86:'IMMIGRATION, CUSTOMS, HEALTH', 87:'AIRPORT FACILITIES',
+  88:'RESTRICTIONS AT AIRPORT OF DEPARTURE',
+  89:'RESTRICTIONS AT AIRPORT OF DEPARTURE',
+  91:'AIRCRAFT ROTATION', 92:'AIRCRAFT ROTATION', 93:'AIRCRAFT ROTATION',
+  94:'AIRCRAFT ROTATION', 95:'AIRCRAFT ROTATION', 96:'OPERATIONS CONTROL',
+  97:'OPERATIONAL REQUIREMENT', 98:'OPERATIONAL REQUIREMENT',
+  99:'OPERATIONAL REQUIREMENT',
 };
 
 // ─── Role toggle ──────────────────────────────────────────────────────────────
@@ -407,13 +433,13 @@ function parseText(text) {
 const SEP = ';';
 const HEADER = [
   'PILOTLOG_DATE','FLIGHTNUMBER','AF_DEP','AF_ARR',
-  'TIME_DEPSCH','TIME_ARRSCH','TIME_DEP','TIME_TO','TIME_LDG','TIME_ARR',
+  'TIME_DEP','TIME_DEPSCH','TIME_ARR','TIME_ARRSCH','TIME_TO','TIME_LDG',
   'TIME_AIR','TIME_TOTAL','TIME_PIC','TIME_SIC','TIME_IFR',
   'OPERATOR',
-  'PILOT1_ID','PILOT1_NAME','PILOT2_ID','PILOT2_NAME','CREWLIST',
+  'PILOT1_ID','PILOT1_NAME','PILOT2_ID','PILOT2_NAME',
   'TO_DAY','LDG_DAY','PF',
-  'REMARKS','FLIGHTLOG',
-  'PAX','FUEL','FUELUSED','DELAY',
+  'REMARKS','CREWLIST','FLIGHTLOG',
+  'PAX','FUEL','FUELUSED','TAG_DELAY',
   'AC_MAKE','AC_MODEL','AC_VARIANT','AC_REG','AC_ENGTYPE',
 ].join(SEP);
 
@@ -453,15 +479,16 @@ function toRow(f, r) {
   const isMyTO  = (d['Take Off']  || '') === 'VEGRIC';
   const isMyLDG = (d['Landing']   || '') === 'VEGRIC';
 
-  // Crew list — all CP + me as FO/CPT
-  const meRole = isCPT ? 'CPT' : 'FO';
-  const crewParts = [];
+  // Crew list — "Flight Deck Crew" header + lines "CODE : ROLE : NAME"
+  const meRole = isCPT ? 'CP' : 'FO';
+  const crewLines = ['Flight Deck Crew'];
   (f.allCrew || []).forEach(c => {
     if (c.code === 'VEGRIC') return;
-    crewParts.push(`(${c.code}) ${c.role}: ${c.name}`);
+    const role = c.role === 'CPT' ? 'CP' : c.role;
+    crewLines.push(`${c.code} : ${role} : ${c.name}`);
   });
-  crewParts.push(`(VEGRIC) ${meRole}: RICARDO VEGA BURGUENO`);
-  const crewList = crewParts.join(', ');
+  crewLines.push(`VEGRIC : ${meRole} : RICARDO VEGA BURGUENO`);
+  const crewList = crewLines.join('\n');
 
   // Pilot1 / Pilot2
   const pilot1Id   = isCPT ? 'VEGRIC'        : f.captainCode;
@@ -472,26 +499,26 @@ function toRow(f, r) {
   const timePic = isCPT ? blockMin : '';
   const timeSic = isCPT ? ''       : blockMin;
 
-  // Delay codes
-  const delayNums = [];   // numeric only — for DELAY column (IATA code)
-  const delayParts = [];  // pretty — for FLIGHTLOG free text
+  // Delay codes — TAG_DELAY uses canonical CrewLounge category names joined by "|"
+  // FLIGHTLOG keeps the human-readable form "93 (AIRCRAFT ROTATION), ..."
+  const delayNames = [];
+  const delayParts = [];
   for (let n = 1; n <= 9; n++) {
-    const t = d[`Delay Time ${n}`];
     const c = d[`Delay Code ${n}`];
-    if (t && c) {
-      const abbr = DELAY_CODES[Number(c)] || c;
-      delayNums.push(String(c).trim());
-      delayParts.push(`${c} (${abbr})`);
-    }
+    if (!c) continue;
+    const name = DELAY_CODES[Number(c)];
+    if (name && !delayNames.includes(name)) delayNames.push(name);
+    delayParts.push(`${c}${name ? ' (' + name + ')' : ''}`);
   }
-  const delayCode = delayNums[0] || '';      // single IATA code — importer rejects lists
-  const delayStr  = delayParts.join(', ');   // e.g. "93 (RA), 89 (AM), 87 (AF)"
+  const delayCode = delayNames.join('|');
+  const delayStr  = delayParts.join(', ');
 
-  // FLIGHTLOG (max 250 chars) — includes Delay info since TAG_DELAY isn't an import column
+  // FLIGHTLOG — multi-line format, auto-imports in PilotLog
   const captRem  = d['Captain Remarks'] || 'No Data Available';
   const fInfoRaw = d['Reason For Extra Fuel'] || '';
   const fInfo    = fInfoRaw.split('(')[0].trim().replace(/\s*-\s*$/, '');
-  const parts = [
+  const noUplift = d['Reason for 0 Uplift'] || '';
+  const logLines = [
     `F/Block: ${d['Block'] || ''}`,
     `F/Trip: ${d['Trip+Taxi'] || ''}`,
     `F/Res: ${d['Reserves'] || ''}`,
@@ -499,31 +526,34 @@ function toRow(f, r) {
     `F/Arr: ${d['Arr'] || ''}`,
     `F/Diff: ${d['Burn Diff'] || ''}`,
     `F/Info: ${fInfo}`,
+    `F/Uplift: ${noUplift}`,
     `Pax/A: ${d['Adult'] || ''}`,
     `Pax/C: ${d['Child'] || ''}`,
     `Pax/I: ${d['Infant'] || ''}`,
     `Cargo: ${d['Freight'] || ''}`,
     `PW: ${d['Placard Weight'] || ''}`,
   ];
-  if (delayStr) parts.push(`Delay: ${delayStr}`);
-  parts.push(`Report: ${captRem}`);
-  let flightLog = parts.join(', ');
-  if (flightLog.length > 250) flightLog = flightLog.slice(0, 247) + '...';
+  for (let n = 1; n <= 9; n++) {
+    const t = d[`Delay Time ${n}`];
+    if (t) logLines.push(`DT/${n}: ${t}`);
+  }
+  logLines.push(`Report: ${captRem}`);
+  const flightLog = logLines.join('\n');
 
   const vals = [
     date, flightNo,
     dep || '', arr || '',
-    d['STD'] || '', d['STA'] || '',
-    d['Off Block'] || '', d['Airborne'] || '', d['Landed'] || '', d['On Block'] || '',
+    d['Off Block'] || '', d['STD'] || '', d['On Block'] || '', d['STA'] || '',
+    d['Airborne'] || '', d['Landed'] || '',
     airHM, blockMin, timePic, timeSic, blockMin,
     'RYANAIR',
-    pilot1Id, pilot1Name, pilot2Id, pilot2Name, crewList,
+    pilot1Id, pilot1Name, pilot2Id, pilot2Name,
     isMyTO  ? '1' : '0',
     isMyLDG ? '1' : '0',
     (isMyTO || isMyLDG) ? 'TRUE' : 'FALSE',
-    flightNo, flightLog,
+    flightNo, crewList, flightLog,
     d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '', delayCode,
-    'Boeing', 'B737', variant, reg, 'Jet',
+    'Boeing', 'B737', variant, reg, 'Turbine (jet-fan)',
   ];
 
   return vals.map(csv).join(SEP);

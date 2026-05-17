@@ -556,7 +556,7 @@ function toRow(f, r) {
     (isMyTO || isMyLDG) ? 'TRUE' : 'FALSE',
     flightNo, crewList, flightLog,
     d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '', delayCode,
-    'Boeing', 'B737', variant, reg, 'Turbine (jet-fan)',
+    'Boeing', 'B737', variant, reg, 'Jet',
   ];
 
   return vals.map(csv).join(SEP);

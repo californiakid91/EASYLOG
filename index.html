@@ -431,81 +431,17 @@ function parseText(text) {
 
 // ─── CSV ──────────────────────────────────────────────────────────────────────
 const SEP = ';';
-
-// 99-column canonical CrewLounge PILOTLOG export format (verified against
-// real export of FR8407 imported via native iOS PilotLog email parser).
 const HEADER = [
-  'PILOTLOG_DATE','IS_PREVEXP','AC_ISSIM','FLIGHTNUMBER','PAIRING',
-  'AF_DEP','DEP_RWY','AF_ARR','ARR_RWY',
+  'PILOTLOG_DATE','FLIGHTNUMBER','AF_DEP','AF_ARR',
   'TIME_DEP','TIME_DEPSCH','TIME_ARR','TIME_ARRSCH','TIME_TO','TIME_LDG',
-  'TIME_AIR','TIME_MODE','TIME_TOTAL','TIME_TOTALSIM',
-  'TIME_PIC','TIME_SIC','TIME_DUAL','TIME_PICUS','TIME_INSTRUCTOR','TIME_EXAMINER',
-  'TIME_NIGHT','TIME_XC','TIME_IFR','TIME_HOOD','TIME_ACTUAL','TIME_RELIEF',
-  'TIME_USER1','TIME_USER2','TIME_USER3','TIME_USER4',
-  'CAPACITY','OPERATOR',
-  'PILOT1_ID','PILOT1_NAME','PILOT1_PHONE','PILOT1_EMAIL',
-  'PILOT2_ID','PILOT2_NAME','PILOT2_PHONE','PILOT2_EMAIL',
-  'PILOT3_ID','PILOT3_NAME','PILOT3_PHONE','PILOT3_EMAIL',
-  'PILOT4_ID','PILOT4_NAME','PILOT4_PHONE','PILOT4_EMAIL',
-  'TO_DAY','TO_NIGHT','LDG_DAY','LDG_NIGHT','LIFT','PF','HOLDING',
-  'TAG_APP','TAG_OPS','TAG_LAUNCH','INSTRUCTION/TRAINING',
+  'TIME_AIR','TIME_TOTAL','TIME_PIC','TIME_SIC','TIME_IFR',
+  'OPERATOR',
+  'PILOT1_ID','PILOT1_NAME','PILOT2_ID','PILOT2_NAME',
+  'TO_DAY','LDG_DAY','PF',
   'REMARKS','CREWLIST','FLIGHTLOG',
-  'PAX','FUEL','FUELPLANNED','FUELUSED','TAG_DELAY','DEICE',
-  'USER_NUMERIC','USER_TEXT','USER_YESNO',
-  'AC_MAKE','AC_MODEL','AC_VARIANT','AC_REG','AC_FIN','AC_RATING',
-  'AC_SP','AC_MP','AC_ME','AC_SPSE','AC_SPME','AC_CLASS',
-  'AC_GLIDER','AC_ULTRALIGHT','AC_SEA',
-  'AC_ENGINES','AC_ENGTYPE','AC_TAILWHEEL','AC_COMPLEX','AC_TMG',
-  'AC_HEAVY','AC_HIGHPERF','AC_AEROBATIC','AC_SEATS',
+  'PAX','FUEL','FUELUSED','DELAY',
+  'AC_MAKE','AC_MODEL','AC_VARIANT','AC_REG','AC_ENGTYPE',
 ].join(SEP);
-
-// IATA → ICAO for common Ryanair destinations. Pass-through if not found.
-const ICAO_MAP = {
-  STN:'EGSS', LTN:'EGGW', BHX:'EGBB', MAN:'EGCC', LPL:'EGGP', EMA:'EGNX',
-  EDI:'EGPH', GLA:'EGPF', BFS:'EGAA', NCL:'EGNT', BRS:'EGGD', LBA:'EGNM',
-  DUB:'EIDW', ORK:'EICK', SNN:'EINN', NOC:'EIKN',
-  MAD:'LEMD', BCN:'LEBL', AGP:'LEMG', PMI:'LEPA', ALC:'LEAL', VLC:'LEVC',
-  SVQ:'LEZL', BIO:'LEBB', SCQ:'LEST', MAH:'LEMH', IBZ:'LEIB',
-  TFS:'GCTS', LPA:'GCLP', ACE:'GCRR', FUE:'GCFV',
-  CDG:'LFPG', BVA:'LFOB', NTE:'LFRS', BOD:'LFBD', MRS:'LFML', NCE:'LFMN',
-  TLS:'LFBO', LIL:'LFQQ',
-  FCO:'LIRF', CIA:'LIRA', MXP:'LIMC', BGY:'LIME', VCE:'LIPZ', BLQ:'LIPE',
-  PSA:'LIRP', NAP:'LIRN', PMO:'LICJ', CTA:'LICC',
-  FRA:'EDDF', HHN:'EDFH', BER:'EDDB', MUC:'EDDM', CGN:'EDDK', DUS:'EDDL',
-  HAM:'EDDH', STR:'EDDS', NUE:'EDDN', LEJ:'EDDP', BRE:'EDDW',
-  AMS:'EHAM', EIN:'EHEH', BRU:'EBBR', CRL:'EBCI',
-  WAW:'EPWA', WMI:'EPMO', WRO:'EPWR', KRK:'EPKK', POZ:'EPPO', KTW:'EPKT',
-  GDN:'EPGD', RZE:'EPRZ', LCJ:'EPLL',
-  PRG:'LKPR', BUD:'LHBP', OTP:'LROP', SOF:'LBSF', ATH:'LGAV', SKG:'LGTS',
-  RHO:'LGRP', HER:'LGIR', VIE:'LOWW', ZRH:'LSZH', GVA:'LSGG',
-  CPH:'EKCH', BLL:'EKBI', OSL:'ENGM', TRF:'ENTO', RYG:'ENRY',
-  ARN:'ESSA', GOT:'ESGG', NYO:'ESKN', VST:'ESOW',
-  HEL:'EFHK', TLL:'EETN', RIX:'EVRA', VNO:'EYVI', KUN:'EYKA',
-  TIA:'LATI', TGD:'LYPG', BEG:'LYBE', SJJ:'LQSA',
-  LIS:'LPPT', OPO:'LPPR', FAO:'LPFR',
-  CMN:'GMMN', AGA:'GMAD', RAK:'GMMX',
-  TLV:'LLBG', AMM:'OJAI', CAI:'HECA', NBE:'DTNH',
-};
-
-function toIcao(code) {
-  const c = (code || '').trim().toUpperCase();
-  if (c.length === 4) return c;            // already ICAO
-  return ICAO_MAP[c] || c;                 // map or pass through
-}
-
-// "2026/05/15" → "15/05/2026"
-function toDmy(s) {
-  const m = (s || '').match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
-  return m ? `${m[3]}/${m[2]}/${m[1]}` : s;
-}
-
-// Heuristic: night if takeoff hour ≥ 19 or ≤ 5 (UTC).
-function isNightFlight(timeStr) {
-  const m = (timeStr || '').match(/^(\d{1,2}):/);
-  if (!m) return false;
-  const h = Number(m[1]);
-  return h >= 19 || h <= 5;
-}
 
 function csv(v) {
   const s = String(v ?? '');
@@ -531,59 +467,53 @@ function stripLeadingZero(s) {
 function toRow(f, r) {
   const isCPT   = r === 'CPT';
   const d       = f.d;
-  const date    = toDmy(f.date);
-  const [depIata, arrIata] = (d['City Pair'] || '').split(' - ');
-  const dep     = toIcao(depIata);
-  const arr     = toIcao(arrIata);
+  // 2026/05/15 → 2026-05-15 (ISO, what the Import Wizard accepts)
+  const [yy, mm, dd] = f.date.split('/');
+  const date    = `${yy}-${mm}-${dd}`;
+  const [dep, arr] = (d['City Pair'] || '').split(' - ');
   const reg     = formatReg(d['Registration'] || '');
   const variant = getVariant(d['Registration'] || '');
-  const blockMin = hmToMin(d['Total Block']) || 0;
+  const blockMin = hmToMin(d['Total Block']);
   const airHM    = stripLeadingZero(d['Total flight'] || '');
   const flightNo = (d['FlightNumber'] || '').replace(/\s+/g, '');
   const isMyTO  = (d['Take Off']  || '') === 'VEGRIC';
   const isMyLDG = (d['Landing']   || '') === 'VEGRIC';
-  const night   = isNightFlight(d['Airborne']) ? blockMin : 0;
 
-  // Crew list — "Flight Deck Crew|CODE   :   ROLE   :   NAME|..." (pipe-separated)
+  // Crew list — "Flight Deck Crew" header + lines "CODE : ROLE : NAME"
   const meRole = isCPT ? 'CP' : 'FO';
-  const crewParts = ['Flight Deck Crew'];
+  const crewLines = ['Flight Deck Crew'];
   (f.allCrew || []).forEach(c => {
     if (c.code === 'VEGRIC') return;
     const role = c.role === 'CPT' ? 'CP' : c.role;
-    crewParts.push(`${c.code}   :   ${role}   :   ${c.name}`);
+    crewLines.push(`${c.code} : ${role} : ${c.name}`);
   });
-  crewParts.push(`VEGRIC   :   ${meRole}   :   RICARDO VEGA BURGUENO`);
-  const crewList = crewParts.join('|');
+  crewLines.push(`VEGRIC : ${meRole} : RICARDO VEGA BURGUENO`);
+  const crewList = crewLines.join('\n');
 
-  // Pilots — up to PILOT4. PIC of the flight is PILOT1, SELF goes to next slot.
-  const otherCrew = (f.allCrew || []).filter(c => c.code !== 'VEGRIC');
-  const pilots = [];
-  if (isCPT) {
-    pilots.push({ id:'VEGRIC', name:'SELF' });
-    otherCrew.forEach(c => pilots.push({ id:c.code, name:c.name }));
-  } else {
-    // Captain first if known, then me, then any other crew
-    if (f.captainCode) pilots.push({ id:f.captainCode, name:f.captain });
-    pilots.push({ id:'VEGRIC', name:'SELF' });
-    otherCrew.filter(c => c.code !== f.captainCode)
-             .forEach(c => pilots.push({ id:c.code, name:c.name }));
-  }
-  while (pilots.length < 4) pilots.push({ id:'', name:'' });
+  // Pilot1 / Pilot2
+  const pilot1Id   = isCPT ? 'VEGRIC'        : f.captainCode;
+  const pilot1Name = isCPT ? 'SELF'          : f.captain;
+  const pilot2Id   = isCPT ? ''              : 'VEGRIC';
+  const pilot2Name = isCPT ? ''              : 'SELF';
 
-  const timePic = isCPT ? blockMin : 0;
-  const timeSic = isCPT ? 0        : blockMin;
+  const timePic = isCPT ? blockMin : '';
+  const timeSic = isCPT ? ''       : blockMin;
 
-  // Delay codes — TAG_DELAY uses CrewLounge canonical category names joined by "|"
-  const delayNames = [];
+  // Delay codes — DELAY field expects numeric IATA codes per official docs.
+  // CrewLounge web importer accepts DELAY (not TAG_DELAY).
+  const delayNums = [];
+  const delayParts = [];
   for (let n = 1; n <= 9; n++) {
     const c = d[`Delay Code ${n}`];
     if (!c) continue;
     const name = DELAY_CODES[Number(c)];
-    if (name && !delayNames.includes(name)) delayNames.push(name);
+    delayNums.push(String(c).trim());
+    delayParts.push(`${c}${name ? ' (' + name + ')' : ''}`);
   }
-  const tagDelay = delayNames.join('|');
+  const delayCode = delayNums.join('|');
+  const delayStr  = delayParts.join(', ');
 
-  // FLIGHTLOG — multi-line block with fuel/pax breakdown + report
+  // FLIGHTLOG — multi-line format, auto-imports in PilotLog
   const captRem  = d['Captain Remarks'] || 'No Data Available';
   const fInfoRaw = d['Reason For Extra Fuel'] || '';
   const fInfo    = fInfoRaw.split('(')[0].trim().replace(/\s*-\s*$/, '');
@@ -610,108 +540,20 @@ function toRow(f, r) {
   logLines.push(`Report: ${captRem}`);
   const flightLog = logLines.join('\n');
 
-  // 99-column canonical row (verified field-by-field against FR8407 export)
   const vals = [
-    /* 1 PILOTLOG_DATE */    date,
-    /* 2 IS_PREVEXP */       'FALSE',
-    /* 3 AC_ISSIM */         'FALSE',
-    /* 4 FLIGHTNUMBER */     flightNo,
-    /* 5 PAIRING */          '',
-    /* 6 AF_DEP */           dep || '',
-    /* 7 DEP_RWY */          '',
-    /* 8 AF_ARR */           arr || '',
-    /* 9 ARR_RWY */          '',
-    /* 10 TIME_DEP */        d['Off Block'] || '',
-    /* 11 TIME_DEPSCH */     d['STD'] || '',
-    /* 12 TIME_ARR */        d['On Block'] || '',
-    /* 13 TIME_ARRSCH */     d['STA'] || '',
-    /* 14 TIME_TO */         d['Airborne'] || '',
-    /* 15 TIME_LDG */        d['Landed'] || '',
-    /* 16 TIME_AIR */        airHM,
-    /* 17 TIME_MODE */       'UTC',
-    /* 18 TIME_TOTAL */      blockMin,
-    /* 19 TIME_TOTALSIM */   '',
-    /* 20 TIME_PIC */        timePic,
-    /* 21 TIME_SIC */        timeSic,
-    /* 22 TIME_DUAL */       0,
-    /* 23 TIME_PICUS */      0,
-    /* 24 TIME_INSTRUCTOR */ 0,
-    /* 25 TIME_EXAMINER */   0,
-    /* 26 TIME_NIGHT */      night,
-    /* 27 TIME_XC */         0,
-    /* 28 TIME_IFR */        blockMin,
-    /* 29 TIME_HOOD */       0,
-    /* 30 TIME_ACTUAL */     0,
-    /* 31 TIME_RELIEF */     0,
-    /* 32 TIME_USER1 */      0,
-    /* 33 TIME_USER2 */      0,
-    /* 34 TIME_USER3 */      0,
-    /* 35 TIME_USER4 */      0,
-    /* 36 CAPACITY */        '',
-    /* 37 OPERATOR */        'RYANAIR',
-    /* 38 PILOT1_ID */       pilots[0].id,
-    /* 39 PILOT1_NAME */     pilots[0].name,
-    /* 40 PILOT1_PHONE */    '',
-    /* 41 PILOT1_EMAIL */    '',
-    /* 42 PILOT2_ID */       pilots[1].id,
-    /* 43 PILOT2_NAME */     pilots[1].name,
-    /* 44 PILOT2_PHONE */    '',
-    /* 45 PILOT2_EMAIL */    '',
-    /* 46 PILOT3_ID */       pilots[2].id,
-    /* 47 PILOT3_NAME */     pilots[2].name,
-    /* 48 PILOT3_PHONE */    '',
-    /* 49 PILOT3_EMAIL */    '',
-    /* 50 PILOT4_ID */       pilots[3].id,
-    /* 51 PILOT4_NAME */     pilots[3].name,
-    /* 52 PILOT4_PHONE */    '',
-    /* 53 PILOT4_EMAIL */    '',
-    /* 54 TO_DAY */          isMyTO  && !night ? 1 : 0,
-    /* 55 TO_NIGHT */        isMyTO  &&  night ? 1 : 0,
-    /* 56 LDG_DAY */         isMyLDG && !night ? 1 : 0,
-    /* 57 LDG_NIGHT */       isMyLDG &&  night ? 1 : 0,
-    /* 58 LIFT */            0,
-    /* 59 PF */              (isMyTO || isMyLDG) ? 'TRUE' : 'FALSE',
-    /* 60 HOLDING */         0,
-    /* 61 TAG_APP */         '',
-    /* 62 TAG_OPS */         '',
-    /* 63 TAG_LAUNCH */      '',
-    /* 64 INSTRUCTION */     '',
-    /* 65 REMARKS */         flightNo,
-    /* 66 CREWLIST */        crewList,
-    /* 67 FLIGHTLOG */       flightLog,
-    /* 68 PAX */             d['Actual Pax'] || '',
-    /* 69 FUEL */            d['Dep'] || '',
-    /* 70 FUELPLANNED */     d['Block'] || '',
-    /* 71 FUELUSED */        d['Burn Off'] || '',
-    /* 72 TAG_DELAY */       tagDelay,
-    /* 73 DEICE */           'FALSE',
-    /* 74 USER_NUMERIC */    0,
-    /* 75 USER_TEXT */       '',
-    /* 76 USER_YESNO */      'FALSE',
-    /* 77 AC_MAKE */         'Boeing',
-    /* 78 AC_MODEL */        'B737',
-    /* 79 AC_VARIANT */      variant,
-    /* 80 AC_REG */          reg,
-    /* 81 AC_FIN */          '',
-    /* 82 AC_RATING */       'B737-6/7/8/900',
-    /* 83 AC_SP */           'FALSE',
-    /* 84 AC_MP */           'TRUE',
-    /* 85 AC_ME */           '',
-    /* 86 AC_SPSE */         'FALSE',
-    /* 87 AC_SPME */         'TRUE',
-    /* 88 AC_CLASS */        'Aeroplane',
-    /* 89 AC_GLIDER */       'FALSE',
-    /* 90 AC_ULTRALIGHT */   'FALSE',
-    /* 91 AC_SEA */          'FALSE',
-    /* 92 AC_ENGINES */      'Multi',
-    /* 93 AC_ENGTYPE */      'Turbine (jet-fan)',
-    /* 94 AC_TAILWHEEL */    'FALSE',
-    /* 95 AC_COMPLEX */      'FALSE',
-    /* 96 AC_TMG */          'FALSE',
-    /* 97 AC_HEAVY */        'TRUE',
-    /* 98 AC_HIGHPERF */     'FALSE',
-    /* 99 AC_AEROBATIC */    'FALSE',
-    /* 100 AC_SEATS */       0,
+    date, flightNo,
+    dep || '', arr || '',
+    d['Off Block'] || '', d['STD'] || '', d['On Block'] || '', d['STA'] || '',
+    d['Airborne'] || '', d['Landed'] || '',
+    airHM, blockMin, timePic, timeSic, blockMin,
+    'RYANAIR',
+    pilot1Id, pilot1Name, pilot2Id, pilot2Name,
+    isMyTO  ? '1' : '0',
+    isMyLDG ? '1' : '0',
+    (isMyTO || isMyLDG) ? 'TRUE' : 'FALSE',
+    flightNo, crewList, flightLog,
+    d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '', delayCode,
+    'Boeing', 'B737', variant, reg, 'Jet',
   ];
 
   return vals.map(csv).join(SEP);

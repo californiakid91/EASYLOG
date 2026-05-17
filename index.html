@@ -538,8 +538,7 @@ function toRow(f, r) {
     if (t) logLines.push(`DT/${n}: ${t}`);
   }
   logLines.push(`Report: ${captRem}`);
-  let flightLog = logLines.join('\n');
-  if (flightLog.length > 250) flightLog = flightLog.slice(0, 247) + '...';
+  const flightLog = logLines.join('\n');
 
   const vals = [
     date, flightNo,
@@ -554,7 +553,7 @@ function toRow(f, r) {
     (isMyTO || isMyLDG) ? 'TRUE' : 'FALSE',
     flightNo, crewList, flightLog,
     d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '', delayCode,
-    'Boeing', 'B737', variant, reg, '',
+    'Boeing', 'B737', variant, reg, 'Jet',
   ];
 
   return vals.map(csv).join(SEP);

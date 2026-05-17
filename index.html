@@ -484,7 +484,7 @@ function toRow(f, r) {
       delayParts.push(`${c} (${abbr})`);
     }
   }
-  const delayCode = delayNums.join(',');     // e.g. "93,89,87"
+  const delayCode = delayNums[0] || '';      // single IATA code — importer rejects lists
   const delayStr  = delayParts.join(', ');   // e.g. "93 (RA), 89 (AM), 87 (AF)"
 
   // FLIGHTLOG (max 250 chars) — includes Delay info since TAG_DELAY isn't an import column

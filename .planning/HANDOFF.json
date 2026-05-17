@@ -1,0 +1,86 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-05-17T21:45:00Z",
+  "context": "default",
+  "phase": null,
+  "phase_name": "PilotLog CSV import debugging — Ryanair → PilotLog flow",
+  "phase_dir": null,
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "paused",
+  "completed_tasks": [
+    {"name": "Investigated CSV format for CrewLounge PILOTLOG canonical export", "status": "done"},
+    {"name": "Tested numerous CSV variants against my.crewlounge.center web wizard", "status": "done"},
+    {"name": "Tested 99-column canonical schema rewrite", "status": "done", "commit": "cfe9a4c"},
+    {"name": "Reverted to 35-column wizard-compatible format", "status": "done", "commit": "f45f7e2"},
+    {"name": "Confirmed iOS AirDrop CSV path is dead (Roster handler only accepts EFB email)", "status": "done"},
+    {"name": "Saved CrewLounge PILOTLOG canonical export reference to memory", "status": "done"}
+  ],
+  "remaining_tasks": [
+    {"name": "User to test CSV import via PilotLog DESKTOP app (Mac/Windows)", "status": "not_started", "owner": "user"},
+    {"name": "Decide path forward based on desktop test result", "status": "not_started"},
+    {"name": "If desktop fails: explore replicating Ryanair EFB email format for native AirDrop", "status": "not_started", "optional": true},
+    {"name": "Point 3 from session start: UI redesign from preserved mockup (commit 14bcef5)", "status": "not_started", "deferred": true}
+  ],
+  "blockers": [
+    {
+      "description": "CrewLounge web wizard rejects key canonical headers (TAG_DELAY, TAG_APP, TIME_MODE, FUELPLANNED, INSTRUCTION/TRAINING) — these are in the database schema but not in the wizard's allowed-headers list",
+      "type": "external",
+      "workaround": "Use 35-column subset (DELAY instead of TAG_DELAY, etc.)"
+    },
+    {
+      "description": "Wizard requires PILOTLOG_DATE in ISO format (YYYY-MM-DD), rejects DD/MM/YYYY even though the export uses DD/MM/YYYY",
+      "type": "external",
+      "workaround": "Send ISO dates"
+    },
+    {
+      "description": "Wizard flags AC_ENGTYPE='Jet' and 'Turbine (jet-fan)' both as 'Invalid value for Aircraft Engine Type' — actual accepted enum unknown",
+      "type": "external",
+      "workaround": "Send anyway; row imports with warning, basic data populates"
+    },
+    {
+      "description": "FLIGHTLOG / JOURNEY LOG appears NOT to persist via cloud — FR8407 export shows FLIGHTLOG empty even though the app shows full JOURNEY LOG content (because FR8407 was imported via native iOS EFB email parser, not wizard)",
+      "type": "external",
+      "workaround": "None known — wizard import will leave JOURNEY LOG empty"
+    },
+    {
+      "description": "iOS AirDrop of .csv routes to 'Import Roster Ryanair EFB' handler which rejects CSV with 'Wrong file type for your airline'",
+      "type": "external",
+      "workaround": "None for direct CSV. Could potentially replicate EFB email format."
+    }
+  ],
+  "human_actions_pending": [
+    {
+      "action": "Test importing current easylog CSV via PilotLog DESKTOP app (Mac or Windows)",
+      "context": "We've ruled out iOS AirDrop and characterized web wizard limits. Desktop is the last untested native path.",
+      "blocking": true
+    },
+    {
+      "action": "Decide path forward after desktop test",
+      "context": "If desktop works → use that flow. If desktop also fails → accept wizard limits OR invest in EFB email format replication OR keep old manual email-airdrop flow.",
+      "blocking": true
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "User always imports via mobile (specifically my.crewlounge.center web), not native PilotLog iOS app's email parser",
+      "rationale": "Clarified mid-session. Earlier 'working' screenshots (FR8407 with DELAY=93(RA),62(FF) and JOURNEY LOG) were from the OLD email→AirDrop→PilotLog iOS workflow, not from any wizard import."
+    },
+    {
+      "decision": "Reverted from 99-column canonical schema to 35-column wizard-compatible subset",
+      "rationale": "Wizard rejected the canonical headers and DD/MM/YYYY date, making rows fail entirely instead of partially importing."
+    },
+    {
+      "decision": "DELAY field uses numeric IATA codes pipe-separated for wizard path (not category names which require TAG_DELAY header that wizard rejects)",
+      "rationale": "Doc: 'Delay code according to the official IATA code list, e.g. 75 for delay due to aircraft de-icing.'"
+    },
+    {
+      "decision": "Deferred 'point 3' (UI redesign from mockup commit 14bcef5) until import bug is closed",
+      "rationale": "User explicitly wanted to fix import first, then UI. Import still not fully resolved."
+    }
+  ],
+  "uncommitted_files": [],
+  "next_action": "Wait for user to test import via PilotLog DESKTOP app. Based on result, decide whether to: (a) adopt desktop flow, (b) accept wizard limits with manual DELAY/JOURNEY LOG entry, or (c) explore replicating Ryanair EFB email format for native iOS AirDrop.",
+  "context_notes": "Session went in circles for hours. Root cause: PilotLog has THREE import paths with different rules (native iOS EFB email parser = full features; web wizard at my.crewlounge.center = restricted subset; desktop = unknown). User's working FR8407 was via the native parser. easylog now targets the wizard subset. Desktop test pending. The reference CrewLounge canonical export is preserved in memory at /home/ricardo/.claude/projects/-home-ricardo-easylog/memory/reference_crewlounge_export.md. User is tired ('estoy un poco cansado ya, de tanto probar')."
+}

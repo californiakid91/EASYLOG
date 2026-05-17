@@ -501,18 +501,18 @@ function toRow(f, r) {
   const timePic = isCPT ? blockMin : '';
   const timeSic = isCPT ? ''       : blockMin;
 
-  // Delay codes — TAG_DELAY uses canonical CrewLounge category names joined by "|"
+  // Delay codes — DELAY field expects numeric IATA codes per official docs.
   // FLIGHTLOG keeps the human-readable form "93 (AIRCRAFT ROTATION), ..."
-  const delayNames = [];
+  const delayNums = [];
   const delayParts = [];
   for (let n = 1; n <= 9; n++) {
     const c = d[`Delay Code ${n}`];
     if (!c) continue;
     const name = DELAY_CODES[Number(c)];
-    if (name && !delayNames.includes(name)) delayNames.push(name);
+    delayNums.push(String(c).trim());
     delayParts.push(`${c}${name ? ' (' + name + ')' : ''}`);
   }
-  const delayCode = delayNames.join('|');
+  const delayCode = delayNums.join('|');
   const delayStr  = delayParts.join(', ');
 
   // FLIGHTLOG — multi-line format, auto-imports in PilotLog
@@ -540,7 +540,8 @@ function toRow(f, r) {
     if (t) logLines.push(`DT/${n}: ${t}`);
   }
   logLines.push(`Report: ${captRem}`);
-  const flightLog = logLines.join(' | ');
+  let flightLog = logLines.join(' | ');
+  if (flightLog.length > 250) flightLog = flightLog.slice(0, 247) + '...';
 
   const vals = [
     date, flightNo,

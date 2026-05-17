@@ -413,7 +413,7 @@ const HEADER = [
   'PILOT1_ID','PILOT1_NAME','PILOT2_ID','PILOT2_NAME','CREWLIST',
   'TO_DAY','LDG_DAY','PF',
   'REMARKS','FLIGHTLOG',
-  'PAX','FUEL','FUELUSED',
+  'PAX','FUEL','FUELUSED','DELAY',
   'AC_MAKE','AC_MODEL','AC_VARIANT','AC_REG','AC_ENGTYPE',
 ].join(SEP);
 
@@ -473,16 +473,19 @@ function toRow(f, r) {
   const timeSic = isCPT ? ''       : blockMin;
 
   // Delay codes
-  const delayParts = [];
+  const delayNums = [];   // numeric only — for DELAY column (IATA code)
+  const delayParts = [];  // pretty — for FLIGHTLOG free text
   for (let n = 1; n <= 9; n++) {
     const t = d[`Delay Time ${n}`];
     const c = d[`Delay Code ${n}`];
     if (t && c) {
       const abbr = DELAY_CODES[Number(c)] || c;
+      delayNums.push(String(c).trim());
       delayParts.push(`${c} (${abbr})`);
     }
   }
-  const delayStr = delayParts.join(', ');
+  const delayCode = delayNums.join(',');     // e.g. "93,89,87"
+  const delayStr  = delayParts.join(', ');   // e.g. "93 (RA), 89 (AM), 87 (AF)"
 
   // FLIGHTLOG (max 250 chars) — includes Delay info since TAG_DELAY isn't an import column
   const captRem  = d['Captain Remarks'] || 'No Data Available';
@@ -505,7 +508,7 @@ function toRow(f, r) {
   if (delayStr) parts.push(`Delay: ${delayStr}`);
   parts.push(`Report: ${captRem}`);
   let flightLog = parts.join(', ');
-  if (flightLog.length > 250) flightLog = flightLog.slice(0, 249) + '…';
+  if (flightLog.length > 250) flightLog = flightLog.slice(0, 247) + '...';
 
   const vals = [
     date, flightNo,
@@ -519,7 +522,7 @@ function toRow(f, r) {
     isMyLDG ? '1' : '0',
     (isMyTO || isMyLDG) ? 'TRUE' : 'FALSE',
     flightNo, flightLog,
-    d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '',
+    d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '', delayCode,
     'Boeing', 'B737', variant, reg, 'Jet',
   ];
 

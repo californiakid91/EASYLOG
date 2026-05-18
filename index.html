@@ -38,13 +38,11 @@
 
   .wrap { max-width: 1100px; margin: 0 auto; }
 
-  /* ── Header ── */
   header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem; }
   .logo  { font-size: 1.75rem; font-weight: 800; letter-spacing: -.5px; }
   .logo span { color: var(--accent); }
   .tagline { color: var(--muted); font-size: .9rem; }
 
-  /* ── Card ── */
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -59,9 +57,13 @@
     text-transform: uppercase;
     color: var(--muted);
     margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
   }
+  .card-title .count { color: var(--accent); font-weight: 700; }
 
-  /* ── Role selector ── */
   .roles { display: flex; gap: .75rem; }
   .role {
     flex: 1;
@@ -91,10 +93,9 @@
   }
   .role.active .badge { background: var(--accent); color: #fff; }
 
-  /* ── Textarea ── */
   textarea {
     width: 100%;
-    height: 220px;
+    height: 180px;
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -110,7 +111,6 @@
   textarea:focus { border-color: var(--accent); }
   textarea::placeholder { color: var(--muted); }
 
-  /* ── Buttons ── */
   .btn {
     display: inline-flex;
     align-items: center;
@@ -128,76 +128,96 @@
   .btn-blue   { background: var(--accent); color: #fff; }
   .btn-green  { background: var(--green); color: #fff; }
   .btn-ghost  { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-danger { background: rgba(248,81,73,.12); color: var(--red); border: 1px solid rgba(248,81,73,.4); }
+  .btn-sm     { padding: .35rem .75rem; font-size: .8rem; }
   .btn:disabled { opacity: .4; cursor: not-allowed; filter: none; }
 
   .actions { display: flex; gap: .75rem; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
 
-  /* ── Status pill ── */
   .status {
     padding: .45rem 1rem;
     border-radius: 20px;
     font-size: .82rem;
     font-weight: 500;
   }
-  .status-ok  { background: rgba(63,185,80,.12); color: var(--green); border: 1px solid rgba(63,185,80,.3); }
-  .status-err { background: rgba(248,81,73,.12); color: var(--red);   border: 1px solid rgba(248,81,73,.3); }
+  .status-ok  { background: rgba(63,185,80,.12);  color: var(--green); border: 1px solid rgba(63,185,80,.3); }
+  .status-err { background: rgba(248,81,73,.12);  color: var(--red);   border: 1px solid rgba(248,81,73,.3); }
+  .status-warn{ background: rgba(210,153,34,.12); color: var(--amber); border: 1px solid rgba(210,153,34,.3); }
 
-  /* ── Stats row ── */
-  .stats { display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
-  .stat {
+  /* ── History ── */
+  .empty {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--muted);
+    font-size: .9rem;
+  }
+  .month-group { margin-bottom: 1rem; }
+  .month-group:last-child { margin-bottom: 0; }
+  .month-header {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .65rem .85rem;
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: .6rem 1.1rem;
-    min-width: 100px;
-    text-align: center;
-  }
-  .stat-val  { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
-  .stat-lbl  { font-size: .7rem; color: var(--muted); margin-top: .15rem; }
-
-  /* ── Table ── */
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: .8rem; }
-  th {
-    text-align: left;
-    padding: .5rem .75rem;
-    border-bottom: 1px solid var(--border);
-    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
     font-weight: 600;
-    white-space: nowrap;
+    font-size: .9rem;
   }
-  td {
-    padding: .45rem .75rem;
-    border-bottom: 1px solid rgba(48,54,61,.6);
-    white-space: nowrap;
+  .month-header:hover { border-color: var(--accent); }
+  .month-header .chev { color: var(--muted); transition: transform .15s; display: inline-block; width: 1rem; }
+  .month-group.collapsed .chev { transform: rotate(-90deg); }
+  .month-header .meta { color: var(--muted); font-weight: 500; font-size: .8rem; margin-left: auto; }
+  .month-actions { display: flex; gap: .5rem; align-items: center; margin: .5rem .25rem .75rem; }
+  .day-list { padding: 0 .25rem; }
+  .month-group.collapsed .day-list,
+  .month-group.collapsed .month-actions { display: none; }
+  .day-item {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .6rem .85rem;
+    border-bottom: 1px solid rgba(48,54,61,.5);
   }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: rgba(47,129,247,.04); }
-
-  /* ── Tags ── */
-  .tag {
-    display: inline-block;
-    padding: .1rem .4rem;
+  .day-item:last-child { border-bottom: none; }
+  .day-date { font-family: 'Courier New', monospace; color: var(--muted); font-size: .8rem; min-width: 3.5rem; }
+  .day-route { flex: 1; font-family: 'Courier New', monospace; font-size: .82rem; }
+  .day-count {
+    font-size: .7rem;
+    color: var(--muted);
+    background: var(--surface2);
+    padding: .15rem .5rem;
     border-radius: 4px;
-    font-size: .68rem;
-    font-weight: 700;
   }
-  .tag-800  { background: rgba(63,185,80,.14); color: var(--green); }
-  .tag-8200 { background: rgba(47,129,247,.14); color: var(--accent); }
-  .tag-pf   { background: rgba(210,153,34,.14); color: var(--amber); }
+  .day-del {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: .25rem .5rem;
+    border-radius: 4px;
+  }
+  .day-del:hover { color: var(--red); background: rgba(248,81,73,.08); }
+
+  .global-actions {
+    display: flex;
+    gap: .65rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .global-actions .spacer { flex: 1; }
+
+  .hint {
+    font-size: .78rem;
+    color: var(--muted);
+    margin-top: .65rem;
+    line-height: 1.45;
+  }
 
   .hidden { display: none !important; }
-
-  .warn-list {
-    margin-top: .75rem;
-    padding: .75rem 1rem;
-    background: rgba(210,153,34,.08);
-    border: 1px solid rgba(210,153,34,.3);
-    border-radius: 8px;
-    font-size: .82rem;
-    color: var(--amber);
-  }
-  .warn-list li { margin-left: 1.2rem; margin-top: .25rem; }
 </style>
 </head>
 <body>
@@ -212,7 +232,7 @@
 
   <!-- Rol -->
   <div class="card">
-    <div class="card-title">Tu rol en este período</div>
+    <div class="card-title">Tu rol</div>
     <div class="roles">
       <label class="role active" id="lbl-fo">
         <input type="radio" name="role" value="FO" checked>
@@ -233,58 +253,44 @@
     </div>
   </div>
 
-  <!-- Input -->
+  <!-- Añadir día -->
   <div class="card">
-    <div class="card-title">Emails de vuelos (pega aquí uno o varios meses)</div>
-    <textarea id="input" placeholder="Pega aquí el contenido de los emails...&#10;&#10;Puedes pegar varios días o meses juntos, el sistema los separará automáticamente."></textarea>
+    <div class="card-title">📥 Añadir día</div>
+    <textarea id="input" placeholder="Pega aquí el email de UN día...&#10;&#10;Si pegas varios días a la vez se te avisará."></textarea>
     <div class="actions">
-      <button class="btn btn-blue" onclick="convert()">Convertir</button>
-      <button class="btn btn-ghost" onclick="clearAll()">Limpiar</button>
+      <button class="btn btn-blue" onclick="addDay()">Añadir</button>
+      <button class="btn btn-ghost" onclick="clearInput()">Limpiar</button>
       <span id="status" class="status hidden"></span>
     </div>
+    <div class="hint">El día se guarda en este navegador (localStorage). Pega de uno en uno.</div>
   </div>
 
-  <!-- Resultados -->
-  <div class="card hidden" id="results">
-    <div class="card-title">Vuelos procesados</div>
-
-    <div class="stats" id="stats"></div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Vuelo</th>
-            <th>Ruta</th>
-            <th>Off→On Block</th>
-            <th>Bloque</th>
-            <th>Vuelo</th>
-            <th>Matrícula</th>
-            <th>Modelo</th>
-            <th>Capitán</th>
-            <th>PF</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
+  <!-- Historial -->
+  <div class="card">
+    <div class="card-title">
+      <span>📚 Días guardados</span>
+      <span class="count" id="hist-count">0 días · 0 vuelos</span>
     </div>
+    <div id="history"></div>
+  </div>
 
-    <div id="warnings" class="hidden"></div>
-
-    <div class="actions" style="margin-top:1.25rem">
-      <button class="btn btn-green" onclick="downloadCSV()">⬇ Descargar CSV</button>
+  <!-- Acciones globales -->
+  <div class="card" id="global-card">
+    <div class="card-title">Exportar</div>
+    <div class="global-actions">
+      <button class="btn btn-green" onclick="downloadAllCSV()" id="btn-dl-all">⬇ Descargar CSV (todo)</button>
       <a class="btn btn-blue" href="https://my.crewlounge.center/pilotlog-import-wizard" target="_blank"
          style="text-decoration:none;">Abrir Import Wizard ↗</a>
+      <span class="spacer"></span>
+      <button class="btn btn-danger" onclick="clearHistory()" id="btn-clear-all">🗑 Borrar historial completo</button>
     </div>
+    <div class="hint">Descargar no borra nada. Cuando hayas confirmado el import en PilotLog, pulsa "Borrar historial completo".</div>
   </div>
 
 </div>
 
 <script>
 // ─── IATA AHM730 delay codes → CrewLounge PILOTLOG enum names ────────────────
-// CrewLounge import expects the category NAME (uppercase), not the IATA number.
-// Multi-delay rows use "|" as separator and only enum names are accepted.
 const DELAY_CODES = {
   11:'BOARDING', 12:'BOARDING', 13:'BOARDING', 14:'OVERSALES', 15:'BOARDING',
   16:'BOARDING', 17:'BOARDING', 18:'BOARDING', 19:'REDUCED MOBILITY',
@@ -323,6 +329,8 @@ const DELAY_CODES = {
   99:'OPERATIONAL REQUIREMENT',
 };
 
+const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
 // ─── Role toggle ──────────────────────────────────────────────────────────────
 document.querySelectorAll('input[name="role"]').forEach(r => {
   r.addEventListener('change', () => {
@@ -333,7 +341,6 @@ document.querySelectorAll('input[name="role"]').forEach(r => {
 const role = () => document.querySelector('input[name="role"]:checked').value;
 
 // ─── Aircraft model ───────────────────────────────────────────────────────────
-// Registrations >= threshold (alphabetical suffix comparison) are B737-8200 MAX
 const THRESHOLDS = { EI: 'HAA', '9H': 'VUA', SP: 'RZA' };
 
 function formatReg(raw) {
@@ -355,7 +362,6 @@ function parseText(text) {
   const DATE_RE = /^\d{4}\/\d{2}\/\d{2}$/;
   const lines   = text.split('\n').map(l => l.trim());
 
-  // Locate date-block starts
   const dateIdx = lines.reduce((acc, l, i) => {
     if (DATE_RE.test(l)) acc.push(i);
     return acc;
@@ -373,7 +379,6 @@ function parseText(text) {
     const dayLines = dayRaw.filter(l => l !== '');
     const date     = dayLines[0];
 
-    // Crew + captain selection
     const crewAt = dayLines.findIndex(l => /^flight deck crew\s*:?\s*$/i.test(l));
     const allCrew = [];
     if (crewAt !== -1) {
@@ -385,7 +390,6 @@ function parseText(text) {
       warnings.push(`Sin sección "Flight Deck Crew" — ${date}`);
     }
 
-    // "Verified By : CODE , ROLE , ..." → captain priority
     let verifiedCode = '';
     for (const l of dayLines) {
       const m = l.match(/^verified by\s*:\s*(\S+)\s*,/i);
@@ -398,7 +402,6 @@ function parseText(text) {
     if (v) { captain = v.name; captainCode = v.code; }
     else if (cps.length) { captain = cps[0].name; captainCode = cps[0].code; }
 
-    // Flight block starts
     const flightAt = dayLines.reduce((acc, l, i) => {
       if (l.startsWith('FlightNumber :')) acc.push(i);
       return acc;
@@ -410,7 +413,6 @@ function parseText(text) {
                        : (crewAt !== -1 ? crewAt : dayLines.length);
       const fLines = dayLines.slice(fStart, fEnd);
 
-      // Parse all key : value pairs
       const d = {};
       fLines.forEach(line => {
         const m = line.match(/^(.+?)\s*:\s*(.*)$/);
@@ -450,7 +452,6 @@ function csv(v) {
     : s;
 }
 
-// "01:15" → 75 minutes; "1:00" → 60
 function hmToMin(s) {
   if (!s) return '';
   const m = s.trim().match(/^(\d+):(\d{1,2})$/);
@@ -458,7 +459,6 @@ function hmToMin(s) {
   return Number(m[1]) * 60 + Number(m[2]);
 }
 
-// "01:00" → "1:00"
 function stripLeadingZero(s) {
   if (!s) return '';
   return s.replace(/^0(\d:\d{2})$/, '$1');
@@ -467,7 +467,6 @@ function stripLeadingZero(s) {
 function toRow(f, r) {
   const isCPT   = r === 'CPT';
   const d       = f.d;
-  // 2026/05/15 → 2026-05-15 (ISO, what the Import Wizard accepts)
   const [yy, mm, dd] = f.date.split('/');
   const date    = `${yy}-${mm}-${dd}`;
   const [dep, arr] = (d['City Pair'] || '').split(' - ');
@@ -479,7 +478,6 @@ function toRow(f, r) {
   const isMyTO  = (d['Take Off']  || '') === 'VEGRIC';
   const isMyLDG = (d['Landing']   || '') === 'VEGRIC';
 
-  // Crew list — "Flight Deck Crew" header + lines "CODE : ROLE : NAME"
   const meRole = isCPT ? 'CP' : 'FO';
   const crewLines = ['Flight Deck Crew'];
   (f.allCrew || []).forEach(c => {
@@ -490,7 +488,6 @@ function toRow(f, r) {
   crewLines.push(`VEGRIC : ${meRole} : RICARDO VEGA BURGUENO`);
   const crewList = crewLines.join('\n');
 
-  // Pilot1 / Pilot2
   const pilot1Id   = isCPT ? 'VEGRIC'        : f.captainCode;
   const pilot1Name = isCPT ? 'SELF'          : f.captain;
   const pilot2Id   = isCPT ? ''              : 'VEGRIC';
@@ -499,8 +496,6 @@ function toRow(f, r) {
   const timePic = isCPT ? blockMin : '';
   const timeSic = isCPT ? ''       : blockMin;
 
-  // Delay codes — TAG_DELAY uses canonical CrewLounge category names joined by "|"
-  // FLIGHTLOG keeps the human-readable form "93 (AIRCRAFT ROTATION), ..."
   const delayNames = [];
   const delayParts = [];
   for (let n = 1; n <= 9; n++) {
@@ -511,9 +506,7 @@ function toRow(f, r) {
     delayParts.push(`${c}${name ? ' (' + name + ')' : ''}`);
   }
   const delayCode = delayNames.join('|');
-  const delayStr  = delayParts.join(', ');
 
-  // FLIGHTLOG — multi-line format, auto-imports in PilotLog
   const captRem  = d['Captain Remarks'] || 'No Data Available';
   const fInfoRaw = d['Reason For Extra Fuel'] || '';
   const fInfo    = fInfoRaw.split('(')[0].trim().replace(/\s*-\s*$/, '');
@@ -559,124 +552,244 @@ function toRow(f, r) {
   return vals.map(csv).join(SEP);
 }
 
-// ─── State ────────────────────────────────────────────────────────────────────
-let _flights = [];
-let _csv     = '';
+function buildCSV(flightsWithRole) {
+  const rows = flightsWithRole.map(({ flight, role }) => toRow(flight, role));
+  return '﻿' + HEADER + '\r\n' + rows.join('\r\n');
+}
 
-// ─── Actions ─────────────────────────────────────────────────────────────────
-function convert() {
+// ─── Storage ──────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'easylog_history_v1';
+
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    console.warn('History load failed:', e);
+    return {};
+  }
+}
+
+function saveHistory(h) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(h));
+}
+
+// dateISO: "YYYY-MM-DD"
+function dateRawToISO(raw) {
+  const [yy, mm, dd] = raw.split('/');
+  return `${yy}-${mm}-${dd}`;
+}
+
+function dateISOToDisplay(iso) {
+  const [, mm, dd] = iso.split('-');
+  return `${dd}/${mm}`;
+}
+
+function monthKey(iso)   { return iso.slice(0, 7); }       // "2026-05"
+function monthLabel(mk)  {
+  const [yy, mm] = mk.split('-');
+  return `${MONTH_NAMES[Number(mm) - 1]} ${yy}`;
+}
+
+// Route concatenation: STN-NTE-STN-PSA-STN
+function routeOfDay(flights) {
+  const segs = flights.map(f => (f.d['City Pair'] || '').split(' - '));
+  if (!segs.length) return '';
+  const parts = [segs[0][0]];
+  segs.forEach(s => parts.push(s[1] || '?'));
+  return parts.filter(Boolean).join('-');
+}
+
+// ─── Actions ──────────────────────────────────────────────────────────────────
+function addDay() {
   const text = document.getElementById('input').value;
-  if (!text.trim()) { showStatus('err', 'Pega el contenido de los emails primero.'); return; }
+  if (!text.trim()) { showStatus('err', 'Pega el contenido del email primero.'); return; }
 
   const { flights, warnings } = parseText(text);
 
   if (!flights.length) {
-    showStatus('err', 'No se encontraron vuelos. Comprueba el formato del texto.');
-    document.getElementById('results').classList.add('hidden');
+    showStatus('err', 'No se encontraron vuelos. Revisa el formato del texto.');
     return;
   }
 
-  _flights = flights;
-  const r  = role();
-  const rows = flights.map(f => toRow(f, r));
-  _csv = '﻿' + HEADER + '\r\n' + rows.join('\r\n');
-
-  // Preview table
-  const tbody = document.getElementById('tbody');
-  tbody.innerHTML = '';
-  flights.forEach(f => {
-    const d       = f.d;
-    const reg     = formatReg(d['Registration'] || '');
-    const variant = getVariant(d['Registration'] || '');
-    const model   = `B737-${variant}`;
-    const [dep, arr] = (d['City Pair'] || '').split(' - ');
-    const isMyTO  = (d['Take Off']  || '') === 'VEGRIC';
-    const isMyLDG = (d['Landing']   || '') === 'VEGRIC';
-    const isPF    = isMyTO || isMyLDG;
-    const noCapt  = !f.captain;
-    const [yy, mm, dd] = f.date.split('/');
-
-    const tr = document.createElement('tr');
-    tr.innerHTML =
-      `<td>${dd}/${mm}/${yy}</td>` +
-      `<td><strong>${(d['FlightNumber'] || '').replace(/\s+/g, '')}</strong></td>` +
-      `<td>${dep || '?'} → ${arr || '?'}</td>` +
-      `<td style="color:var(--muted);font-size:.75rem">${d['Off Block'] || ''} → ${d['On Block'] || ''}</td>` +
-      `<td><strong>${d['Total Block'] || ''}</strong></td>` +
-      `<td>${d['Total flight'] || ''}</td>` +
-      `<td style="font-family:monospace">${reg}</td>` +
-      `<td><span class="tag ${variant === '8200' ? 'tag-8200' : 'tag-800'}">${model}</span></td>` +
-      `<td style="${noCapt ? 'color:var(--red)' : ''}">${f.captain || '—'}</td>` +
-      `<td>${isPF ? '<span class="tag tag-pf">PF</span>' : ''}</td>`;
-    tbody.appendChild(tr);
-  });
-
-  // Stats
-  const days    = new Set(flights.map(f => f.date)).size;
-  const blkMins = flights.reduce((s, f) => s + toMins(f.d['Total Block']), 0);
-  const airMins = flights.reduce((s, f) => s + toMins(f.d['Total flight']), 0);
-  const pfCount = flights.filter(f => (f.d['Take Off'] || '') === 'VEGRIC').length;
-
-  document.getElementById('stats').innerHTML =
-    stat(flights.length, 'Vuelos') +
-    stat(days, 'Días') +
-    stat(fmtMins(blkMins), 'Horas bloque') +
-    stat(fmtMins(airMins), 'Horas vuelo') +
-    stat(pfCount, 'Como PF');
-
-  // Warnings
-  const wDiv = document.getElementById('warnings');
-  if (warnings.length) {
-    wDiv.innerHTML = `<ul class="warn-list">${warnings.map(w => `<li>${w}</li>`).join('')}</ul>`;
-    wDiv.classList.remove('hidden');
-  } else {
-    wDiv.classList.add('hidden');
+  const dates = [...new Set(flights.map(f => f.date))];
+  if (dates.length > 1) {
+    showStatus('err', `El paste contiene ${dates.length} días. Pega solo uno a la vez.`);
+    return;
   }
 
-  document.getElementById('results').classList.remove('hidden');
-  showStatus('ok', `${flights.length} vuelo${flights.length > 1 ? 's' : ''} procesado${flights.length > 1 ? 's' : ''} correctamente.`);
+  const iso = dateRawToISO(dates[0]);
+  const hist = loadHistory();
+
+  if (hist[iso]) {
+    const existing = hist[iso].flights.length;
+    const ok = confirm(
+      `Ya tienes ${existing} vuelo${existing !== 1 ? 's' : ''} guardados el ${dateISOToDisplay(iso)} (${monthLabel(monthKey(iso))}).\n\n` +
+      `¿Reemplazar con los ${flights.length} vuelo${flights.length !== 1 ? 's' : ''} nuevos?`
+    );
+    if (!ok) { showStatus('warn', 'Cancelado. No se ha guardado nada.'); return; }
+  }
+
+  hist[iso] = {
+    addedAt: new Date().toISOString(),
+    role: role(),
+    flights,
+  };
+  saveHistory(hist);
+
+  document.getElementById('input').value = '';
+  renderHistory();
+  const warnMsg = warnings.length ? ` (${warnings.length} aviso${warnings.length !== 1 ? 's' : ''})` : '';
+  showStatus('ok', `${flights.length} vuelo${flights.length !== 1 ? 's' : ''} añadidos al ${dateISOToDisplay(iso)}${warnMsg}.`);
 }
 
-function downloadCSV() {
-  if (!_csv) return;
-  const blob = new Blob([_csv], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const a    = Object.assign(document.createElement('a'), {
-    href: url,
-    download: `pilotlog_${new Date().toISOString().slice(0,10)}.csv`
+function removeDay(iso) {
+  const hist = loadHistory();
+  if (!hist[iso]) return;
+  const n = hist[iso].flights.length;
+  if (!confirm(`¿Borrar el día ${dateISOToDisplay(iso)} (${n} vuelo${n !== 1 ? 's' : ''})?`)) return;
+  delete hist[iso];
+  saveHistory(hist);
+  renderHistory();
+  showStatus('ok', `Día ${dateISOToDisplay(iso)} eliminado.`);
+}
+
+function clearHistory() {
+  const hist = loadHistory();
+  const days = Object.keys(hist).length;
+  if (!days) { showStatus('warn', 'El historial ya está vacío.'); return; }
+  const total = Object.values(hist).reduce((s, d) => s + d.flights.length, 0);
+  if (!confirm(`¿Borrar TODO el historial? (${days} días, ${total} vuelos)\n\nEsta acción no se puede deshacer.`)) return;
+  localStorage.removeItem(STORAGE_KEY);
+  renderHistory();
+  showStatus('ok', 'Historial borrado.');
+}
+
+function flightsForMonth(mk) {
+  const hist = loadHistory();
+  const out = [];
+  Object.keys(hist).sort().forEach(iso => {
+    if (monthKey(iso) !== mk) return;
+    const r = hist[iso].role || 'FO';
+    hist[iso].flights.forEach(flight => out.push({ flight, role: r }));
   });
+  return out;
+}
+
+function allFlights() {
+  const hist = loadHistory();
+  const out = [];
+  Object.keys(hist).sort().forEach(iso => {
+    const r = hist[iso].role || 'FO';
+    hist[iso].flights.forEach(flight => out.push({ flight, role: r }));
+  });
+  return out;
+}
+
+function triggerDownload(csvText, filename) {
+  const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: filename });
   a.click();
   URL.revokeObjectURL(url);
 }
 
-function clearAll() {
-  document.getElementById('input').value = '';
-  document.getElementById('status').classList.add('hidden');
-  document.getElementById('results').classList.add('hidden');
-  _flights = [];
-  _csv = '';
+function downloadAllCSV() {
+  const list = allFlights();
+  if (!list.length) { showStatus('err', 'No hay vuelos guardados.'); return; }
+  triggerDownload(buildCSV(list), `pilotlog_${new Date().toISOString().slice(0,10)}.csv`);
+  showStatus('ok', `Descargados ${list.length} vuelos.`);
+}
+
+function downloadMonthCSV(mk) {
+  const list = flightsForMonth(mk);
+  if (!list.length) return;
+  triggerDownload(buildCSV(list), `pilotlog_${mk}.csv`);
+  showStatus('ok', `Descargados ${list.length} vuelos de ${monthLabel(mk)}.`);
+}
+
+function toggleMonth(mk) {
+  const el = document.querySelector(`[data-month="${mk}"]`);
+  if (el) el.classList.toggle('collapsed');
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const hist = loadHistory();
+  const isoList = Object.keys(hist).sort().reverse();
+  const totalDays    = isoList.length;
+  const totalFlights = isoList.reduce((s, iso) => s + hist[iso].flights.length, 0);
+
+  document.getElementById('hist-count').textContent =
+    `${totalDays} día${totalDays !== 1 ? 's' : ''} · ${totalFlights} vuelo${totalFlights !== 1 ? 's' : ''}`;
+
+  const host = document.getElementById('history');
+  const dlAllBtn = document.getElementById('btn-dl-all');
+  const clearBtn = document.getElementById('btn-clear-all');
+
+  if (!totalDays) {
+    host.innerHTML = `<div class="empty">Aún no has guardado ningún día. Pega tu primer email arriba ↑</div>`;
+    dlAllBtn.disabled = true;
+    clearBtn.disabled = true;
+    return;
+  }
+
+  dlAllBtn.disabled = false;
+  clearBtn.disabled = false;
+
+  // Group by month, months sorted desc
+  const byMonth = {};
+  isoList.forEach(iso => {
+    const mk = monthKey(iso);
+    (byMonth[mk] = byMonth[mk] || []).push(iso);
+  });
+  const monthsDesc = Object.keys(byMonth).sort().reverse();
+
+  host.innerHTML = monthsDesc.map(mk => {
+    const days = byMonth[mk];
+    const fcount = days.reduce((s, iso) => s + hist[iso].flights.length, 0);
+    const items = days.map(iso => {
+      const day    = hist[iso];
+      const route  = routeOfDay(day.flights);
+      const count  = day.flights.length;
+      return `
+        <div class="day-item">
+          <span class="day-date">${dateISOToDisplay(iso)}</span>
+          <span class="day-route">${route || '—'}</span>
+          <span class="day-count">${count} vuelo${count !== 1 ? 's' : ''}</span>
+          <button class="day-del" title="Borrar día" onclick="removeDay('${iso}')">✕</button>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="month-group" data-month="${mk}">
+        <div class="month-header" onclick="toggleMonth('${mk}')">
+          <span class="chev">▾</span>
+          <span>${monthLabel(mk)}</span>
+          <span class="meta">${days.length} día${days.length !== 1 ? 's' : ''} · ${fcount} vuelo${fcount !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="month-actions">
+          <button class="btn btn-ghost btn-sm" onclick="downloadMonthCSV('${mk}')">⬇ CSV de ${monthLabel(mk)}</button>
+        </div>
+        <div class="day-list">${items}</div>
+      </div>`;
+  }).join('');
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+function clearInput() {
+  document.getElementById('input').value = '';
+  document.getElementById('status').classList.add('hidden');
+}
+
 function showStatus(type, msg) {
   const el = document.getElementById('status');
   el.className = `status status-${type}`;
   el.textContent = msg;
 }
 
-function stat(val, lbl) {
-  return `<div class="stat"><div class="stat-val">${val}</div><div class="stat-lbl">${lbl}</div></div>`;
-}
-
-function toMins(s) {
-  if (!s) return 0;
-  const [h, m] = s.split(':').map(Number);
-  return (h || 0) * 60 + (m || 0);
-}
-
-function fmtMins(m) {
-  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
-}
+// ─── Init ─────────────────────────────────────────────────────────────────────
+renderHistory();
 </script>
 </body>
 </html>

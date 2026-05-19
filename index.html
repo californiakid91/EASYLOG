@@ -101,12 +101,15 @@
     border-radius: 8px;
     color: var(--text);
     font-family: 'Courier New', monospace;
-    font-size: .8rem;
+    font-size: 16px;
     line-height: 1.5;
     padding: .85rem 1rem;
     resize: vertical;
     outline: none;
     transition: border-color .15s;
+  }
+  @media (min-width: 768px) {
+    textarea { font-size: .8rem; }
   }
   textarea:focus { border-color: var(--accent); }
   textarea::placeholder { color: var(--muted); }

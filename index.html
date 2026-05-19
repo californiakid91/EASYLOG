@@ -403,6 +403,24 @@
     <div id="history"></div>
   </div>
 
+  <!-- Aeropuertos personalizados -->
+  <div class="card" id="airports-card">
+    <div class="card-title" style="cursor:pointer;" onclick="toggleAirportsCard()">
+      <span>✈️ Aeropuertos personalizados <span id="airports-count" class="count"></span></span>
+      <span id="airports-chev" style="color:var(--muted);">▾</span>
+    </div>
+    <div id="airports-body" class="hidden">
+      <div id="airports-list" style="margin-bottom:1rem;"></div>
+      <div style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:center;">
+        <input id="ap-iata" maxlength="3" placeholder="IATA" style="width:5rem; text-transform:uppercase; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:.5rem .65rem; font-size:16px;">
+        <input id="ap-lat" placeholder="Lat (ej. 40.42)" style="flex:1; min-width:8rem; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:.5rem .65rem; font-size:16px;">
+        <input id="ap-lon" placeholder="Lon (ej. -3.70)" style="flex:1; min-width:8rem; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:.5rem .65rem; font-size:16px;">
+        <button class="btn btn-blue btn-sm" onclick="addAirport()">Añadir</button>
+      </div>
+      <div class="hint">¿No sabes las coordenadas? <a id="ap-search" href="#" target="_blank" style="color:var(--accent);">🔍 Buscar en Google</a>. Pega lat y lon en grados decimales (N/E positivos, S/W negativos).</div>
+    </div>
+  </div>
+
   <!-- Acciones globales -->
   <div class="card" id="global-card">
     <div class="card-title">Exportar</div>
@@ -754,8 +772,8 @@ function toRow(f, r) {
   let toNight = '0';
   let ldgDay = isMyLDG ? '1' : '0';
   let ldgNight = '0';
-  const depCoords = AIRPORTS[(dep || '').toUpperCase()];
-  const arrCoords = AIRPORTS[(arr || '').toUpperCase()];
+  const depCoords = resolveAirport(dep);
+  const arrCoords = resolveAirport(arr);
   if (isMyTO && depCoords && d['Airborne']) {
     const utc = buildUTCDate(f.date, d['Airborne']);
     if (utc && isNightAt(utc, depCoords.lat, depCoords.lon)) { toDay = '0'; toNight = '1'; }
@@ -847,11 +865,13 @@ function buildCSV(flightsWithRole) {
 }
 
 // ─── Storage (mode-aware: local | cloud) ─────────────────────────────────────
-const STORAGE_KEY = 'easylog_history_v1';
-const MODE_KEY    = 'easylog_mode';
+const STORAGE_KEY   = 'easylog_history_v1';
+const AIRPORTS_KEY  = 'easylog_airports_v1';
+const MODE_KEY      = 'easylog_mode';
 
-// In-memory cache. Always the source of truth for render functions.
-let _cache = {};
+// In-memory state. Always the source of truth for render functions.
+let _cache = {};         // history: { iso: { addedAt, role, flights } }
+let _airports = {};      // custom airports: { IATA: { lat, lon } }
 // Cloud state (populated only when mode === 'cloud')
 let cloud = { app: null, auth: null, db: null, user: null, unsub: null, hydrated: false };
 
@@ -859,34 +879,48 @@ function getMode() { return localStorage.getItem(MODE_KEY); } // 'local' | 'clou
 function setMode(m) { localStorage.setItem(MODE_KEY, m); }
 
 function loadHistory() { return _cache; }
+function loadAirports() { return _airports; }
+function resolveAirport(iata) {
+  if (!iata) return null;
+  const k = iata.toUpperCase();
+  return _airports[k] || AIRPORTS[k] || null;
+}
 
-function saveHistory(h) {
-  _cache = h;
+function saveHistory(h) { _cache = h; persist(); }
+function saveAirports(a) { _airports = a; persist(); }
+
+function persist() {
   const mode = getMode();
   if (mode === 'cloud') {
-    saveHistoryCloud(h);
+    persistCloud();
   } else {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h)); }
-    catch (e) { console.warn('Local save failed:', e); }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(_cache));
+      localStorage.setItem(AIRPORTS_KEY, JSON.stringify(_airports));
+    } catch (e) { console.warn('Local save failed:', e); }
   }
 }
 
 function hydrateLocal() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    _cache = raw ? JSON.parse(raw) : {};
+    const h = localStorage.getItem(STORAGE_KEY);
+    _cache = h ? JSON.parse(h) : {};
+    const a = localStorage.getItem(AIRPORTS_KEY);
+    _airports = a ? JSON.parse(a) : {};
   } catch (e) {
     console.warn('Local hydrate failed:', e);
-    _cache = {};
+    _cache = {}; _airports = {};
   }
 }
 
-async function saveHistoryCloud(h) {
+async function persistCloud() {
   if (!cloud.user || !cloud.db) return;
   setSync('syncing', 'Guardando…');
   try {
     const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
-    await setDoc(doc(cloud.db, 'users', cloud.user.uid), { history: h, updatedAt: Date.now() });
+    await setDoc(doc(cloud.db, 'users', cloud.user.uid), {
+      history: _cache, airports: _airports, updatedAt: Date.now()
+    });
     setSync('ok', 'Sincronizado ✓');
   } catch (e) {
     console.error('Cloud save failed:', e);
@@ -967,7 +1001,12 @@ function addDay() {
   document.getElementById('input').value = '';
   renderHistory();
   const warnMsg = warnings.length ? ` (${warnings.length} aviso${warnings.length !== 1 ? 's' : ''})` : '';
-  showStatus('ok', `${flights.length} vuelo${flights.length !== 1 ? 's' : ''} añadidos al ${dateISOToDisplay(iso)}${warnMsg}.`);
+  const unknown = unknownAirportsInFlights(flights);
+  if (unknown.length) {
+    showStatus('warn', `${flights.length} vuelos añadidos. Aeropuerto${unknown.length>1?'s':''} desconocido${unknown.length>1?'s':''}: ${unknown.join(', ')} — añade abajo sus coords para detectar noche.`);
+  } else {
+    showStatus('ok', `${flights.length} vuelo${flights.length !== 1 ? 's' : ''} añadidos al ${dateISOToDisplay(iso)}${warnMsg}.`);
+  }
 }
 
 function removeDay(iso) {
@@ -1056,6 +1095,80 @@ function downloadMonthCSV(mk) {
 function toggleMonth(mk) {
   const el = document.querySelector(`[data-month="${mk}"]`);
   if (el) el.classList.toggle('collapsed');
+}
+
+// ─── Custom airports UI ──────────────────────────────────────────────────────
+function toggleAirportsCard() {
+  const body = document.getElementById('airports-body');
+  const chev = document.getElementById('airports-chev');
+  body.classList.toggle('hidden');
+  chev.style.transform = body.classList.contains('hidden') ? 'rotate(-90deg)' : '';
+}
+
+function addAirport() {
+  const iata = document.getElementById('ap-iata').value.trim().toUpperCase();
+  const lat  = parseFloat(document.getElementById('ap-lat').value);
+  const lon  = parseFloat(document.getElementById('ap-lon').value);
+  if (!/^[A-Z]{3}$/.test(iata)) { showStatus('err', 'IATA inválido (3 letras).'); return; }
+  if (!isFinite(lat) || lat < -90 || lat > 90)   { showStatus('err', 'Lat fuera de rango (-90 a 90).'); return; }
+  if (!isFinite(lon) || lon < -180 || lon > 180) { showStatus('err', 'Lon fuera de rango (-180 a 180).'); return; }
+  const a = { ..._airports, [iata]: { lat, lon } };
+  saveAirports(a);
+  document.getElementById('ap-iata').value = '';
+  document.getElementById('ap-lat').value  = '';
+  document.getElementById('ap-lon').value  = '';
+  renderAirports();
+  showStatus('ok', `${iata} añadido.`);
+}
+
+function removeAirport(iata) {
+  if (!confirm(`¿Borrar ${iata}?`)) return;
+  const a = { ..._airports };
+  delete a[iata];
+  saveAirports(a);
+  renderAirports();
+}
+
+function renderAirports() {
+  const keys = Object.keys(_airports).sort();
+  const cnt = document.getElementById('airports-count');
+  const list = document.getElementById('airports-list');
+  if (!cnt || !list) return;
+  cnt.textContent = keys.length ? `· ${keys.length}` : '';
+  if (!keys.length) {
+    list.innerHTML = `<div class="empty" style="padding:.85rem 0;">Ninguno aún. La app ya conoce ~110 aeropuertos comunes — solo añade los que falten.</div>`;
+  } else {
+    list.innerHTML = keys.map(k => `
+      <div class="day-item">
+        <span class="day-date">${k}</span>
+        <span class="day-route">${_airports[k].lat.toFixed(4)}, ${_airports[k].lon.toFixed(4)}</span>
+        <button class="day-del" onclick="removeAirport('${k}')" title="Borrar">✕</button>
+      </div>
+    `).join('');
+  }
+  // Update search link based on IATA input
+  const iataInput = document.getElementById('ap-iata');
+  const link = document.getElementById('ap-search');
+  if (iataInput && link) {
+    iataInput.oninput = () => {
+      const v = iataInput.value.trim().toUpperCase();
+      link.href = v ? `https://www.google.com/search?q=${v}+airport+coordinates+latitude+longitude` : '#';
+    };
+  }
+}
+
+function unknownAirportsInFlights(flights) {
+  const seen = new Set();
+  flights.forEach(f => {
+    const [dep, arr] = ((f.d || {})['City Pair'] || '').split(' - ');
+    [dep, arr].forEach(x => {
+      if (!x) return;
+      const k = x.trim().toUpperCase();
+      if (!k) return;
+      if (!resolveAirport(k)) seen.add(k);
+    });
+  });
+  return [...seen];
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────────
@@ -1168,6 +1281,7 @@ function applyLocalMode() {
   document.getElementById('user-chip').classList.add('hidden');
   hydrateLocal();
   renderHistory();
+  renderAirports();
   updateModeChip();
   setSync('', '');
 }
@@ -1207,9 +1321,12 @@ async function applyCloudMode() {
       setSync('syncing', 'Sincronizando…');
       const ref = fsMod.doc(cloud.db, 'users', u.uid);
       cloud.unsub = fsMod.onSnapshot(ref, (snap) => {
-        _cache = (snap.exists() && snap.data().history) ? snap.data().history : {};
+        const data = snap.exists() ? snap.data() : {};
+        _cache    = data.history  || {};
+        _airports = data.airports || {};
         cloud.hydrated = true;
         renderHistory();
+        renderAirports();
         setSync('ok', 'Sincronizado ✓');
       }, (err) => {
         console.error('Snapshot error:', err);

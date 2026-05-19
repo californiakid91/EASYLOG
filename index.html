@@ -869,6 +869,14 @@ function downloadAllCSV() {
   if (!list.length) { showStatus('err', 'No hay vuelos guardados.'); return; }
   triggerDownload(buildCSV(list), `pilotlog_${new Date().toISOString().slice(0,10)}.csv`);
   showStatus('ok', `Descargados ${list.length} vuelos.`);
+  setTimeout(() => {
+    const where = getMode() === 'cloud' ? 'la nube' : 'este navegador';
+    if (confirm(`CSV descargado (${list.length} vuelos).\n\n¿Borrar ahora todo el historial de ${where}?\n\nRecomendado tras confirmar el import en PilotLog.`)) {
+      saveHistory({});
+      renderHistory();
+      showStatus('ok', 'Historial borrado.');
+    }
+  }, 400);
 }
 
 function downloadMonthCSV(mk) {
@@ -876,6 +884,16 @@ function downloadMonthCSV(mk) {
   if (!list.length) return;
   triggerDownload(buildCSV(list), `pilotlog_${mk}.csv`);
   showStatus('ok', `Descargados ${list.length} vuelos de ${monthLabel(mk)}.`);
+  setTimeout(() => {
+    const where = getMode() === 'cloud' ? 'la nube' : 'este navegador';
+    if (confirm(`CSV de ${monthLabel(mk)} descargado (${list.length} vuelos).\n\n¿Borrar ${monthLabel(mk)} de ${where}?\n\nRecomendado tras confirmar el import en PilotLog.`)) {
+      const hist = loadHistory();
+      Object.keys(hist).forEach(iso => { if (monthKey(iso) === mk) delete hist[iso]; });
+      saveHistory(hist);
+      renderHistory();
+      showStatus('ok', `${monthLabel(mk)} borrado.`);
+    }
+  }, 400);
 }
 
 function toggleMonth(mk) {

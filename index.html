@@ -466,6 +466,142 @@ const DELAY_CODES = {
 
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
+// ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
+const AIRPORTS = {
+  // UK & Ireland
+  STN:{lat:51.8849,lon:0.2353}, LTN:{lat:51.8747,lon:-0.3683}, LGW:{lat:51.1481,lon:-0.1903},
+  LHR:{lat:51.4700,lon:-0.4543}, EDI:{lat:55.9500,lon:-3.3725}, LBA:{lat:53.8659,lon:-1.6606},
+  MAN:{lat:53.3537,lon:-2.2750}, GLA:{lat:55.8717,lon:-4.4333}, NCL:{lat:55.0375,lon:-1.6917},
+  BFS:{lat:54.6575,lon:-6.2158}, BHX:{lat:52.4539,lon:-1.7480}, BRS:{lat:51.3827,lon:-2.7191},
+  EMA:{lat:52.8311,lon:-1.3281}, LPL:{lat:53.3336,lon:-2.8497}, SOU:{lat:50.9503,lon:-1.3568},
+  DUB:{lat:53.4214,lon:-6.2700}, ORK:{lat:51.8413,lon:-8.4911}, SNN:{lat:52.7019,lon:-8.9248},
+  NOC:{lat:53.9101,lon:-8.8181}, KIR:{lat:52.1809,lon:-9.5238},
+  // Italy
+  BGY:{lat:45.6739,lon:9.7042}, MXP:{lat:45.6300,lon:8.7231}, LIN:{lat:45.4451,lon:9.2767},
+  PSA:{lat:43.6839,lon:10.3927}, BLQ:{lat:44.5354,lon:11.2887}, AOI:{lat:43.6163,lon:13.3623},
+  FCO:{lat:41.8003,lon:12.2389}, CIA:{lat:41.7994,lon:12.5949}, TRN:{lat:45.2008,lon:7.6496},
+  VRN:{lat:45.3957,lon:10.8885}, TSF:{lat:45.6484,lon:12.1944}, VCE:{lat:45.5053,lon:12.3519},
+  CAG:{lat:39.2515,lon:9.0543}, PMO:{lat:38.1759,lon:13.0910}, CTA:{lat:37.4668,lon:15.0664},
+  NAP:{lat:40.8844,lon:14.2908}, BRI:{lat:41.1389,lon:16.7606}, GOA:{lat:44.4133,lon:8.8375},
+  TRS:{lat:45.8275,lon:13.4722}, FOG:{lat:41.4329,lon:15.5350}, RMI:{lat:44.0203,lon:12.6117},
+  PEG:{lat:43.0959,lon:12.5132}, BDS:{lat:40.6576,lon:17.9470}, REG:{lat:38.0712,lon:15.6516},
+  // Spain & Portugal
+  MAD:{lat:40.4719,lon:-3.5626}, BCN:{lat:41.2974,lon:2.0833}, AGP:{lat:36.6749,lon:-4.4991},
+  ALC:{lat:38.2822,lon:-0.5582}, PMI:{lat:39.5517,lon:2.7388}, VLC:{lat:39.4893,lon:-0.4816},
+  SVQ:{lat:37.4180,lon:-5.8931}, IBZ:{lat:38.8729,lon:1.3731}, MAH:{lat:39.8626,lon:4.2186},
+  LPA:{lat:27.9319,lon:-15.3866}, TFS:{lat:28.0445,lon:-16.5725}, TFN:{lat:28.4827,lon:-16.3415},
+  ACE:{lat:28.9455,lon:-13.6052}, FUE:{lat:28.4527,lon:-13.8638}, BIO:{lat:43.3011,lon:-2.9106},
+  SCQ:{lat:42.8963,lon:-8.4154}, ZAZ:{lat:41.6661,lon:-1.0414}, MJV:{lat:37.7750,lon:-0.8125},
+  XRY:{lat:36.7446,lon:-6.0601}, GRO:{lat:41.9009,lon:2.7606}, REU:{lat:41.1474,lon:1.1672},
+  LIS:{lat:38.7813,lon:-9.1359}, OPO:{lat:41.2481,lon:-8.6814}, FAO:{lat:37.0144,lon:-7.9659},
+  // France
+  CDG:{lat:49.0097,lon:2.5479}, BVA:{lat:49.4544,lon:2.1128}, NTE:{lat:47.1532,lon:-1.6107},
+  MRS:{lat:43.4366,lon:5.2150}, TLS:{lat:43.6293,lon:1.3638}, BOD:{lat:44.8283,lon:-0.7156},
+  LDE:{lat:43.1787,lon:-0.0064}, BIQ:{lat:43.4683,lon:-1.5311}, NCE:{lat:43.6584,lon:7.2159},
+  LIL:{lat:50.5633,lon:3.0894}, RNS:{lat:48.0695,lon:-1.7347}, CFE:{lat:45.7867,lon:3.1692},
+  // Germany / Austria / Switz / Belgium / NL / LUX
+  HHN:{lat:49.9487,lon:7.2639}, FMM:{lat:47.9888,lon:10.2395}, BER:{lat:52.3667,lon:13.5033},
+  CGN:{lat:50.8659,lon:7.1427}, FRA:{lat:50.0379,lon:8.5622}, MUC:{lat:48.3538,lon:11.7861},
+  HAM:{lat:53.6304,lon:9.9882}, DUS:{lat:51.2895,lon:6.7668}, NUE:{lat:49.4987,lon:11.0780},
+  VIE:{lat:48.1103,lon:16.5697}, GVA:{lat:46.2381,lon:6.1090}, ZRH:{lat:47.4647,lon:8.5492},
+  BRU:{lat:50.9014,lon:4.4844}, CRL:{lat:50.4592,lon:4.4538}, AMS:{lat:52.3105,lon:4.7683},
+  EIN:{lat:51.4500,lon:5.3747}, LUX:{lat:49.6266,lon:6.2114},
+  // Poland & Czech & Slovakia & Hungary
+  WMI:{lat:52.4511,lon:20.6517}, WAW:{lat:52.1657,lon:20.9671}, KRK:{lat:50.0777,lon:19.7848},
+  WRO:{lat:51.1027,lon:16.8858}, GDN:{lat:54.3776,lon:18.4662}, POZ:{lat:52.4210,lon:16.8263},
+  KTW:{lat:50.4743,lon:19.0800}, RZE:{lat:50.1100,lon:22.0190},
+  PRG:{lat:50.1008,lon:14.2632}, BRQ:{lat:49.1513,lon:16.6944},
+  BUD:{lat:47.4369,lon:19.2556}, BTS:{lat:48.1702,lon:17.2127},
+  // Greece / Cyprus / Malta / Croatia / Balkans
+  ATH:{lat:37.9364,lon:23.9445}, SKG:{lat:40.5197,lon:22.9709}, CHQ:{lat:35.5317,lon:24.1497},
+  HER:{lat:35.3397,lon:25.1803}, RHO:{lat:36.4054,lon:28.0862}, CFU:{lat:39.6019,lon:19.9117},
+  KGS:{lat:36.7933,lon:27.0917}, ZTH:{lat:37.7509,lon:20.8843}, EFL:{lat:38.1200,lon:20.5005},
+  PFO:{lat:34.7180,lon:32.4857}, LCA:{lat:34.8751,lon:33.6249}, MLA:{lat:35.8575,lon:14.4775},
+  ZAG:{lat:45.7429,lon:16.0688}, SPU:{lat:43.5389,lon:16.2980}, DBV:{lat:42.5614,lon:18.2682},
+  ZAD:{lat:44.1083,lon:15.3467}, PUY:{lat:45.2333,lon:13.9222}, RJK:{lat:45.2169,lon:14.5703},
+  TZL:{lat:44.4587,lon:18.7248}, SJJ:{lat:43.8246,lon:18.3315}, TIA:{lat:41.4147,lon:19.7206},
+  BEG:{lat:44.8184,lon:20.3091}, PRN:{lat:42.5728,lon:21.0359}, SOF:{lat:42.6967,lon:23.4114},
+  // Scandinavia & Baltics
+  OSL:{lat:60.1939,lon:11.1004}, TRF:{lat:59.1867,lon:10.2586}, BGO:{lat:60.2934,lon:5.2181},
+  ARN:{lat:59.6519,lon:17.9186}, NYO:{lat:58.7886,lon:16.9122}, GOT:{lat:57.6628,lon:12.2798},
+  CPH:{lat:55.6180,lon:12.6561}, BLL:{lat:55.7403,lon:9.1518},
+  RIX:{lat:56.9236,lon:23.9711}, VNO:{lat:54.6341,lon:25.2858}, KUN:{lat:54.9639,lon:24.0848},
+  TLL:{lat:59.4133,lon:24.8328}, HEL:{lat:60.3172,lon:24.9633},
+  // Romania / Moldova / Bulgaria
+  OTP:{lat:44.5711,lon:26.0851}, CLJ:{lat:46.7852,lon:23.6862}, TSR:{lat:45.8099,lon:21.3379},
+  IAS:{lat:47.1785,lon:27.6206}, BCM:{lat:46.5217,lon:26.9103}, BOJ:{lat:42.5696,lon:27.5152},
+  VAR:{lat:43.2322,lon:27.8251},
+  // Morocco / Tunisia / Israel / Turkey
+  RAK:{lat:31.6069,lon:-8.0363}, AGA:{lat:30.3811,lon:-9.5460}, CMN:{lat:33.3675,lon:-7.5897},
+  RBA:{lat:34.0515,lon:-6.7515}, FEZ:{lat:33.9272,lon:-4.9777}, NDR:{lat:34.9888,lon:-3.0282},
+  TNG:{lat:35.7269,lon:-5.9168}, OUD:{lat:34.7872,lon:-1.9239}, ESU:{lat:31.3974,lon:-9.6817},
+  TLV:{lat:32.0114,lon:34.8867}, AYT:{lat:36.8987,lon:30.8005}, IST:{lat:41.2753,lon:28.7519},
+  // Jordan / Egypt
+  AMM:{lat:31.7226,lon:35.9933}, AQJ:{lat:29.6126,lon:35.0181}, HRG:{lat:27.1783,lon:33.7994},
+  SSH:{lat:27.9773,lon:34.3947},
+};
+
+// ─── Solar position (NOAA-style, ~30 lines) ───────────────────────────────────
+const RAD = Math.PI / 180;
+const DAY_MS = 86400000, J1970 = 2440588, J2000 = 2451545;
+const OBLIQ = RAD * 23.4397;
+
+function _toDays(date) { return date.valueOf() / DAY_MS - 0.5 + J1970 - J2000; }
+function _solarMeanAnomaly(d) { return RAD * (357.5291 + 0.98560028 * d); }
+function _eclipticLong(M) {
+  const C = RAD * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2*M) + 0.0003 * Math.sin(3*M));
+  return M + C + RAD * 102.9372 + Math.PI;
+}
+function _declination(L) { return Math.asin(Math.sin(0) * Math.cos(OBLIQ) + Math.cos(0) * Math.sin(OBLIQ) * Math.sin(L)); }
+function _approxTransit(Ht, lw, n) { return 0.0009 + (Ht + lw) / (2*Math.PI) + n; }
+function _solarTransitJ(ds, M, L) { return J2000 + ds + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2*L); }
+function _hourAngle(h, phi, d) {
+  return Math.acos((Math.sin(h) - Math.sin(phi)*Math.sin(d)) / (Math.cos(phi)*Math.cos(d)));
+}
+function _fromJulian(j) { return new Date((j + 0.5 - J1970) * DAY_MS); }
+
+// Returns { sunrise, sunset } as UTC Date objects for the given date+location
+function sunTimes(date, lat, lon) {
+  const lw = RAD * -lon;
+  const phi = RAD * lat;
+  const d = _toDays(date);
+  const n = Math.round(d - 0.0009 - lw / (2*Math.PI));
+  const ds = _approxTransit(0, lw, n);
+  const M = _solarMeanAnomaly(ds);
+  const L = _eclipticLong(M);
+  const dec = _declination(L);
+  const Jnoon = _solarTransitJ(ds, M, L);
+  const h0 = RAD * -0.833; // sun upper limb + atmospheric refraction
+  const w = _hourAngle(h0, phi, dec);
+  if (isNaN(w)) return null; // polar day/night
+  const Jset = _solarTransitJ(_approxTransit(w, lw, n), M, L);
+  const Jrise = Jnoon - (Jset - Jnoon);
+  return { sunrise: _fromJulian(Jrise), sunset: _fromJulian(Jset) };
+}
+
+// EASA "night" = sun centre 6° below horizon, i.e. end of civil twilight.
+// Easier proxy: sunset + 30 min → sunrise - 30 min.
+function isNightAt(utcDate, lat, lon) {
+  const t = sunTimes(utcDate, lat, lon);
+  if (!t) {
+    // polar: if it's permanent day or night, fall back to local hour
+    return false;
+  }
+  const startNight = t.sunset.getTime() + 30 * 60000;
+  const endNight   = t.sunrise.getTime() - 30 * 60000;
+  const ts = utcDate.getTime();
+  if (startNight < endNight) return ts >= startNight && ts <= endNight;
+  return ts >= startNight || ts <= endNight;
+}
+
+function buildUTCDate(dateRaw, hm) {
+  // dateRaw: "YYYY/MM/DD". hm: "HH:MM" (UTC).
+  if (!hm || !/^\d{1,2}:\d{2}$/.test(hm)) return null;
+  const [yy, mm, dd] = dateRaw.split('/').map(Number);
+  const [HH, MM] = hm.split(':').map(Number);
+  return new Date(Date.UTC(yy, mm-1, dd, HH, MM));
+}
+
 // ─── Role toggle ──────────────────────────────────────────────────────────────
 document.querySelectorAll('input[name="role"]').forEach(r => {
   r.addEventListener('change', () => {
@@ -574,7 +710,7 @@ const HEADER = [
   'TIME_AIR','TIME_TOTAL','TIME_PIC','TIME_SIC','TIME_IFR',
   'OPERATOR',
   'PILOT1_ID','PILOT1_NAME','PILOT2_ID','PILOT2_NAME',
-  'TO_DAY','LDG_DAY','PF',
+  'TO_DAY','TO_NIGHT','LDG_DAY','LDG_NIGHT','PF',
   'REMARKS','CREWLIST','FLIGHTLOG',
   'PAX','FUEL','FUELUSED','TAG_DELAY',
   'AC_MAKE','AC_MODEL','AC_VARIANT','AC_REG','AC_ENGTYPE',
@@ -612,6 +748,25 @@ function toRow(f, r) {
   const flightNo = (d['FlightNumber'] || '').replace(/\s+/g, '');
   const isMyTO  = (d['Take Off']  || '') === 'VEGRIC';
   const isMyLDG = (d['Landing']   || '') === 'VEGRIC';
+
+  // ── Day/Night TO+LDG ──
+  let toDay  = isMyTO  ? '1' : '0';
+  let toNight = '0';
+  let ldgDay = isMyLDG ? '1' : '0';
+  let ldgNight = '0';
+  const depCoords = AIRPORTS[(dep || '').toUpperCase()];
+  const arrCoords = AIRPORTS[(arr || '').toUpperCase()];
+  if (isMyTO && depCoords && d['Airborne']) {
+    const utc = buildUTCDate(f.date, d['Airborne']);
+    if (utc && isNightAt(utc, depCoords.lat, depCoords.lon)) { toDay = '0'; toNight = '1'; }
+  }
+  if (isMyLDG && arrCoords && d['Landed']) {
+    // If landed time < airborne time, flight crossed midnight UTC — bump landed date by 1 day
+    let utc = buildUTCDate(f.date, d['Landed']);
+    const utcTO = buildUTCDate(f.date, d['Airborne'] || '');
+    if (utc && utcTO && utc < utcTO) utc = new Date(utc.getTime() + 86400000);
+    if (utc && isNightAt(utc, arrCoords.lat, arrCoords.lon)) { ldgDay = '0'; ldgNight = '1'; }
+  }
 
   const meRole = isCPT ? 'CP' : 'FO';
   const crewLines = ['Flight Deck Crew'];
@@ -676,8 +831,7 @@ function toRow(f, r) {
     airHM, blockMin, timePic, timeSic, blockMin,
     'RYANAIR',
     pilot1Id, pilot1Name, pilot2Id, pilot2Name,
-    isMyTO  ? '1' : '0',
-    isMyLDG ? '1' : '0',
+    toDay, toNight, ldgDay, ldgNight,
     (isMyTO || isMyLDG) ? 'TRUE' : 'FALSE',
     flightNo, crewList, flightLog,
     d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '', delayCode,

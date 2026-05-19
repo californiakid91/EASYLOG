@@ -1,0 +1,73 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-05-19T21:30:00Z",
+  "context": "default",
+  "phase": null,
+  "phase_name": "Cloud sync + night TO/LDG detection + custom airports",
+  "phase_dir": null,
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "paused",
+  "completed_tasks": [
+    {"name": "Dual-mode storage: local-only or Firebase cloud sync with Google login", "status": "done", "commit": "4f74a60"},
+    {"name": "Prompt to clear history after CSV export (minimize data at rest)", "status": "done", "commit": "fd77180"},
+    {"name": "iOS textarea zoom fix (font-size 16px on mobile)", "status": "done", "commit": "90b3cc0"},
+    {"name": "Stable checkpoint tag stable-pre-night-detection", "status": "done", "ref": "90b3cc0"},
+    {"name": "Night TO/LDG detection via NOAA-style solar calc + ~110 airport coords DB", "status": "done", "commit": "a0b8681"},
+    {"name": "Custom airports UI: add IATA+lat+lon from app, persisted alongside history", "status": "done", "commit": "a0a5100"},
+    {"name": "Firebase API key restricted in Google Cloud (HTTP referrers + API scope)", "status": "done", "owner": "user"},
+    {"name": "Firestore security rules deployed (request.auth.uid == uid)", "status": "done", "owner": "user"},
+    {"name": "GitHub secret-scanning alert closed as false positive", "status": "done", "owner": "user"}
+  ],
+  "remaining_tasks": [
+    {"name": "User to test custom airport flow end-to-end (add ZZZ, verify warning, verify sync)", "status": "not_started", "owner": "user"},
+    {"name": "User to validate that wizard accepts the new 4-column TO/LDG (TO_DAY;TO_NIGHT;LDG_DAY;LDG_NIGHT) instead of the previous 2-column format", "status": "not_started", "owner": "user", "blocking": true},
+    {"name": "Optional: 'Paste from clipboard' button + iOS Shortcut guide for friction reduction", "status": "deferred"},
+    {"name": "Optional: client-side encryption of cloud data (extra paranoia layer)", "status": "deferred"}
+  ],
+  "blockers": [
+    {
+      "description": "CSV column schema changed from 35 to 37 cols (added TO_NIGHT + LDG_NIGHT). Wizard at my.crewlounge.center has not been re-tested with this schema. Risk: wizard may reject if it's column-position-based instead of header-based",
+      "type": "external",
+      "workaround": "If wizard rejects, fallback is `git reset --hard stable-pre-night-detection` then `git push --force origin main` (documented in reference_stable_checkpoint_revert.md)"
+    }
+  ],
+  "human_actions_pending": [
+    {
+      "action": "Verify night flight (sunset takeoff or post-dawn landing) produces TO_NIGHT=1 / LDG_NIGHT=1 in exported CSV",
+      "context": "Algorithm verified with sunrise/sunset table for Madrid summer solstice (04:46/19:50 UTC ✓) and STN winter solstice (08:05/15:51 UTC ✓), but end-to-end with a real flight email pending",
+      "blocking": false
+    },
+    {
+      "action": "Test wizard import with the new 37-column CSV",
+      "context": "Schema changed since last validated working state (e527a3c, 35 cols)",
+      "blocking": true
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Two-mode storage: local-only (no Firebase loaded) OR cloud (Firebase + Google login)",
+      "rationale": "User wants to share app with colleagues who may not trust cloud storage. Privacy-by-design — local mode never imports Firebase SDK."
+    },
+    {
+      "decision": "Firebase web API key kept public in committed source",
+      "rationale": "Firebase web API keys are public by design (https://firebase.google.com/docs/projects/api-keys). Real security is enforced by Firestore rules + authorized domains + API key HTTP-referrer restrictions in Google Cloud — all configured."
+    },
+    {
+      "decision": "Night defined as sunset+30min → sunrise-30min (civil twilight proxy)",
+      "rationale": "Standard EASA/FAA aviation definition. Sun calculation uses NOAA-style algorithm inlined (~30 LOC), no external dependency. Verified vs published sunrise/sunset tables."
+    },
+    {
+      "decision": "Airport DB seeded with ~110 IATA codes for Ryanair STN ops; user can add custom entries in-app",
+      "rationale": "Static list covers common destinations. User can extend without redeploy via the airports card. Each entry: IATA → {lat, lon} in degrees, +N/+E."
+    },
+    {
+      "decision": "Stable git tag stable-pre-night-detection at commit 90b3cc0",
+      "rationale": "Last known fully-validated state before TO_NIGHT/LDG_NIGHT schema change. Revert command documented for emergency rollback."
+    }
+  ],
+  "uncommitted_files": [],
+  "next_action": "Wait for user to test (a) night detection in a real exported CSV and (b) wizard acceptance of the new 37-col schema. If wizard breaks, revert to tag stable-pre-night-detection.",
+  "context_notes": "User: Ricardo Vega, Ryanair FO based at STN, code VEGRIC. Session built on top of previously-validated e527a3c CSV format. Three new features shipped this session: cloud sync (Firebase), night TO/LDG detection (solar calc), custom airports UI. Security stance is now explicit priority #1 — see feedback_security_priority.md memory. iOS PWA limitations acknowledged: AirDrop .csv import dead end on iOS, native 'Open With' for PWA not supported by Apple. Repo: https://github.com/californiakid91/EASYLOG (deployed at https://californiakid91.github.io/EASYLOG/)."
+}

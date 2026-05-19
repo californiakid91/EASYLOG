@@ -218,6 +218,93 @@
   }
 
   .hidden { display: none !important; }
+
+  /* ── Auth ── */
+  .auth-overlay {
+    position: fixed; inset: 0;
+    background: rgba(13,17,23,.92);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+  }
+  .auth-card h2 { font-size: 1.4rem; margin-bottom: .5rem; }
+  .auth-card p  { color: var(--muted); font-size: .9rem; margin-bottom: 1.5rem; line-height: 1.5; }
+  .btn-google {
+    background: #fff; color: #1f1f1f;
+    border: 1px solid var(--border);
+    width: 100%; justify-content: center;
+    padding: .8rem 1rem; font-weight: 600;
+  }
+  .btn-google:hover { filter: brightness(.97); }
+  .btn-google svg { width: 18px; height: 18px; }
+
+  .user-chip {
+    margin-left: auto;
+    display: flex; align-items: center; gap: .6rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: .3rem .35rem .3rem .85rem;
+    font-size: .85rem;
+  }
+  .user-chip img { width: 28px; height: 28px; border-radius: 50%; }
+  .user-chip .name { color: var(--text); font-weight: 500; }
+  .user-chip button {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; padding: .15rem .35rem; border-radius: 4px; font-size: .85rem;
+  }
+  .user-chip button:hover { color: var(--red); }
+
+  .auth-err { color: var(--red); font-size: .85rem; margin-top: 1rem; }
+  .sync-indicator { font-size: .75rem; color: var(--muted); }
+  .sync-indicator.syncing { color: var(--amber); }
+  .sync-indicator.ok      { color: var(--green); }
+
+  /* ── Welcome / mode chooser ── */
+  .welcome-card { max-width: 440px; }
+  .welcome-card h2 { font-size: 1.4rem; margin-bottom: .35rem; }
+  .welcome-card .sub { color: var(--muted); font-size: .9rem; margin-bottom: 1.5rem; }
+  .mode-opt {
+    display: block; width: 100%; text-align: left;
+    background: var(--surface2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 1rem; margin-bottom: .75rem; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .mode-opt:hover { border-color: var(--accent); background: var(--acc-dim); }
+  .mode-opt .ttl { font-weight: 600; font-size: .98rem; margin-bottom: .25rem; }
+  .mode-opt .desc { font-size: .82rem; color: var(--muted); line-height: 1.4; }
+  .privacy-note {
+    margin-top: 1.25rem; padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+    font-size: .78rem; color: var(--muted); line-height: 1.5; text-align: left;
+  }
+  .privacy-note a { color: var(--accent); text-decoration: none; }
+
+  /* ── App footer ── */
+  .footer {
+    margin-top: 2rem; text-align: center;
+    font-size: .75rem; color: var(--muted); line-height: 1.6;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+  .mode-chip {
+    display: inline-flex; align-items: center; gap: .35rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: .25rem .7rem;
+    font-size: .75rem; color: var(--muted); cursor: pointer;
+    margin-left: .5rem;
+  }
+  .mode-chip:hover { border-color: var(--accent); color: var(--text); }
 </style>
 </head>
 <body>
@@ -228,7 +315,46 @@
       <div class="logo">Easy<span>Log</span></div>
       <div class="tagline">Convierte emails de vuelos Ryanair al formato CSV de PilotLog</div>
     </div>
+    <div id="user-chip" class="user-chip hidden">
+      <img id="user-photo" alt="">
+      <span class="name" id="user-name"></span>
+      <button id="btn-logout" title="Cerrar sesión">Salir</button>
+    </div>
   </header>
+
+  <!-- Welcome / mode chooser -->
+  <div id="welcome-overlay" class="auth-overlay hidden">
+    <div class="auth-card welcome-card">
+      <div class="logo" style="font-size:1.6rem; margin-bottom:.35rem;">Easy<span style="color:var(--accent)">Log</span></div>
+      <h2>¿Cómo quieres usar la app?</h2>
+      <div class="sub">Puedes cambiar de modo en cualquier momento.</div>
+      <button class="mode-opt" id="mode-local">
+        <div class="ttl">📱 Solo en este dispositivo</div>
+        <div class="desc">Sin login. Tus vuelos se guardan únicamente en este navegador.</div>
+      </button>
+      <button class="mode-opt" id="mode-cloud">
+        <div class="ttl">☁️ Sincronizar en la nube</div>
+        <div class="desc">Login con Google. Accede a tus vuelos desde cualquier dispositivo.</div>
+      </button>
+      <div class="privacy-note">
+        🔒 EasyLog no recoge ni vende datos. En modo Local tus vuelos no salen del navegador; en modo Nube se guardan en tu cuenta y nadie más puede acceder. <a href="https://github.com/californiakid91/EASYLOG" target="_blank">Código abierto</a>.
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth gate -->
+  <div id="auth-overlay" class="auth-overlay hidden">
+    <div class="auth-card">
+      <div class="logo" style="font-size:1.6rem; margin-bottom:.5rem;">Easy<span style="color:var(--accent)">Log</span></div>
+      <h2>Inicia sesión</h2>
+      <p>Tus vuelos se guardan en la nube y se sincronizan entre tus dispositivos.</p>
+      <button class="btn btn-google" id="btn-login">
+        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.32z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83C6.71 7.31 9.14 5.38 12 5.38z"/></svg>
+        Continuar con Google
+      </button>
+      <div id="auth-err" class="auth-err hidden"></div>
+    </div>
+  </div>
 
   <!-- Rol -->
   <div class="card">
@@ -262,7 +388,7 @@
       <button class="btn btn-ghost" onclick="clearInput()">Limpiar</button>
       <span id="status" class="status hidden"></span>
     </div>
-    <div class="hint">El día se guarda en este navegador (localStorage). Pega de uno en uno.</div>
+    <div class="hint">El día se guarda en la nube y se sincroniza entre tus dispositivos. Pega de uno en uno. <span id="sync-indicator" class="sync-indicator"></span></div>
   </div>
 
   <!-- Historial -->
@@ -285,6 +411,12 @@
       <button class="btn btn-danger" onclick="clearHistory()" id="btn-clear-all">🗑 Borrar historial completo</button>
     </div>
     <div class="hint">Descargar no borra nada. Cuando hayas confirmado el import en PilotLog, pulsa "Borrar historial completo".</div>
+  </div>
+
+  <div class="footer">
+    🔒 EasyLog no recoge ni vende datos de usuarios.
+    <a href="https://github.com/californiakid91/EASYLOG" target="_blank">Código abierto</a>.
+    <span id="mode-chip" class="mode-chip" title="Cambiar modo">📱 Local</span>
   </div>
 
 </div>
@@ -557,21 +689,59 @@ function buildCSV(flightsWithRole) {
   return '﻿' + HEADER + '\r\n' + rows.join('\r\n');
 }
 
-// ─── Storage ──────────────────────────────────────────────────────────────────
+// ─── Storage (mode-aware: local | cloud) ─────────────────────────────────────
 const STORAGE_KEY = 'easylog_history_v1';
+const MODE_KEY    = 'easylog_mode';
 
-function loadHistory() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch (e) {
-    console.warn('History load failed:', e);
-    return {};
+// In-memory cache. Always the source of truth for render functions.
+let _cache = {};
+// Cloud state (populated only when mode === 'cloud')
+let cloud = { app: null, auth: null, db: null, user: null, unsub: null, hydrated: false };
+
+function getMode() { return localStorage.getItem(MODE_KEY); } // 'local' | 'cloud' | null
+function setMode(m) { localStorage.setItem(MODE_KEY, m); }
+
+function loadHistory() { return _cache; }
+
+function saveHistory(h) {
+  _cache = h;
+  const mode = getMode();
+  if (mode === 'cloud') {
+    saveHistoryCloud(h);
+  } else {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h)); }
+    catch (e) { console.warn('Local save failed:', e); }
   }
 }
 
-function saveHistory(h) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(h));
+function hydrateLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    _cache = raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    console.warn('Local hydrate failed:', e);
+    _cache = {};
+  }
+}
+
+async function saveHistoryCloud(h) {
+  if (!cloud.user || !cloud.db) return;
+  setSync('syncing', 'Guardando…');
+  try {
+    const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
+    await setDoc(doc(cloud.db, 'users', cloud.user.uid), { history: h, updatedAt: Date.now() });
+    setSync('ok', 'Sincronizado ✓');
+  } catch (e) {
+    console.error('Cloud save failed:', e);
+    setSync('err', 'Error al sincronizar');
+  }
+}
+
+function setSync(state, msg) {
+  const el = document.getElementById('sync-indicator');
+  if (!el) return;
+  el.className = `sync-indicator ${state || ''}`;
+  el.textContent = msg || '';
 }
 
 // dateISO: "YYYY-MM-DD"
@@ -660,7 +830,7 @@ function clearHistory() {
   if (!days) { showStatus('warn', 'El historial ya está vacío.'); return; }
   const total = Object.values(hist).reduce((s, d) => s + d.flights.length, 0);
   if (!confirm(`¿Borrar TODO el historial? (${days} días, ${total} vuelos)\n\nEsta acción no se puede deshacer.`)) return;
-  localStorage.removeItem(STORAGE_KEY);
+  saveHistory({});
   renderHistory();
   showStatus('ok', 'Historial borrado.');
 }
@@ -788,8 +958,136 @@ function showStatus(type, msg) {
   el.textContent = msg;
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
-renderHistory();
+// ─── Boot: mode chooser + cloud auth ─────────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDypn5llH50vOYn_ldaaeb7reMqn8PR1KU",
+  authDomain: "easylog-ce18d.firebaseapp.com",
+  projectId: "easylog-ce18d",
+  storageBucket: "easylog-ce18d.firebasestorage.app",
+  messagingSenderId: "838500561836",
+  appId: "1:838500561836:web:eceda293d5d34ddeeb0009"
+};
+
+function showWelcome() {
+  document.getElementById('welcome-overlay').classList.remove('hidden');
+  document.getElementById('auth-overlay').classList.add('hidden');
+}
+function hideWelcome() { document.getElementById('welcome-overlay').classList.add('hidden'); }
+function showAuth(err) {
+  document.getElementById('auth-overlay').classList.remove('hidden');
+  const e = document.getElementById('auth-err');
+  if (err) { e.textContent = err; e.classList.remove('hidden'); }
+  else     { e.classList.add('hidden'); }
+}
+function hideAuth() { document.getElementById('auth-overlay').classList.add('hidden'); }
+
+function updateModeChip() {
+  const chip = document.getElementById('mode-chip');
+  if (!chip) return;
+  const mode = getMode();
+  chip.textContent = mode === 'cloud' ? '☁️ Nube' : '📱 Local';
+}
+
+function applyLocalMode() {
+  hideWelcome(); hideAuth();
+  document.getElementById('user-chip').classList.add('hidden');
+  hydrateLocal();
+  renderHistory();
+  updateModeChip();
+  setSync('', '');
+}
+
+async function applyCloudMode() {
+  hideWelcome();
+  setSync('syncing', 'Cargando nube…');
+  try {
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js');
+    const authMod = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js');
+    const fsMod   = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
+
+    cloud.app  = initializeApp(FIREBASE_CONFIG);
+    cloud.auth = authMod.getAuth(cloud.app);
+    cloud.db   = fsMod.getFirestore(cloud.app);
+    await authMod.setPersistence(cloud.auth, authMod.browserLocalPersistence);
+
+    authMod.onAuthStateChanged(cloud.auth, async (u) => {
+      if (!u) {
+        cloud.user = null;
+        if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
+        _cache = {};
+        renderHistory();
+        document.getElementById('user-chip').classList.add('hidden');
+        showAuth();
+        return;
+      }
+      cloud.user = u;
+      hideAuth();
+      // user chip
+      document.getElementById('user-photo').src = u.photoURL || '';
+      document.getElementById('user-name').textContent = u.displayName || u.email || 'Usuario';
+      document.getElementById('user-chip').classList.remove('hidden');
+      updateModeChip();
+
+      // live subscription to user's history doc
+      setSync('syncing', 'Sincronizando…');
+      const ref = fsMod.doc(cloud.db, 'users', u.uid);
+      cloud.unsub = fsMod.onSnapshot(ref, (snap) => {
+        _cache = (snap.exists() && snap.data().history) ? snap.data().history : {};
+        cloud.hydrated = true;
+        renderHistory();
+        setSync('ok', 'Sincronizado ✓');
+      }, (err) => {
+        console.error('Snapshot error:', err);
+        setSync('err', 'Error al cargar');
+      });
+    });
+
+    // login button
+    document.getElementById('btn-login').onclick = async () => {
+      try {
+        await authMod.signInWithPopup(cloud.auth, new authMod.GoogleAuthProvider());
+      } catch (e) {
+        showAuth(e.code === 'auth/popup-closed-by-user' ? 'Login cancelado.' : 'Error al iniciar sesión.');
+      }
+    };
+    // logout
+    document.getElementById('btn-logout').onclick = async () => {
+      if (!confirm('¿Cerrar sesión? Tus datos siguen en la nube.')) return;
+      await authMod.signOut(cloud.auth);
+    };
+  } catch (e) {
+    console.error('Firebase load failed:', e);
+    showAuth('No se pudo cargar Firebase. Comprueba tu conexión.');
+  }
+}
+
+function switchMode() {
+  const current = getMode();
+  const other = current === 'cloud' ? 'local' : 'cloud';
+  const msg = other === 'cloud'
+    ? 'Cambiar a modo Nube. Tus datos actuales se quedan en este navegador; si quieres subirlos, expórtalos antes y vuelve a importarlos manualmente.\n\n¿Continuar?'
+    : 'Cambiar a modo Local. Verás solo los datos guardados en este navegador (no los de la nube).\n\n¿Continuar?';
+  if (!confirm(msg)) return;
+  // tear down cloud listener if any
+  if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
+  _cache = {};
+  setMode(other);
+  if (other === 'local') applyLocalMode();
+  else applyCloudMode();
+}
+
+// Welcome buttons
+document.getElementById('mode-local').onclick = () => { setMode('local'); applyLocalMode(); };
+document.getElementById('mode-cloud').onclick = () => { setMode('cloud'); applyCloudMode(); };
+document.getElementById('mode-chip').onclick  = switchMode;
+
+// Boot
+(function boot() {
+  const mode = getMode();
+  if (!mode) { showWelcome(); renderHistory(); return; }
+  if (mode === 'cloud') applyCloudMode();
+  else applyLocalMode();
+})();
 </script>
 </body>
 </html>

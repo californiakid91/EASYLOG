@@ -978,6 +978,8 @@ function routeOfDay(flights) {
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
 function tryParseUKDaysCommand(text) {
+  // Nunca tratar un email de vuelo Ryanair como comando
+  if (/FlightNumber\s*:/i.test(text)) return null;
   const t = text.trim().toLowerCase();
   if (!t.includes('uk') || !/days?/i.test(t)) return null;
   if (!/añade?|agrega?|\badd\b/i.test(t)) return null;
@@ -1336,6 +1338,35 @@ function isUKDay(flight, isoDate) {
   return Date.UTC(ld.getUTCFullYear(), ld.getUTCMonth(), ld.getUTCDate()) === Date.UTC(y, mo - 1, day);
 }
 
+function backfillUKDays() {
+  const hist = loadHistory();
+  const updated = { ..._ukdays };
+  let changed = false;
+  Object.keys(hist).forEach(iso => {
+    if (iso < UK_DAYS_START || iso > UK_DAYS_END || updated[iso]) return;
+    const day = hist[iso];
+    if (!day.flights || !day.flights.length) return;
+    const sorted = [...day.flights].sort((a, b) =>
+      +((a.d['Off Block'] || '00:00').replace(':', '')) -
+      +((b.d['Off Block'] || '00:00').replace(':', ''))
+    );
+    const lastFlight = sorted[sorted.length - 1];
+    if (!isUKDay(lastFlight, iso)) return;
+    const fd = lastFlight.d;
+    const offsetMin = ukOffsetMin(iso);
+    const utc = buildUTCOnBlock(iso, fd['On Block'], fd['Off Block']);
+    let onBlock = fd['On Block'] || '--:--';
+    if (utc) {
+      const ld = new Date(utc.getTime() + offsetMin * 60000);
+      onBlock = `${String(ld.getUTCHours()).padStart(2,'0')}:${String(ld.getUTCMinutes()).padStart(2,'0')}`;
+    }
+    const [dep, arr] = (fd['City Pair'] || '').split(' - ');
+    updated[iso] = { route: arr ? `${dep}→${arr}` : dep || '—', onBlock, tz: offsetMin ? 'BST' : 'GMT' };
+    changed = true;
+  });
+  if (changed) saveUKDays(updated);
+}
+
 function renderUKDays() {
   const host = document.getElementById('ukdays-body');
   if (!host) return;
@@ -1497,6 +1528,7 @@ function applyLocalMode() {
   hideWelcome(); hideAuth();
   document.getElementById('user-chip').classList.add('hidden');
   hydrateLocal();
+  backfillUKDays();
   renderHistory();
   renderAirports();
   updateModeChip();
@@ -1542,6 +1574,7 @@ async function applyCloudMode() {
         _cache    = data.history  || {};
         _airports = data.airports || {};
         _ukdays   = data.ukdays   || {};
+        backfillUKDays();
         cloud.hydrated = true;
         renderHistory();
         renderAirports();

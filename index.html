@@ -403,8 +403,17 @@
     <div id="history"></div>
   </div>
 
-  <!-- Aeropuertos personalizados -->
-  <div class="card" id="airports-card">
+  <!-- UK Days -->
+  <div class="card">
+    <div class="card-title">
+      <span>🇬🇧 UK Days</span>
+      <span class="count" id="ukdays-count"></span>
+    </div>
+    <div id="ukdays-body"></div>
+  </div>
+
+  <!-- Aeropuertos personalizados (oculto — se gestiona via prompt al añadir días) -->
+  <div class="card" id="airports-card" style="display:none;">
     <div class="card-title" style="cursor:pointer;" onclick="toggleAirportsCard()">
       <span>✈️ Aeropuertos personalizados <span id="airports-count" class="count"></span></span>
       <span id="airports-chev" style="color:var(--muted);">▾</span>
@@ -867,11 +876,13 @@ function buildCSV(flightsWithRole) {
 // ─── Storage (mode-aware: local | cloud) ─────────────────────────────────────
 const STORAGE_KEY   = 'easylog_history_v1';
 const AIRPORTS_KEY  = 'easylog_airports_v1';
+const UK_DAYS_KEY   = 'easylog_ukdays_v1';
 const MODE_KEY      = 'easylog_mode';
 
 // In-memory state. Always the source of truth for render functions.
-let _cache = {};         // history: { iso: { addedAt, role, flights } }
-let _airports = {};      // custom airports: { IATA: { lat, lon } }
+let _cache    = {};  // history: { iso: { addedAt, role, flights } }
+let _airports = {};  // custom airports: { IATA: { lat, lon } }
+let _ukdays   = {};  // UK Days: { iso: { route, onBlock, tz } } — persiste aunque se borre el historial
 // Cloud state (populated only when mode === 'cloud')
 let cloud = { app: null, auth: null, db: null, user: null, unsub: null, hydrated: false };
 
@@ -888,6 +899,7 @@ function resolveAirport(iata) {
 
 function saveHistory(h) { _cache = h; persist(); }
 function saveAirports(a) { _airports = a; persist(); }
+function saveUKDays(u)   { _ukdays = u; persist(); }
 
 function persist() {
   const mode = getMode();
@@ -897,6 +909,7 @@ function persist() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(_cache));
       localStorage.setItem(AIRPORTS_KEY, JSON.stringify(_airports));
+      localStorage.setItem(UK_DAYS_KEY, JSON.stringify(_ukdays));
     } catch (e) { console.warn('Local save failed:', e); }
   }
 }
@@ -907,9 +920,11 @@ function hydrateLocal() {
     _cache = h ? JSON.parse(h) : {};
     const a = localStorage.getItem(AIRPORTS_KEY);
     _airports = a ? JSON.parse(a) : {};
+    const u = localStorage.getItem(UK_DAYS_KEY);
+    _ukdays = u ? JSON.parse(u) : {};
   } catch (e) {
     console.warn('Local hydrate failed:', e);
-    _cache = {}; _airports = {};
+    _cache = {}; _airports = {}; _ukdays = {};
   }
 }
 
@@ -919,7 +934,7 @@ async function persistCloud() {
   try {
     const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
     await setDoc(doc(cloud.db, 'users', cloud.user.uid), {
-      history: _cache, airports: _airports, updatedAt: Date.now()
+      history: _cache, airports: _airports, ukdays: _ukdays, updatedAt: Date.now()
     });
     setSync('ok', 'Sincronizado ✓');
   } catch (e) {
@@ -962,9 +977,73 @@ function routeOfDay(flights) {
 }
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
+function tryParseUKDaysCommand(text) {
+  const t = text.trim().toLowerCase();
+  if (!t.includes('uk') || !/days?/i.test(t)) return null;
+  if (!/añade?|agrega?|\badd\b/i.test(t)) return null;
+
+  const MONTHS = {
+    enero:1,ene:1,january:1,jan:1,
+    febrero:2,feb:2,february:2,
+    marzo:3,mar:3,march:3,
+    abril:4,abr:4,april:4,apr:4,
+    mayo:5,may:5,
+    junio:6,jun:6,june:6,
+    julio:7,jul:7,july:7,
+    agosto:8,ago:8,august:8,aug:8,
+    septiembre:9,sep:9,september:9,
+    octubre:10,oct:10,october:10,
+    noviembre:11,nov:11,november:11,
+    diciembre:12,dic:12,december:12,
+  };
+
+  let month = null;
+  for (const [name, num] of Object.entries(MONTHS)) {
+    if (t.includes(name)) { month = num; break; }
+  }
+  if (!month) return null;
+
+  // Infer year from UK Days range: may-dec → 2026, jan-mar → 2027, apr → 2026
+  const year = (month >= 1 && month <= 3) ? 2027 : 2026;
+
+  // Extract day numbers (1-2 digits surrounded by word boundaries)
+  const days = [...t.matchAll(/\b(\d{1,2})\b/g)]
+    .map(m => Number(m[1]))
+    .filter(n => n >= 1 && n <= 31);
+
+  if (!days.length) return null;
+
+  const dates = days
+    .map(d => `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`)
+    .filter(iso => iso >= UK_DAYS_START && iso <= UK_DAYS_END);
+
+  return dates.length ? { dates } : null;
+}
+
 function addDay() {
   const text = document.getElementById('input').value;
   if (!text.trim()) { showStatus('err', 'Pega el contenido del email primero.'); return; }
+
+  // ── Comando manual UK Days ──
+  const ukCmd = tryParseUKDaysCommand(text);
+  if (ukCmd) {
+    const added = [], skipped = [];
+    const updated = { ..._ukdays };
+    ukCmd.dates.forEach(iso => {
+      if (_ukdays[iso]) { skipped.push(dateISOToDisplay(iso)); return; }
+      updated[iso] = { route: '—', onBlock: '--:--', tz: ukOffsetMin(iso) ? 'BST' : 'GMT', manual: true };
+      added.push(dateISOToDisplay(iso));
+    });
+    if (added.length) saveUKDays(updated);
+    renderUKDays();
+    document.getElementById('input').value = '';
+    showStatus(added.length ? 'ok' : 'warn',
+      added.length
+        ? `UK Days añadidos: ${added.join(', ')}${skipped.length ? ` · ya existían: ${skipped.join(', ')}` : ''}.`
+        : `Ya estaban registrados: ${skipped.join(', ')}.`
+    );
+    return;
+  }
 
   const { flights, warnings } = parseText(text);
 
@@ -998,12 +1077,53 @@ function addDay() {
   };
   saveHistory(hist);
 
+  // Detectar y registrar UK Day de forma permanente
+  if (iso >= UK_DAYS_START && iso <= UK_DAYS_END && !_ukdays[iso]) {
+    const sorted = [...flights].sort((a, b) =>
+      +(( a.d['Off Block'] || '00:00').replace(':','')) -
+      +((b.d['Off Block'] || '00:00').replace(':',''))
+    );
+    const lastFlight = sorted[sorted.length - 1];
+    if (isUKDay(lastFlight, iso)) {
+      const fd = lastFlight.d;
+      const offsetMin = ukOffsetMin(iso);
+      const utc = buildUTCOnBlock(iso, fd['On Block'], fd['Off Block']);
+      let onBlock = fd['On Block'] || '--:--';
+      if (utc) {
+        const ld = new Date(utc.getTime() + offsetMin * 60000);
+        onBlock = `${String(ld.getUTCHours()).padStart(2,'0')}:${String(ld.getUTCMinutes()).padStart(2,'0')}`;
+      }
+      const [dep, arr] = (fd['City Pair'] || '').split(' - ');
+      saveUKDays({ ..._ukdays, [iso]: {
+        route: arr ? `${dep}→${arr}` : dep || '—',
+        onBlock,
+        tz: offsetMin ? 'BST' : 'GMT',
+      }});
+    }
+  }
+
   document.getElementById('input').value = '';
   renderHistory();
   const warnMsg = warnings.length ? ` (${warnings.length} aviso${warnings.length !== 1 ? 's' : ''})` : '';
   const unknown = unknownAirportsInFlights(flights);
   if (unknown.length) {
-    showStatus('warn', `${flights.length} vuelos añadidos. Aeropuerto${unknown.length>1?'s':''} desconocido${unknown.length>1?'s':''}: ${unknown.join(', ')} — añade abajo sus coords para detectar noche.`);
+    const saved = [];
+    for (const iata of unknown) {
+      const latStr = prompt(`Aeropuerto ${iata} no encontrado en la base de datos.\n\nIntroduce la latitud (ej. 51.885):`);
+      if (latStr === null) break;
+      const lonStr = prompt(`Aeropuerto ${iata} — ahora la longitud (ej. -0.368):`);
+      if (lonStr === null) break;
+      const la = parseFloat(latStr), lo = parseFloat(lonStr);
+      if (!isNaN(la) && !isNaN(lo) && isFinite(la) && isFinite(lo)) {
+        _airports = { ..._airports, [iata]: { lat: la, lon: lo } };
+        saved.push(iata);
+      }
+    }
+    if (saved.length) { saveAirports(_airports); renderHistory(); }
+    const skipMsg = unknown.length > saved.length
+      ? ` (${unknown.filter(x => !saved.includes(x)).join(', ')} sin coords — detección de noche desactivada para esos aeropuertos)`
+      : '';
+    showStatus('ok', `${flights.length} vuelo${flights.length !== 1 ? 's' : ''} añadidos al ${dateISOToDisplay(iso)}${warnMsg}${skipMsg}.`);
   } else {
     showStatus('ok', `${flights.length} vuelo${flights.length !== 1 ? 's' : ''} añadidos al ${dateISOToDisplay(iso)}${warnMsg}.`);
   }
@@ -1171,6 +1291,102 @@ function unknownAirportsInFlights(flights) {
   return [...seen];
 }
 
+// ─── UK Days ──────────────────────────────────────────────────────────────────
+const UK_DAYS_START = '2026-04-06';
+const UK_DAYS_END   = '2027-04-07';
+
+function lastSundayOf(year, month0) {
+  const lastDay = new Date(Date.UTC(year, month0 + 1, 0));
+  const dow = lastDay.getUTCDay();
+  return new Date(Date.UTC(year, month0 + 1, -dow));
+}
+
+function ukOffsetMin(isoDate) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d, 12));
+  const bstStart = lastSundayOf(y, 2); // último domingo de marzo
+  const bstEnd   = lastSundayOf(y, 9); // último domingo de octubre
+  return (date >= bstStart && date < bstEnd) ? 60 : 0;
+}
+
+function buildUTCOnBlock(isoDate, onBlockStr, offBlockStr) {
+  const m = onBlockStr && onBlockStr.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const h = +m[1], min = +m[2];
+  const [y, mo, d] = isoDate.split('-').map(Number);
+  let dt = new Date(Date.UTC(y, mo - 1, d, h, min));
+  if (offBlockStr) {
+    const om = offBlockStr.match(/^(\d{1,2}):(\d{2})$/);
+    if (om) {
+      const offMin = +om[1] * 60 + +om[2];
+      if (h * 60 + min < offMin) dt = new Date(dt.getTime() + 86400000);
+    }
+  }
+  return dt;
+}
+
+function isUKDay(flight, isoDate) {
+  const d = flight.d;
+  const utc = buildUTCOnBlock(isoDate, d['On Block'], d['Off Block']);
+  if (!utc) return false;
+  const localMs = utc.getTime() + ukOffsetMin(isoDate) * 60000;
+  const ld = new Date(localMs);
+  const [y, mo, day] = isoDate.split('-').map(Number);
+  // UK Day: on block local = mismo día que el vuelo (antes de medianoche LT)
+  return Date.UTC(ld.getUTCFullYear(), ld.getUTCMonth(), ld.getUTCDate()) === Date.UTC(y, mo - 1, day);
+}
+
+function renderUKDays() {
+  const host = document.getElementById('ukdays-body');
+  if (!host) return;
+  const isoList = Object.keys(_ukdays).sort();
+  const countEl = document.getElementById('ukdays-count');
+  if (countEl) countEl.textContent = `${isoList.length} día${isoList.length !== 1 ? 's' : ''}`;
+
+  if (!isoList.length) {
+    host.innerHTML = `<div class="empty">Sin días UK aún. Los días en que el último vuelo bloquea antes de medianoche LT aparecerán aquí.</div>`;
+    return;
+  }
+
+  const byMonth = {};
+  isoList.forEach(iso => {
+    const mk = monthKey(iso);
+    (byMonth[mk] = byMonth[mk] || []).push(iso);
+  });
+
+  host.innerHTML = Object.keys(byMonth).sort().map(mk => {
+    const entries = byMonth[mk];
+    const items = entries.map(iso => {
+      const { route, onBlock, tz } = _ukdays[iso];
+      return `
+        <div class="day-item">
+          <span class="day-date">${dateISOToDisplay(iso)}</span>
+          <span class="day-route">${route}</span>
+          <span class="day-count" style="color:var(--green);">OB ${onBlock} ${tz}</span>
+        </div>`;
+    }).join('');
+    return `
+      <div class="month-group" data-ukmonth="${mk}">
+        <div class="month-header" onclick="toggleUKMonth('${mk}')">
+          <span class="chev">▾</span>
+          <span>${monthLabel(mk)}</span>
+          <span class="meta">${entries.length} día${entries.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="day-list">${items}</div>
+      </div>`;
+  }).join('');
+}
+
+function toggleUKMonth(mk) {
+  const group = document.querySelector(`[data-ukmonth="${mk}"]`);
+  if (!group) return;
+  const list = group.querySelector('.day-list');
+  const chev = group.querySelector('.chev');
+  const collapsed = list.style.display === 'none';
+  list.style.display = collapsed ? '' : 'none';
+  chev.style.transform = collapsed ? '' : 'rotate(-90deg)';
+}
+
 // ─── Render ───────────────────────────────────────────────────────────────────
 function renderHistory() {
   const hist = loadHistory();
@@ -1232,6 +1448,7 @@ function renderHistory() {
         <div class="day-list">${items}</div>
       </div>`;
   }).join('');
+  renderUKDays();
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1324,6 +1541,7 @@ async function applyCloudMode() {
         const data = snap.exists() ? snap.data() : {};
         _cache    = data.history  || {};
         _airports = data.airports || {};
+        _ukdays   = data.ukdays   || {};
         cloud.hydrated = true;
         renderHistory();
         renderAirports();

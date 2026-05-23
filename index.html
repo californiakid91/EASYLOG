@@ -1130,9 +1130,10 @@ async function persistCloud() {
   setSync('syncing', 'Guardando…');
   try {
     const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
+    // merge:true preserva dayMap en Firestore — dayMap se guarda por separado en saveDayMap()
     await setDoc(doc(cloud.db, 'users', cloud.user.uid), {
-      history: _cache, excelData: _excelData, airports: _airports, ukdays: _ukdays, dayMap: _dayMap, updatedAt: Date.now()
-    });
+      history: _cache, excelData: _excelData, airports: _airports, ukdays: _ukdays, updatedAt: Date.now()
+    }, { merge: true });
     setSync('ok', 'Sincronizado ✓');
   } catch (e) {
     console.error('Cloud save failed:', e);
@@ -2122,7 +2123,13 @@ function saveDayMap() {
   localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap));
   if (getMode() === 'cloud') {
     _dayMapSaving = true;
-    persistCloud().finally(() => { setTimeout(() => { _dayMapSaving = false; }, 3000); });
+    (async () => {
+      try {
+        const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
+        await setDoc(doc(cloud.db, 'users', cloud.user.uid), { dayMap: _dayMap }, { merge: true });
+      } catch (e) { console.warn('saveDayMap cloud failed:', e); }
+      finally { setTimeout(() => { _dayMapSaving = false; }, 2000); }
+    })();
   }
 }
 

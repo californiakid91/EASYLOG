@@ -417,9 +417,12 @@
 
   <!-- UK Days -->
   <div class="card">
-    <div class="card-title">
+    <div class="card-title" style="cursor:pointer;" onclick="toggleUKDays()">
       <span>🇬🇧 UK Days</span>
-      <span class="count" id="ukdays-count"></span>
+      <span style="display:flex;align-items:center;gap:.5rem;">
+        <span class="count" id="ukdays-count"></span>
+        <span id="ukdays-chev" style="color:var(--muted);transition:transform .2s;transform:rotate(-90deg);">▾</span>
+      </span>
     </div>
     <div style="display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap;">
       <button class="btn btn-blue btn-sm" onclick="addTodayAsUKDay()">+ Añadir hoy</button>
@@ -1457,39 +1460,51 @@ function renderUKDays() {
       <div class="uk-status ${cls}">${statusText}</div>
     </div>`;
 
+  let monthsHTML = '';
   if (!isoList.length) {
-    host.innerHTML = progressHTML + `<div class="empty">Sin días UK aún. Los días en que el último vuelo bloquea antes de medianoche LT aparecerán aquí.</div>`;
-    return;
-  }
-
-  const byMonth = {};
-  isoList.forEach(iso => {
-    const mk = monthKey(iso);
-    (byMonth[mk] = byMonth[mk] || []).push(iso);
-  });
-
-  host.innerHTML = progressHTML + Object.keys(byMonth).sort().map(mk => {
-    const entries = byMonth[mk];
-    const items = entries.map(iso => {
-      const { route, onBlock, tz } = _ukdays[iso];
+    monthsHTML = `<div class="empty">Sin días UK aún. Los días en que el último vuelo bloquea antes de medianoche LT aparecerán aquí.</div>`;
+  } else {
+    const byMonth = {};
+    isoList.forEach(iso => {
+      const mk = monthKey(iso);
+      (byMonth[mk] = byMonth[mk] || []).push(iso);
+    });
+    monthsHTML = Object.keys(byMonth).sort().map(mk => {
+      const entries = byMonth[mk];
+      const items = entries.map(iso => {
+        const { route, onBlock, tz } = _ukdays[iso];
+        return `
+          <div class="day-item">
+            <span class="day-date">${dateISOToDisplay(iso)}</span>
+            <span class="day-route">${route}</span>
+            <span class="day-count" style="color:var(--green);">OB ${onBlock} ${tz}</span>
+            <button class="day-del" title="Eliminar UK Day" onclick="removeUKDay('${iso}')">✕</button>
+          </div>`;
+      }).join('');
       return `
-        <div class="day-item">
-          <span class="day-date">${dateISOToDisplay(iso)}</span>
-          <span class="day-route">${route}</span>
-          <span class="day-count" style="color:var(--green);">OB ${onBlock} ${tz}</span>
-          <button class="day-del" title="Eliminar UK Day" onclick="removeUKDay('${iso}')">✕</button>
+        <div class="month-group" data-ukmonth="${mk}">
+          <div class="month-header" onclick="toggleUKMonth('${mk}')">
+            <span class="chev" style="transform:rotate(-90deg)">▾</span>
+            <span>${monthLabel(mk)}</span>
+            <span class="meta">${entries.length} día${entries.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="day-list" style="display:none">${items}</div>
         </div>`;
     }).join('');
-    return `
-      <div class="month-group" data-ukmonth="${mk}">
-        <div class="month-header" onclick="toggleUKMonth('${mk}')">
-          <span class="chev" style="transform:rotate(-90deg)">▾</span>
-          <span>${monthLabel(mk)}</span>
-          <span class="meta">${entries.length} día${entries.length !== 1 ? 's' : ''}</span>
-        </div>
-        <div class="day-list" style="display:none">${items}</div>
-      </div>`;
-  }).join('');
+  }
+
+  const prevOpen = document.getElementById('ukdays-months')?.style.display !== 'none';
+  host.innerHTML = progressHTML +
+    `<div id="ukdays-months" style="display:${prevOpen ? 'block' : 'none'}">${monthsHTML}</div>`;
+}
+
+function toggleUKDays() {
+  const el   = document.getElementById('ukdays-months');
+  const chev = document.getElementById('ukdays-chev');
+  if (!el) return;
+  const open = el.style.display === 'none';
+  el.style.display  = open ? 'block' : 'none';
+  if (chev) chev.style.transform = open ? 'rotate(0deg)' : 'rotate(-90deg)';
 }
 
 function addTodayAsUKDay() {

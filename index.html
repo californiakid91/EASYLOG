@@ -2025,7 +2025,8 @@ function downloadTaxExcel() {
         const blk  = f.d?.['Total Block']    || '';
         const offB = f.d?.['Off Block']      || '';
         const onB  = f.d?.['On Block']       || '';
-        const fNo  = f.d?.['Flight Number']  || '';
+        const fNoRaw = (f.d?.['FlightNumber'] || f.d?.['Flight Number'] || '').replace(/\s+/g,'');
+        const fNo  = fNoRaw && !fNoRaw.toUpperCase().startsWith('FR') ? 'FR' + fNoRaw : fNoRaw;
 
         const r = new Array(22).fill('');
         r[0] = serial;

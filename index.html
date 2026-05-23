@@ -385,6 +385,77 @@
     margin-left: .5rem;
   }
   .mode-chip:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ── Calendar ── */
+  .cal-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .cal-arrow {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); cursor: pointer; font-size: 1.3rem; line-height: 1;
+    padding: .15rem .55rem; transition: border-color .15s, color .15s;
+  }
+  .cal-arrow:hover { border-color: var(--accent); color: var(--accent); }
+  #cal-title { font-weight: 700; font-size: 1rem; letter-spacing: .01em; }
+  .cal-dow {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    margin-bottom: .3rem;
+  }
+  .cal-dow span {
+    text-align: center; font-size: .68rem; font-weight: 700;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .06em;
+  }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-day {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; cursor: pointer; font-size: .82rem; font-weight: 500;
+    border: 1.5px solid transparent; transition: border-color .12s, background .12s;
+    user-select: none;
+  }
+  .cal-day:hover:not(.other-month) { border-color: var(--accent); }
+  .cal-day.other-month { opacity: .2; pointer-events: none; }
+  .cal-day.today { border-color: var(--accent) !important; font-weight: 800; }
+  .cal-day.s-off  { background: rgba(110,118,129,.30); color: var(--muted); }
+  .cal-day.s-stby { background: rgba(210,153,34,.25);  color: var(--amber); font-weight: 700; }
+  .cal-day.s-duty { background: rgba(10,40,100,.70);   color: #a0c0f8;      font-weight: 700; }
+
+  /* ── Day modal (bottom sheet) ── */
+  .day-modal {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.55); display: flex;
+    align-items: flex-end; justify-content: center;
+  }
+  .day-modal.hidden { display: none; }
+  .day-modal-box {
+    background: var(--surface); border-radius: 18px 18px 0 0;
+    padding: 1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom));
+    width: 100%; max-width: 480px; text-align: center;
+  }
+  .day-modal-handle {
+    width: 36px; height: 4px; background: var(--border);
+    border-radius: 2px; margin: 0 auto .75rem;
+  }
+  .day-modal-date {
+    font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; color: var(--text);
+  }
+  .day-opts { display: flex; gap: .75rem; justify-content: center; }
+  .day-opt {
+    flex: 1; padding: .85rem .4rem; border-radius: 12px;
+    border: 2px solid; cursor: pointer; font-size: .88rem; font-weight: 700;
+    transition: opacity .12s, transform .1s; text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .day-opt:active { transform: scale(.96); }
+  .day-opt.opt-off  { background: rgba(110,118,129,.18); color: var(--muted); border-color: var(--border); }
+  .day-opt.opt-stby { background: rgba(210,153,34,.15);  color: var(--amber); border-color: var(--amber); }
+  .day-opt.opt-duty { background: rgba(10,40,100,.55);   color: #a0c0f8;      border-color: #2f5cb8; }
+  .day-opt.selected { opacity: 1; filter: brightness(1.2); }
+  .day-modal-cancel {
+    margin-top: .9rem; background: none; border: none;
+    color: var(--muted); cursor: pointer; font-size: .85rem; width: 100%;
+    padding: .4rem;
+  }
 </style>
 </head>
 <body>
@@ -445,6 +516,19 @@
       </button>
       <div id="auth-err" class="auth-err hidden"></div>
     </div>
+  </div>
+
+  <!-- Calendario -->
+  <div class="card" id="cal-card">
+    <div class="cal-nav">
+      <button class="cal-arrow" onclick="calPrev()">‹</button>
+      <span id="cal-title"></span>
+      <button class="cal-arrow" onclick="calNext()">›</button>
+    </div>
+    <div class="cal-dow">
+      <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+    </div>
+    <div id="cal-grid" class="cal-grid"></div>
   </div>
 
   <!-- UK Days -->
@@ -529,6 +613,20 @@
         <div><div class="role-label" style="font-size:.85rem;">Comandante</div></div>
         <span class="badge">CPT</span>
       </label>
+    </div>
+  </div>
+
+  <!-- Day modal -->
+  <div id="day-modal" class="day-modal hidden" onclick="closeDayModal()">
+    <div class="day-modal-box" onclick="event.stopPropagation()">
+      <div class="day-modal-handle"></div>
+      <div class="day-modal-date" id="day-modal-date"></div>
+      <div class="day-opts">
+        <button class="day-opt opt-off"  onclick="setDayStatus('off')">OFF</button>
+        <button class="day-opt opt-stby" onclick="setDayStatus('stby')">STBY</button>
+        <button class="day-opt opt-duty" onclick="setDayStatus('duty')">DUTY</button>
+      </div>
+      <button class="day-modal-cancel" onclick="closeDayModal()">Cancelar</button>
     </div>
   </div>
 
@@ -1825,6 +1923,101 @@ function toggleTheme() {
   if (mode === 'cloud') applyCloudMode();
   else applyLocalMode();
 })();
+
+// ─── Calendar ────────────────────────────────────────────────────────────────
+const CAL_KEY = 'easylog_days_v1';
+const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DAYS_ES   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MESES_ES  = ['enero','febrero','marzo','abril','mayo','junio',
+                   'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+let _calYear  = new Date().getFullYear();
+let _calMonth = new Date().getMonth();
+let _calSel   = null;
+let _dayMap   = {};  // { 'YYYY-MM-DD': 'off'|'stby'|'duty' }
+
+function loadDayMap() {
+  try { _dayMap = JSON.parse(localStorage.getItem(CAL_KEY) || '{}'); } catch { _dayMap = {}; }
+}
+function saveDayMap() { localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap)); }
+
+function renderCalendar() {
+  const grid  = document.getElementById('cal-grid');
+  const title = document.getElementById('cal-title');
+  if (!grid) return;
+
+  title.textContent = `${MONTHS_ES[_calMonth]} ${_calYear}`;
+
+  const today    = new Date();
+  const firstDay = new Date(_calYear, _calMonth, 1);
+  const lastDay  = new Date(_calYear, _calMonth + 1, 0);
+  const prevLast = new Date(_calYear, _calMonth, 0);
+
+  let startDow = firstDay.getDay(); // 0=Sun
+  startDow = startDow === 0 ? 6 : startDow - 1; // Mon=0
+
+  let html = '';
+
+  for (let i = startDow - 1; i >= 0; i--)
+    html += `<div class="cal-day other-month">${prevLast.getDate() - i}</div>`;
+
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const iso = `${_calYear}-${String(_calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = d === today.getDate() && _calMonth === today.getMonth() && _calYear === today.getFullYear();
+    const st = _dayMap[iso] || '';
+    const cls = ['cal-day', isToday ? 'today' : '', st ? `s-${st}` : ''].filter(Boolean).join(' ');
+    html += `<div class="${cls}" onclick="openDayModal('${iso}')">${d}</div>`;
+  }
+
+  const endDow = lastDay.getDay();
+  const tail   = endDow === 0 ? 0 : 7 - endDow;
+  for (let i = 1; i <= tail; i++)
+    html += `<div class="cal-day other-month">${i}</div>`;
+
+  grid.innerHTML = html;
+}
+
+function calPrev() {
+  if (_calMonth === 0) { _calMonth = 11; _calYear--; } else _calMonth--;
+  renderCalendar();
+}
+function calNext() {
+  if (_calMonth === 11) { _calMonth = 0; _calYear++; } else _calMonth++;
+  renderCalendar();
+}
+
+function openDayModal(iso) {
+  _calSel = iso;
+  const [y, m, d] = iso.split('-');
+  const dt = new Date(+y, +m - 1, +d);
+  document.getElementById('day-modal-date').textContent =
+    `${DAYS_ES[dt.getDay()]} ${+d} de ${MESES_ES[+m - 1]} de ${y}`;
+
+  const cur = _dayMap[iso];
+  ['off','stby','duty'].forEach(s => {
+    document.querySelector(`.opt-${s}`)?.classList.toggle('selected', cur === s);
+  });
+
+  document.getElementById('day-modal').classList.remove('hidden');
+}
+
+function closeDayModal() {
+  document.getElementById('day-modal').classList.add('hidden');
+  _calSel = null;
+}
+
+function setDayStatus(status) {
+  if (!_calSel) return;
+  if (_dayMap[_calSel] === status) delete _dayMap[_calSel];
+  else _dayMap[_calSel] = status;
+  saveDayMap();
+  closeDayModal();
+  renderCalendar();
+}
+
+loadDayMap();
+renderCalendar();
 
 (function() {
   const slides = Array.from(document.querySelectorAll('.bg-slide'));

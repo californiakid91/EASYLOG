@@ -41,7 +41,7 @@ Documento de referencia para rellenar el Excel TAX YEAR desde emails de vuelo Ry
 | Columna | Valor |
 |---|---|
 | FLIGHT NO | `SIM` |
-| UK TRAINING | 05:00 (automático) |
+| UK TRAINING | rellenar manualmente (variable) |
 | UW | 1 (primera fila) |
 | U | 1 (primera fila) |
 

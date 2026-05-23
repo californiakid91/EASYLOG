@@ -83,11 +83,31 @@
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg);
+    background: transparent;
     color: var(--text);
     min-height: 100vh;
     padding: 2rem 1rem 4rem;
   }
+  #bg-tint {
+    position: fixed; inset: 0; z-index: -1;
+    background: var(--bg); opacity: .80;
+    pointer-events: none;
+    transition: background .3s;
+  }
+  #bg-rotator {
+    position: fixed; inset: 0; z-index: -2;
+    overflow: hidden;
+  }
+  .bg-slide {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+    filter: blur(10px) brightness(.75);
+    transform: scale(1.08);
+    opacity: 0;
+    transition: opacity 2.5s ease-in-out;
+    will-change: opacity;
+  }
+  .bg-slide.active { opacity: 1; }
 
   .wrap { max-width: 1100px; margin: 0 auto; }
 
@@ -364,6 +384,14 @@
 </style>
 </head>
 <body>
+<div id="bg-tint"></div>
+<div id="bg-rotator">
+  <div class="bg-slide active" style="background-image:url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1920&q=80')"></div>
+  <div class="bg-slide" style="background-image:url('https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?auto=format&fit=crop&w=1920&q=80')"></div>
+  <div class="bg-slide" style="background-image:url('https://images.unsplash.com/photo-1569629743817-70d8db6c323b?auto=format&fit=crop&w=1920&q=80')"></div>
+  <div class="bg-slide" style="background-image:url('https://images.unsplash.com/photo-1504614755-c44b57c0b7a3?auto=format&fit=crop&w=1920&q=80')"></div>
+  <div class="bg-slide" style="background-image:url('https://images.unsplash.com/photo-1488085061387-422e29b40080?auto=format&fit=crop&w=1920&q=80')"></div>
+</div>
 <div class="wrap">
 
   <header>
@@ -1792,6 +1820,17 @@ function toggleTheme() {
   if (!mode) { showWelcome(); renderHistory(); return; }
   if (mode === 'cloud') applyCloudMode();
   else applyLocalMode();
+})();
+
+(function() {
+  const slides = Array.from(document.querySelectorAll('.bg-slide'));
+  if (slides.length < 2) return;
+  let cur = 0;
+  setInterval(() => {
+    slides[cur].classList.remove('active');
+    cur = (cur + 1) % slides.length;
+    slides[cur].classList.add('active');
+  }, 7000);
 })();
 </script>
 </body>

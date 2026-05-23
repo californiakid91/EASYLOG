@@ -1493,8 +1493,9 @@ function renderUKDays() {
     }).join('');
   }
 
-  const prevOpen = document.getElementById('ukdays-months')?.style.display !== 'none';
-  host.innerHTML = progressHTML +
+  const monthsEl = document.getElementById('ukdays-months');
+  const prevOpen  = monthsEl ? monthsEl.style.display !== 'none' : false;
+  host.innerHTML  = progressHTML +
     `<div id="ukdays-months" style="display:${prevOpen ? 'block' : 'none'}">${monthsHTML}</div>`;
 }
 

@@ -1394,16 +1394,17 @@ function renderUKDays() {
           <span class="day-date">${dateISOToDisplay(iso)}</span>
           <span class="day-route">${route}</span>
           <span class="day-count" style="color:var(--green);">OB ${onBlock} ${tz}</span>
+          <button class="day-del" title="Eliminar UK Day" onclick="removeUKDay('${iso}')">✕</button>
         </div>`;
     }).join('');
     return `
       <div class="month-group" data-ukmonth="${mk}">
         <div class="month-header" onclick="toggleUKMonth('${mk}')">
-          <span class="chev">▾</span>
+          <span class="chev" style="transform:rotate(-90deg)">▾</span>
           <span>${monthLabel(mk)}</span>
           <span class="meta">${entries.length} día${entries.length !== 1 ? 's' : ''}</span>
         </div>
-        <div class="day-list">${items}</div>
+        <div class="day-list" style="display:none">${items}</div>
       </div>`;
   }).join('');
 }
@@ -1416,6 +1417,14 @@ function toggleUKMonth(mk) {
   const collapsed = list.style.display === 'none';
   list.style.display = collapsed ? '' : 'none';
   chev.style.transform = collapsed ? '' : 'rotate(-90deg)';
+}
+
+function removeUKDay(iso) {
+  if (!confirm(`¿Eliminar ${dateISOToDisplay(iso)} de UK Days?`)) return;
+  const updated = { ..._ukdays };
+  delete updated[iso];
+  saveUKDays(updated);
+  renderUKDays();
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────────

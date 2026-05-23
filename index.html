@@ -2019,7 +2019,7 @@ function downloadTaxExcel() {
       buf.push(r);
     } else if (status === 'sim') {
       const r = new Array(22).fill('');
-      r[0]=serial; r[1]='SIM'; r[9]=hhmmToFrac('05:00'); r[17]=1; r[18]=1;
+      r[0]=serial; r[1]='SIM'; r[17]=1; r[18]=1;
       buf.push(r);
     } else if (flights.length > 0) {
       const bst = isBST(iso);

@@ -607,12 +607,12 @@
   <div class="card" style="padding:.6rem 1rem;">
     <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;">
       <span style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.06em; white-space:nowrap;">Rol CSV</span>
-      <label class="role active" id="lbl-fo" style="flex:1; padding:.35rem .7rem; gap:.5rem;" onclick="setRole('FO')">
+      <label class="role active" id="lbl-fo" style="flex:1; padding:.35rem .7rem; gap:.5rem;" onclick="event.preventDefault();setRole('FO')">
         <input type="radio" name="role" value="FO" checked>
         <div><div class="role-label" style="font-size:.85rem;">Primer Oficial</div></div>
         <span class="badge">FO</span>
       </label>
-      <label class="role" id="lbl-cpt" style="flex:1; padding:.35rem .7rem; gap:.5rem;" onclick="setRole('CPT')">
+      <label class="role" id="lbl-cpt" style="flex:1; padding:.35rem .7rem; gap:.5rem;" onclick="event.preventDefault();setRole('CPT')">
         <input type="radio" name="role" value="CPT">
         <div><div class="role-label" style="font-size:.85rem;">Comandante</div></div>
         <span class="badge">CPT</span>

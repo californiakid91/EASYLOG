@@ -419,6 +419,7 @@
   .cal-day.s-off  { background: rgba(110,118,129,.30); color: var(--muted); }
   .cal-day.s-stby { background: rgba(210,153,34,.25);  color: var(--amber); font-weight: 700; }
   .cal-day.s-duty { background: rgba(10,40,100,.70);   color: #a0c0f8;      font-weight: 700; }
+  .cal-day.s-sim  { background: rgba(120,40,180,.55);  color: #d4a8ff;      font-weight: 700; }
 
   /* ── Day modal (bottom sheet) ── */
   .day-modal {
@@ -450,6 +451,7 @@
   .day-opt.opt-off  { background: rgba(110,118,129,.18); color: var(--muted); border-color: var(--border); }
   .day-opt.opt-stby { background: rgba(210,153,34,.15);  color: var(--amber); border-color: var(--amber); }
   .day-opt.opt-duty { background: rgba(10,40,100,.55);   color: #a0c0f8;      border-color: #2f5cb8; }
+  .day-opt.opt-sim  { background: rgba(120,40,180,.35);  color: #d4a8ff;      border-color: #8b3fc8; }
   .day-opt.selected { opacity: 1; filter: brightness(1.2); }
   .day-modal-cancel {
     margin-top: .9rem; background: none; border: none;
@@ -457,6 +459,7 @@
     padding: .4rem;
   }
 </style>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div id="bg-tint"></div>
@@ -590,7 +593,8 @@
   <div class="card" id="global-card">
     <div class="card-title">Exportar</div>
     <div class="global-actions">
-      <button class="btn btn-green" onclick="downloadAllCSV()" id="btn-dl-all">⬇ Descargar CSV (todo)</button>
+      <button class="btn btn-green" onclick="downloadAllCSV()" id="btn-dl-all">⬇ Descargar CSV PilotLog</button>
+      <button class="btn btn-blue" onclick="downloadTaxExcel()">⬇ Descargar Excel Tax Year</button>
       <a class="btn btn-blue" href="https://my.crewlounge.center/pilotlog-import-wizard" target="_blank"
          style="text-decoration:none;">Abrir Import Wizard ↗</a>
       <span class="spacer"></span>
@@ -625,6 +629,7 @@
         <button class="day-opt opt-off"  onclick="setDayStatus('off')">OFF</button>
         <button class="day-opt opt-stby" onclick="setDayStatus('stby')">STBY</button>
         <button class="day-opt opt-duty" onclick="setDayStatus('duty')">DUTY</button>
+        <button class="day-opt opt-sim"  onclick="setDayStatus('sim')">SIM</button>
       </div>
       <button class="day-modal-cancel" onclick="closeDayModal()">Cancelar</button>
     </div>
@@ -1924,6 +1929,165 @@ function toggleTheme() {
   else applyLocalMode();
 })();
 
+// ─── Tax Year Excel generator ────────────────────────────────────────────────
+const UK_AP = new Set([
+  'STN','LHR','LGW','LTN','MAN','EDI','BHX','BRS','LPL','NCL','ABZ',
+  'GLA','BFS','LCY','EMA','DSA','CWL','SOU','BOH','NQY','INV','BHD',
+  'MME','HUY','LBA','JER','GCI','BHD','SEN','NWI','PLH','EXT','BRR'
+]);
+
+function isBST(iso) {
+  const d = new Date(iso + 'T12:00:00Z');
+  const y = d.getUTCFullYear();
+  const sunMarch = new Date(Date.UTC(y, 2, 31));
+  sunMarch.setUTCDate(31 - sunMarch.getUTCDay());
+  const sunOct = new Date(Date.UTC(y, 9, 31));
+  sunOct.setUTCDate(31 - sunOct.getUTCDay());
+  return d >= sunMarch && d < sunOct;
+}
+
+function hhmmToFrac(hhmm) {
+  if (!hhmm || hhmm === '--:--') return null;
+  const [h, m] = hhmm.split(':').map(Number);
+  return +(((h * 60 + m) / 1440).toFixed(8));
+}
+
+function subHHMM(t1, t2) {
+  const [h1, m1] = t1.split(':').map(Number);
+  const [h2, m2] = t2.split(':').map(Number);
+  const diff = Math.max(0, h1 * 60 + m1 - h2 * 60 - m2);
+  return `${String(Math.floor(diff / 60)).padStart(2,'0')}:${String(diff % 60).padStart(2,'0')}`;
+}
+
+function isoToExcelSerial(iso) {
+  return Math.round((new Date(iso + 'T00:00:00Z') - new Date('1899-12-30T00:00:00Z')) / 86400000);
+}
+
+function downloadTaxExcel() {
+  const TAX_START = '2026-04-06';
+  const TAX_END   = '2027-04-05';
+  const MONTHS_EN = ['January','February','March','April','May','June',
+                     'July','August','September','October','November','December'];
+
+  const HEADER = ['Date','Flight No','From','Destination',
+    'UK Report','UK Flight','UK Turnaround','UK Debrief','UK STBY','UK Training','',
+    'NonUK Report','NonUK Flight','NonUK Turnaround','NonUK Debrief','Layover','NonUK Training',
+    'UW','U','E','OFFBLOCKS','ONBLOCKS'];
+
+  const allRows = [
+    HEADER,
+    [],
+    ['NAME','Ricardo Vega Burgueño','','','Tax Year 2025-2026'],
+    ['','','','','','','UK DUTY TIME','','','','','','','NON UK DUTY TIME'],
+    HEADER
+  ];
+
+  let cur = new Date(TAX_START + 'T00:00:00Z');
+  const endD = new Date(TAX_END   + 'T00:00:00Z');
+  let prevMonth = -1;
+  let buf = [];
+
+  const flushMonth = m => { allRows.push(...buf); allRows.push(['TOTAL ' + MONTHS_EN[m].toUpperCase()]); allRows.push([]); buf = []; };
+
+  while (cur <= endD) {
+    const iso = cur.toISOString().split('T')[0];
+    const m   = cur.getUTCMonth();
+    if (prevMonth !== -1 && m !== prevMonth) flushMonth(prevMonth);
+    prevMonth = m;
+
+    const serial  = isoToExcelSerial(iso);
+    const status  = _dayMap[iso];
+    const flights = (_cache[iso]?.flights) || [];
+
+    if (status === 'off') {
+      buf.push([serial, 'OFF']);
+    } else if (status === 'stby') {
+      const r = new Array(22).fill('');
+      r[0]=serial; r[1]='SBY'; r[17]=1; r[18]=1;
+      buf.push(r);
+    } else if (status === 'sim') {
+      const r = new Array(22).fill('');
+      r[0]=serial; r[1]='SIM'; r[17]=1; r[18]=1;
+      buf.push(r);
+    } else if (flights.length > 0) {
+      const bst = isBST(iso);
+      flights.forEach((f, idx) => {
+        const isFirst = idx === 0;
+        const isLast  = idx === flights.length - 1;
+        const cp   = (f.d?.['City Pair'] || '').split(' - ');
+        const from = (cp[0] || '').trim();
+        const to   = (cp[1] || '').trim();
+        const fromUK = UK_AP.has(from);
+        const toUK   = UK_AP.has(to);
+        const blk  = f.d?.['Total Block']    || '';
+        const offB = f.d?.['Off Block']      || '';
+        const onB  = f.d?.['On Block']       || '';
+        const fNo  = f.d?.['Flight Number']  || '';
+
+        const r = new Array(22).fill('');
+        r[0] = serial;
+        r[1] = fNo;
+        r[2] = from;
+        r[3] = to;
+
+        if (isFirst && fromUK) r[4] = hhmmToFrac('01:00');  // UK Report
+
+        if (fromUK && toUK)        { r[5]  = hhmmToFrac(blk); }
+        else if (fromUK || toUK)   { r[5]  = hhmmToFrac('00:15'); r[12] = hhmmToFrac(subHHMM(blk,'00:15')); }
+        else                       { r[12] = hhmmToFrac(blk); }
+
+        if (!isLast) { if (toUK) r[6] = hhmmToFrac('01:30'); else r[13] = hhmmToFrac('01:30'); }
+        if (isLast)  { if (toUK) r[7] = hhmmToFrac('00:30'); else r[14] = hhmmToFrac('00:30'); }
+
+        if (isFirst) {
+          r[17] = 1; // UW
+          const lastOnB = flights[flights.length-1].d?.['On Block'] || '';
+          if (lastOnB) {
+            const [h, min] = lastOnB.split(':').map(Number);
+            const localMin = h * 60 + min + (bst ? 60 : 0);
+            if (localMin < 1440) r[18] = 1; // U
+          }
+        }
+
+        r[20] = hhmmToFrac(offB) ?? '';
+        r[21] = hhmmToFrac(onB)  ?? '';
+        buf.push(r);
+      });
+    } else {
+      buf.push([serial]);
+    }
+
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+  if (prevMonth !== -1) flushMonth(prevMonth);
+
+  if (typeof XLSX === 'undefined') {
+    showStatus('err', 'SheetJS no cargado — comprueba la conexión a internet.');
+    return;
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(allRows);
+  // Format date column (A) as date
+  const dateFmt = 'DD/MM/YYYY';
+  for (let i = 5; i < allRows.length; i++) {
+    const cell = ws[XLSX.utils.encode_cell({r:i, c:0})];
+    if (cell && typeof cell.v === 'number') { cell.t='n'; cell.z=dateFmt; }
+  }
+  // Format time columns as [h]:mm
+  const timeCols = [4,5,6,7,8,9,11,12,13,14,15,16,20,21];
+  for (let i = 5; i < allRows.length; i++) {
+    timeCols.forEach(c => {
+      const cell = ws[XLSX.utils.encode_cell({r:i, c})];
+      if (cell && typeof cell.v === 'number') { cell.t='n'; cell.z='[h]:mm'; }
+    });
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'TAX 26-27');
+  XLSX.writeFile(wb, 'TAX YEAR 26-27.xlsx');
+  showStatus('ok', 'Excel descargado.');
+}
+
 // ─── Calendar ────────────────────────────────────────────────────────────────
 const CAL_KEY = 'easylog_days_v1';
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -1995,7 +2159,7 @@ function openDayModal(iso) {
     `${DAYS_ES[dt.getDay()]} ${+d} de ${MESES_ES[+m - 1]} de ${y}`;
 
   const cur = _dayMap[iso];
-  ['off','stby','duty'].forEach(s => {
+  ['off','stby','duty','sim'].forEach(s => {
     document.querySelector(`.opt-${s}`)?.classList.toggle('selected', cur === s);
   });
 

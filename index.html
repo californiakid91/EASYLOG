@@ -409,6 +409,10 @@
       <span>🇬🇧 UK Days</span>
       <span class="count" id="ukdays-count"></span>
     </div>
+    <div style="display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap;">
+      <button class="btn btn-blue btn-sm" onclick="addTodayAsUKDay()">+ Añadir hoy</button>
+      <button class="btn btn-ghost btn-sm" onclick="emailUKDaysBackup()">📧 Backup</button>
+    </div>
     <div id="ukdays-body"></div>
   </div>
 
@@ -1407,6 +1411,45 @@ function renderUKDays() {
         <div class="day-list" style="display:none">${items}</div>
       </div>`;
   }).join('');
+}
+
+function addTodayAsUKDay() {
+  const now = new Date();
+  const iso = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  if (iso < UK_DAYS_START || iso > UK_DAYS_END) {
+    showStatus('warn', 'La fecha actual está fuera del rango UK Days (6 abr 2026 – 7 abr 2027).');
+    return;
+  }
+  if (_ukdays[iso]) {
+    showStatus('warn', `${dateISOToDisplay(iso)} ya está registrado como UK Day.`);
+    return;
+  }
+  saveUKDays({ ..._ukdays, [iso]: { route: '—', onBlock: '--:--', tz: ukOffsetMin(iso) ? 'BST' : 'GMT', manual: true }});
+  renderUKDays();
+  showStatus('ok', `${dateISOToDisplay(iso)} añadido como UK Day.`);
+}
+
+function emailUKDaysBackup() {
+  const keys = Object.keys(_ukdays).sort();
+  if (!keys.length) { showStatus('warn', 'No hay UK Days registrados aún.'); return; }
+
+  const byMonth = {};
+  keys.forEach(iso => { const mk = monthKey(iso); (byMonth[mk] = byMonth[mk] || []).push(iso); });
+
+  const lines = ['UK DAYS BACKUP — EasyLog', `Generado: ${new Date().toLocaleDateString('es-ES')}`, ''];
+  Object.keys(byMonth).sort().forEach(mk => {
+    lines.push(`── ${monthLabel(mk)} ──`);
+    byMonth[mk].forEach(iso => {
+      const { route, onBlock, tz } = _ukdays[iso];
+      lines.push(`  ${dateISOToDisplay(iso)}  ${route}  OB ${onBlock} ${tz}`);
+    });
+    lines.push('');
+  });
+  lines.push(`Total: ${keys.length} día${keys.length !== 1 ? 's' : ''}`);
+
+  const subject = encodeURIComponent('EasyLog — UK Days Backup');
+  const body    = encodeURIComponent(lines.join('\n'));
+  window.location.href = `mailto:rivegabur@gmail.com?subject=${subject}&body=${body}`;
 }
 
 function toggleUKMonth(mk) {

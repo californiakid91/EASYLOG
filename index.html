@@ -824,8 +824,9 @@ function buildUTCDate(dateRaw, hm) {
 // ─── Role toggle ──────────────────────────────────────────────────────────────
 document.querySelectorAll('input[name="role"]').forEach(r => {
   r.addEventListener('change', () => {
-    document.getElementById('lbl-fo').classList.toggle('active', r.value === 'FO');
-    document.getElementById('lbl-cpt').classList.toggle('active', r.value === 'CPT');
+    const v = document.querySelector('input[name="role"]:checked').value;
+    document.getElementById('lbl-fo').classList.toggle('active', v === 'FO');
+    document.getElementById('lbl-cpt').classList.toggle('active', v === 'CPT');
   });
 });
 const role = () => document.querySelector('input[name="role"]:checked').value;
@@ -2146,7 +2147,7 @@ function renderCalendar() {
     const isToday = d === today.getDate() && _calMonth === today.getMonth() && _calYear === today.getFullYear();
     const st = _dayMap[iso] || '';
     const cls = ['cal-day', isToday ? 'today' : '', st ? `s-${st}` : ''].filter(Boolean).join(' ');
-    html += `<div class="${cls}" onclick="openDayModal('${iso}')">${d}</div>`;
+    html += `<div class="${cls}" data-iso="${iso}">${d}</div>`;
   }
 
   const endDow = lastDay.getDay();
@@ -2197,6 +2198,11 @@ function setDayStatus(status) {
 
 loadDayMap();
 renderCalendar();
+
+document.getElementById('cal-grid').addEventListener('click', e => {
+  const day = e.target.closest('[data-iso]');
+  if (day) openDayModal(day.dataset.iso);
+});
 
 (function() {
   const slides = Array.from(document.querySelectorAll('.bg-slide'));

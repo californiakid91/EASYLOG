@@ -411,7 +411,7 @@
     aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
     border-radius: 8px; cursor: pointer; font-size: .82rem; font-weight: 500;
     border: 1.5px solid transparent; transition: border-color .12s, background .12s;
-    user-select: none;
+    user-select: none; touch-action: manipulation;
   }
   .cal-day:hover:not(.other-month) { border-color: var(--accent); }
   .cal-day.other-month { opacity: .2; pointer-events: none; }
@@ -607,12 +607,12 @@
   <div class="card" style="padding:.6rem 1rem;">
     <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;">
       <span style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.06em; white-space:nowrap;">Rol CSV</span>
-      <label class="role active" id="lbl-fo" style="flex:1; padding:.35rem .7rem; gap:.5rem;">
+      <label class="role active" id="lbl-fo" style="flex:1; padding:.35rem .7rem; gap:.5rem;" onclick="setRole('FO')">
         <input type="radio" name="role" value="FO" checked>
         <div><div class="role-label" style="font-size:.85rem;">Primer Oficial</div></div>
         <span class="badge">FO</span>
       </label>
-      <label class="role" id="lbl-cpt" style="flex:1; padding:.35rem .7rem; gap:.5rem;">
+      <label class="role" id="lbl-cpt" style="flex:1; padding:.35rem .7rem; gap:.5rem;" onclick="setRole('CPT')">
         <input type="radio" name="role" value="CPT">
         <div><div class="role-label" style="font-size:.85rem;">Comandante</div></div>
         <span class="badge">CPT</span>
@@ -822,13 +822,11 @@ function buildUTCDate(dateRaw, hm) {
 }
 
 // ─── Role toggle ──────────────────────────────────────────────────────────────
-document.querySelectorAll('input[name="role"]').forEach(r => {
-  r.addEventListener('change', () => {
-    const v = document.querySelector('input[name="role"]:checked').value;
-    document.getElementById('lbl-fo').classList.toggle('active', v === 'FO');
-    document.getElementById('lbl-cpt').classList.toggle('active', v === 'CPT');
-  });
-});
+function setRole(v) {
+  document.querySelector(`input[name="role"][value="${v}"]`).checked = true;
+  document.getElementById('lbl-fo').classList.toggle('active', v === 'FO');
+  document.getElementById('lbl-cpt').classList.toggle('active', v === 'CPT');
+}
 const role = () => document.querySelector('input[name="role"]:checked').value;
 
 // ─── Aircraft model ───────────────────────────────────────────────────────────
@@ -1867,7 +1865,7 @@ async function applyCloudMode() {
         _airports   = data.airports  || {};
         _ukdays     = data.ukdays    || {};
         _dayMap     = data.dayMap    || {};
-        saveDayMap();
+        try { localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap)); } catch {}
         backfillUKDays();
         cloud.hydrated = true;
         renderHistory();

@@ -1069,12 +1069,14 @@ function buildCSV(flightsWithRole) {
 const STORAGE_KEY   = 'easylog_history_v1';
 const AIRPORTS_KEY  = 'easylog_airports_v1';
 const UK_DAYS_KEY   = 'easylog_ukdays_v1';
+const EXCEL_KEY     = 'easylog_excel_v1';
 const MODE_KEY      = 'easylog_mode';
 
 // In-memory state. Always the source of truth for render functions.
-let _cache    = {};  // history: { iso: { addedAt, role, flights } }
-let _airports = {};  // custom airports: { IATA: { lat, lon } }
-let _ukdays   = {};  // UK Days: { iso: { route, onBlock, tz } } — persiste aunque se borre el historial
+let _cache      = {};  // history for CSV: { iso: { addedAt, role, flights } } — se puede borrar
+let _excelData  = {};  // historial permanente para Excel: { iso: { role, flights } } — nunca se borra con clearHistory
+let _airports   = {};  // custom airports: { IATA: { lat, lon } }
+let _ukdays     = {};  // UK Days: { iso: { route, onBlock, tz } } — persiste aunque se borre el historial
 // Cloud state (populated only when mode === 'cloud')
 let cloud = { app: null, auth: null, db: null, user: null, unsub: null, hydrated: false };
 
@@ -1102,6 +1104,7 @@ function persist() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(_cache));
       localStorage.setItem(AIRPORTS_KEY, JSON.stringify(_airports));
       localStorage.setItem(UK_DAYS_KEY, JSON.stringify(_ukdays));
+      localStorage.setItem(EXCEL_KEY, JSON.stringify(_excelData));
     } catch (e) { console.warn('Local save failed:', e); }
   }
 }
@@ -1110,6 +1113,8 @@ function hydrateLocal() {
   try {
     const h = localStorage.getItem(STORAGE_KEY);
     _cache = h ? JSON.parse(h) : {};
+    const x = localStorage.getItem(EXCEL_KEY);
+    _excelData = x ? JSON.parse(x) : {};
     const a = localStorage.getItem(AIRPORTS_KEY);
     _airports = a ? JSON.parse(a) : {};
     const u = localStorage.getItem(UK_DAYS_KEY);
@@ -1126,7 +1131,7 @@ async function persistCloud() {
   try {
     const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
     await setDoc(doc(cloud.db, 'users', cloud.user.uid), {
-      history: _cache, airports: _airports, ukdays: _ukdays, dayMap: _dayMap, updatedAt: Date.now()
+      history: _cache, excelData: _excelData, airports: _airports, ukdays: _ukdays, dayMap: _dayMap, updatedAt: Date.now()
     });
     setSync('ok', 'Sincronizado ✓');
   } catch (e) {
@@ -1269,6 +1274,7 @@ function addDay() {
     role: role(),
     flights,
   };
+  _excelData[iso] = { role: role(), flights };
   saveHistory(hist);
 
   // Detectar y registrar UK Day de forma permanente
@@ -1327,8 +1333,9 @@ function removeDay(iso) {
   const hist = loadHistory();
   if (!hist[iso]) return;
   const n = hist[iso].flights.length;
-  if (!confirm(`¿Borrar el día ${dateISOToDisplay(iso)} (${n} vuelo${n !== 1 ? 's' : ''})?`)) return;
+  if (!confirm(`¿Borrar el día ${dateISOToDisplay(iso)} (${n} vuelo${n !== 1 ? 's' : ''}) de la lista y del Excel?`)) return;
   delete hist[iso];
+  delete _excelData[iso];
   saveHistory(hist);
   renderHistory();
   showStatus('ok', `Día ${dateISOToDisplay(iso)} eliminado.`);
@@ -1854,10 +1861,11 @@ async function applyCloudMode() {
       const ref = fsMod.doc(cloud.db, 'users', u.uid);
       cloud.unsub = fsMod.onSnapshot(ref, (snap) => {
         const data = snap.exists() ? snap.data() : {};
-        _cache    = data.history  || {};
-        _airports = data.airports || {};
-        _ukdays   = data.ukdays   || {};
-        _dayMap   = data.dayMap   || {};
+        _cache      = data.history   || {};
+        _excelData  = data.excelData || {};
+        _airports   = data.airports  || {};
+        _ukdays     = data.ukdays    || {};
+        _dayMap     = data.dayMap    || {};
         saveDayMap();
         backfillUKDays();
         cloud.hydrated = true;
@@ -2000,7 +2008,7 @@ function downloadTaxExcel() {
 
     const serial  = isoToExcelSerial(iso);
     const status  = _dayMap[iso];
-    const flights = (_cache[iso]?.flights) || [];
+    const flights = (_excelData[iso]?.flights) || [];
 
     if (status === 'off') {
       buf.push([serial, 'OFF']);

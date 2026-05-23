@@ -90,9 +90,8 @@
   }
   #bg-tint {
     position: fixed; inset: 0; z-index: -1;
-    background: var(--bg); opacity: .80;
+    background: var(--bg); opacity: .52;
     pointer-events: none;
-    transition: background .3s;
   }
   #bg-rotator {
     position: fixed; inset: 0; z-index: -2;
@@ -101,8 +100,8 @@
   .bg-slide {
     position: absolute; inset: 0;
     background-size: cover; background-position: center;
-    filter: blur(10px) brightness(.75);
-    transform: scale(1.08);
+    filter: blur(3px) brightness(.85);
+    transform: scale(1.05);
     opacity: 0;
     transition: opacity 2.5s ease-in-out;
     will-change: opacity;
@@ -117,11 +116,16 @@
   .tagline { color: var(--muted); font-size: .9rem; }
 
   .card {
-    background: var(--surface);
+    background: rgba(22,27,34,0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 1.5rem;
     margin-bottom: 1.25rem;
+  }
+  body.light .card {
+    background: rgba(255,255,255,0.72);
   }
   .card-title {
     font-size: .7rem;

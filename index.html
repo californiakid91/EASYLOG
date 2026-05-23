@@ -1126,7 +1126,7 @@ async function persistCloud() {
   try {
     const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
     await setDoc(doc(cloud.db, 'users', cloud.user.uid), {
-      history: _cache, airports: _airports, ukdays: _ukdays, updatedAt: Date.now()
+      history: _cache, airports: _airports, ukdays: _ukdays, dayMap: _dayMap, updatedAt: Date.now()
     });
     setSync('ok', 'Sincronizado ✓');
   } catch (e) {
@@ -1857,10 +1857,13 @@ async function applyCloudMode() {
         _cache    = data.history  || {};
         _airports = data.airports || {};
         _ukdays   = data.ukdays   || {};
+        _dayMap   = data.dayMap   || {};
+        saveDayMap();
         backfillUKDays();
         cloud.hydrated = true;
         renderHistory();
         renderAirports();
+        renderCalendar();
         setSync('ok', 'Sincronizado ✓');
       }, (err) => {
         console.error('Snapshot error:', err);
@@ -2104,7 +2107,10 @@ let _dayMap   = {};  // { 'YYYY-MM-DD': 'off'|'stby'|'duty' }
 function loadDayMap() {
   try { _dayMap = JSON.parse(localStorage.getItem(CAL_KEY) || '{}'); } catch { _dayMap = {}; }
 }
-function saveDayMap() { localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap)); }
+function saveDayMap() {
+  localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap));
+  if (getMode() === 'cloud') persistCloud();
+}
 
 function renderCalendar() {
   const grid  = document.getElementById('cal-grid');

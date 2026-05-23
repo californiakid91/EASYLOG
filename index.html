@@ -415,27 +415,17 @@
     </div>
   </div>
 
-  <!-- Rol -->
+  <!-- UK Days -->
   <div class="card">
-    <div class="card-title">Tu rol</div>
-    <div class="roles">
-      <label class="role active" id="lbl-fo">
-        <input type="radio" name="role" value="FO" checked>
-        <div>
-          <div class="role-label">Primer Oficial</div>
-          <div class="role-sub">Horas como SIC</div>
-        </div>
-        <span class="badge">FO / SIC</span>
-      </label>
-      <label class="role" id="lbl-cpt">
-        <input type="radio" name="role" value="CPT">
-        <div>
-          <div class="role-label">Comandante</div>
-          <div class="role-sub">Horas como PIC</div>
-        </div>
-        <span class="badge">CPT / PIC</span>
-      </label>
+    <div class="card-title">
+      <span>🇬🇧 UK Days</span>
+      <span class="count" id="ukdays-count"></span>
     </div>
+    <div style="display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap;">
+      <button class="btn btn-blue btn-sm" onclick="addTodayAsUKDay()">+ Añadir hoy</button>
+      <button class="btn btn-ghost btn-sm" onclick="emailUKDaysBackup()">📧 Backup</button>
+    </div>
+    <div id="ukdays-body"></div>
   </div>
 
   <!-- Añadir día -->
@@ -457,19 +447,6 @@
       <span class="count" id="hist-count">0 días · 0 vuelos</span>
     </div>
     <div id="history"></div>
-  </div>
-
-  <!-- UK Days -->
-  <div class="card">
-    <div class="card-title">
-      <span>🇬🇧 UK Days</span>
-      <span class="count" id="ukdays-count"></span>
-    </div>
-    <div style="display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap;">
-      <button class="btn btn-blue btn-sm" onclick="addTodayAsUKDay()">+ Añadir hoy</button>
-      <button class="btn btn-ghost btn-sm" onclick="emailUKDaysBackup()">📧 Backup</button>
-    </div>
-    <div id="ukdays-body"></div>
   </div>
 
   <!-- Aeropuertos personalizados (oculto — se gestiona via prompt al añadir días) -->
@@ -501,6 +478,23 @@
       <button class="btn btn-danger" onclick="clearHistory()" id="btn-clear-all">🗑 Borrar historial completo</button>
     </div>
     <div class="hint">Descargar no borra nada. Cuando hayas confirmado el import en PilotLog, pulsa "Borrar historial completo".</div>
+  </div>
+
+  <!-- Rol (compacto) -->
+  <div class="card" style="padding:.6rem 1rem;">
+    <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;">
+      <span style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.06em; white-space:nowrap;">Rol CSV</span>
+      <label class="role active" id="lbl-fo" style="flex:1; padding:.35rem .7rem; gap:.5rem;">
+        <input type="radio" name="role" value="FO" checked>
+        <div><div class="role-label" style="font-size:.85rem;">Primer Oficial</div></div>
+        <span class="badge">FO</span>
+      </label>
+      <label class="role" id="lbl-cpt" style="flex:1; padding:.35rem .7rem; gap:.5rem;">
+        <input type="radio" name="role" value="CPT">
+        <div><div class="role-label" style="font-size:.85rem;">Comandante</div></div>
+        <span class="badge">CPT</span>
+      </label>
+    </div>
   </div>
 
   <div class="footer">

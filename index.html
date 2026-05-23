@@ -25,6 +25,31 @@
     --red:      #f85149;
     --radius:   10px;
   }
+  body.light {
+    --bg:       #f6f8fa;
+    --surface:  #ffffff;
+    --surface2: #f0f2f4;
+    --border:   #d0d7de;
+    --accent:   #0969da;
+    --acc-dim:  rgba(9,105,218,.10);
+    --text:     #1f2328;
+    --muted:    #656d76;
+    --green:    #1a7f37;
+    --amber:    #9a6700;
+    --red:      #cf222e;
+  }
+  #theme-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: .3rem .5rem;
+    transition: color .15s, border-color .15s;
+  }
+  #theme-btn:hover { color: var(--text); border-color: var(--text); }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -318,10 +343,13 @@
       <div class="logo">Easy<span>Log</span></div>
       <div class="tagline">Convierte emails de vuelos Ryanair al formato CSV de PilotLog</div>
     </div>
-    <div id="user-chip" class="user-chip hidden">
-      <img id="user-photo" alt="">
-      <span class="name" id="user-name"></span>
-      <button id="btn-logout" title="Cerrar sesión">Salir</button>
+    <div style="display:flex; align-items:center; gap:.75rem; margin-left:auto;">
+      <button id="theme-btn" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+      <div id="user-chip" class="user-chip hidden">
+        <img id="user-photo" alt="">
+        <span class="name" id="user-name"></span>
+        <button id="btn-logout" title="Cerrar sesión">Salir</button>
+      </div>
     </div>
   </header>
 
@@ -1675,6 +1703,20 @@ function switchMode() {
 document.getElementById('mode-local').onclick = () => { setMode('local'); applyLocalMode(); };
 document.getElementById('mode-cloud').onclick = () => { setMode('cloud'); applyCloudMode(); };
 document.getElementById('mode-chip').onclick  = switchMode;
+
+// ─── Tema día/noche ───────────────────────────────────────────────────────────
+function toggleTheme() {
+  const light = document.body.classList.toggle('light');
+  document.getElementById('theme-btn').textContent = light ? '🌙' : '☀️';
+  localStorage.setItem('easylog_theme', light ? 'light' : 'dark');
+}
+(function applyTheme() {
+  if (localStorage.getItem('easylog_theme') === 'light') {
+    document.body.classList.add('light');
+    const btn = document.getElementById('theme-btn');
+    if (btn) btn.textContent = '☀️';
+  }
+})();
 
 // Boot
 (function boot() {

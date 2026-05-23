@@ -1078,6 +1078,7 @@ let _airports   = {};  // custom airports: { IATA: { lat, lon } }
 let _ukdays     = {};  // UK Days: { iso: { route, onBlock, tz } } — persiste aunque se borre el historial
 // Cloud state (populated only when mode === 'cloud')
 let cloud = { app: null, auth: null, db: null, user: null, unsub: null, hydrated: false };
+let _dayMapSaving = false; // evita que onSnapshot sobreescriba _dayMap mientras guardamos
 
 function getMode() { return localStorage.getItem(MODE_KEY); } // 'local' | 'cloud' | null
 function setMode(m) { localStorage.setItem(MODE_KEY, m); }
@@ -1864,8 +1865,10 @@ async function applyCloudMode() {
         _excelData  = data.excelData || {};
         _airports   = data.airports  || {};
         _ukdays     = data.ukdays    || {};
-        _dayMap     = data.dayMap    || {};
-        try { localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap)); } catch {}
+        if (!_dayMapSaving) {
+          _dayMap = data.dayMap || {};
+          try { localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap)); } catch {}
+        }
         backfillUKDays();
         cloud.hydrated = true;
         renderHistory();
@@ -2117,7 +2120,10 @@ function loadDayMap() {
 }
 function saveDayMap() {
   localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap));
-  if (getMode() === 'cloud') persistCloud();
+  if (getMode() === 'cloud') {
+    _dayMapSaving = true;
+    persistCloud().finally(() => { setTimeout(() => { _dayMapSaving = false; }, 3000); });
+  }
 }
 
 function renderCalendar() {

@@ -121,3 +121,9 @@
 - **FLIGHTLOG >250 chars NO genera issue** (se descarta como causa de los Issues; posible truncado silencioso, sin importancia).
 - **Fila 14, 2026-09-18 STN-HAM: "PIC / Captain Name is missing"** → el parser no encontró capitán ese día (¿rol distinto de `CP`, sin sección Flight Deck Crew, o CP no verificado?). Nuevo bug → pedir ese email al usuario (fase 2).
 - Ningún issue menciona LDG/landing → LDG_NIGHT vacío sigue sin explicar; se resuelve con PRUEBA_C.
+
+### PRUEBA_C importada (2026-10-03 14:24)
+- Aviso "tag_delay" desaparece con cabecera `DELAY` ✓
+- **TIME_NIGHT** en `H:MM` importa: FR2134 1:35 (Day 0:40), FR2135 2:36 ✓ → método de estimación validado
+- **LDG_NIGHT=1** importa en FR2134 ✓ (TO DAY 1) → el formato actual de T/O-LDG funciona; el landing ausente del CSV habitual queda por explicar (pedido el CSV original)
+- **DELAY** con un código (`93`) → "93 (RA)" ✓; con varios `41|93` → **vacío** ✗. PRUEBA_D prueba `41,93` y `93 62 15`.

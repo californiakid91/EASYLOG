@@ -5,15 +5,15 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.1 Datos fiables — Phase 1.1 (borrados en la nube), luego Phase 2 (CSV)
+**Current focus:** v0.1 Datos fiables — botón fecha UK Days (quick-fix), luego Phase 2 (CSV)
 
 ## Current Position
 
 Milestone: v0.1 Datos fiables
-Phase: 1.1 [INSERTED] (Borrados persisten en la nube)
-Plan: 01.1-01 created, awaiting approval
-Status: PLAN created, ready for APPLY
-Last activity: 2026-10-03 — Phase 1 complete, transitioned to Phase 2
+Phase: 1.1 [INSERTED] complete → next: quick-fix botón fecha UK Days, luego Phase 2
+Plan: 01.1-01 complete
+Status: Ready to plan
+Last activity: 2026-10-03 15:05 — Phase 1.1 complete, verificado en iPhone
 
 Progress:
 - Milestone: [██░░░░░░░░] 25%
@@ -24,7 +24,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan created, awaiting approval]
+  ✓        ✓        ✓     [Loop complete - ready for next PLAN]
 ```
 
 ## Accumulated Context
@@ -34,6 +34,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - UK Day = on-block último vuelo < 00:00 hora Londres (sin exigir aeropuerto UK)
 - Pistas: sin secretos en cliente; fuente por dialéctica en fase 4
 - Fixtures con nombres de tripulación → gitignored
+- Escrituras a nube con mergeFields + guard hidratación (ignora fromCache); last-write-wins por campo aceptado
 
 ### Deferred Issues
 | Issue | Origin | Effort | Revisit |
@@ -41,6 +42,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Landing ausente en el CSV habitual del usuario (con PRUEBA_C sí importa) — pedido el CSV original | Phase 1 | S | Fase 2 |
 | removeDay no borra UK Day; día en _excelData imborrable si historial limpiado (18/09 espurio, día de SIM) | Phase 1 | S | Fase 3 |
 | Fecha PILOTLOG_DATE de sectores post-medianoche | Phase 1 | S | Fase 2 |
+| Petición usuario: botón "📅 Añadir otra fecha" (date picker) en UK Days en vez de recordar el comando de texto | Phase 1.1 | S | Quick-fix justo tras cerrar 1.1 |
 
 ### Blockers/Concerns
 - Ninguno: esquema de importación validado con el usuario (AUDIT.md, 'Esquema de importación validado')
@@ -52,9 +54,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-03
-Stopped at: Phase 1 complete, ready to plan Phase 2
-Next action: aprobar y /paul:apply .paul/phases/01.1-borrados-nube/01.1-01-PLAN.md
-Resume file: .paul/phases/01.1-borrados-nube/01.1-01-PLAN.md
+Stopped at: Phase 1.1 complete (deploy 7b922f7 verificado por usuario)
+Next action: /paul:plan quick-fix botón "📅 Añadir otra fecha" en UK Days; después Phase 2 (CSV)
+Resume file: .paul/phases/01.1-borrados-nube/01.1-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

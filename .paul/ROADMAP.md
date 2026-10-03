@@ -15,7 +15,7 @@ Phases: 1 of 4 complete
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 1 | Auditoría (arnés + causas raíz) | 1/1 | ✅ Complete | 2026-10-03 |
-| 1.1 | [INSERTED] Borrados persisten en la nube (merge:true) | 1 | Planning | - |
+| 1.1 | [INSERTED] Borrados persisten en la nube (merge:true) | 1/1 | ✅ Complete | 2026-10-03 |
 | 2 | CSV: esquema validado + TIME_NIGHT + delays | TBD | Not started | - |
 | 3 | UK Days: orden cronológico + recálculo | TBD | Not started | - |
 | 4 | Pista en uso (dialéctica de fuente + implementación) | TBD | Not started | - |
@@ -30,6 +30,7 @@ Phases: 1 of 4 complete
 **Goal:** Borrar un UK Day, un día guardado o un estado del calendario se mantiene tras recargar.
 **Reason:** `setDoc merge:true` no elimina claves de mapas anidados (AUDIT.md) — bloquea al usuario ahora (18/09).
 **Scope:** persistCloud + saveDayMap con `mergeFields`; verificación real con el 18/09.
+**Plans:** - [x] 01.1-01: mergeFields + guard hidratación (deploy 7b922f7)
 
 ### Phase 2: CSV
 **Goal:** El CSV importa en PilotLog con T/O-LDG, night, delays y columnas correctas.

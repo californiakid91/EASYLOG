@@ -33,6 +33,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 ### Validated (Shipped)
 
 - [x] Auditoría con causa raíz de los 5 fallos (AUDIT.md) — Phase 1
+- [x] Borrados persisten en la nube (UK Days, días guardados, calendario) — Phase 1.1
 
 - [x] CSV importa en PilotLog (separador `;`, minutos, PF TRUE/FALSE, SELF)
 - [x] Excel Tax Year con fechas dd/mm/yyyy y prefijo FR
@@ -40,7 +41,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ### Active (In Progress)
 
-- [ ] Fase 2: confirmar H8 (mapeo posicional 35→37 cols) con prueba de importación del usuario
+- [ ] Botón "📅 Añadir otra fecha" en UK Days (petición usuario)
 
 ### Planned (Next)
 
@@ -87,6 +88,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Testear index.html vía node:vm sin copiar código | Evita desincronización; arnés reutilizable | 2026-10-03 | Active |
 | UK Day = on-block último vuelo antes de 00:00 hora Londres (sin exigir aeropuerto UK) | Confirmado por usuario + REGLAS_EXCEL_TAX_YEAR.md | 2026-10-03 | Active |
 | Pistas: sin claves secretas en cliente; fuente a decidir por dialéctica | Seguridad #1; app sin servidor | 2026-10-03 | Active |
+| Firestore: mergeFields por campo + no escribir antes del primer snapshot del servidor | merge:true no borraba claves; evitar pisar la nube desde caché offline | 2026-10-03 | Active |
 
 ## Success Metrics
 
@@ -114,4 +116,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-03 after Phase 1*
+*Last updated: 2026-10-03 after Phase 1.1*

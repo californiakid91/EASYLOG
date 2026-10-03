@@ -1077,7 +1077,7 @@ let _excelData  = {};  // historial permanente para Excel: { iso: { role, flight
 let _airports   = {};  // custom airports: { IATA: { lat, lon } }
 let _ukdays     = {};  // UK Days: { iso: { route, onBlock, tz } } — persiste aunque se borre el historial
 // Cloud state (populated only when mode === 'cloud')
-let cloud = { app: null, auth: null, db: null, user: null, unsub: null, hydrated: false };
+let cloud = { app: null, auth: null, db: null, user: null, unsub: null, hydrated: false, pendingWrite: false };
 let _dayMapSaving  = false; // evita que onSnapshot sobreescriba _dayMap mientras guardamos
 let _ukdaysSaving  = false; // evita que onSnapshot sobreescriba _ukdays mientras guardamos
 
@@ -1128,18 +1128,28 @@ function hydrateLocal() {
 
 async function persistCloud() {
   if (!cloud.user || !cloud.db) return;
+  // No escribir antes del primer snapshot: mergeFields reemplaza campos enteros y un estado local parcial pisaría la nube
+  if (!cloud.hydrated) { blockedCloudWrite(); return; }
   setSync('syncing', 'Guardando…');
   try {
     const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
-    // merge:true preserva dayMap en Firestore — dayMap se guarda por separado en saveDayMap()
+    // mergeFields reemplaza cada campo entero (así los borrados llegan a la nube; merge:true conservaba las claves borradas).
+    // dayMap no está en la lista → queda intacto; se guarda por separado en saveDayMap()
     await setDoc(doc(cloud.db, 'users', cloud.user.uid), {
       history: _cache, excelData: _excelData, airports: _airports, ukdays: _ukdays, updatedAt: Date.now()
-    }, { merge: true });
+    }, { mergeFields: ['history', 'excelData', 'airports', 'ukdays', 'updatedAt'] });
     setSync('ok', 'Sincronizado ✓');
   } catch (e) {
     console.error('Cloud save failed:', e);
     setSync('err', 'Error al sincronizar');
   }
+}
+
+// Escritura a la nube bloqueada porque aún no se han cargado los datos reales de la nube
+function blockedCloudWrite() {
+  cloud.pendingWrite = true;
+  setSync('err', 'Sin conexión con la nube');
+  showStatus('warn', 'Aún no hay conexión con la nube: este cambio NO se ha guardado. Repítelo cuando ponga "Sincronizado ✓".');
 }
 
 function setSync(state, msg) {
@@ -1843,6 +1853,7 @@ async function applyCloudMode() {
     authMod.onAuthStateChanged(cloud.auth, async (u) => {
       if (!u) {
         cloud.user = null;
+        cloud.hydrated = false; cloud.pendingWrite = false;
         if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
         _cache = {};
         renderHistory();
@@ -1862,17 +1873,29 @@ async function applyCloudMode() {
       setSync('syncing', 'Sincronizando…');
       const ref = fsMod.doc(cloud.db, 'users', u.uid);
       cloud.unsub = fsMod.onSnapshot(ref, (snap) => {
+        // Sin conexión Firestore entrega una copia de caché (a menudo vacía): no tomarla como la nube real,
+        // porque al guardar con mergeFields se sustituiría el historial de la nube por ese estado parcial
+        if (!cloud.hydrated && snap.metadata.fromCache) {
+          setSync('err', 'Sin conexión con la nube');
+          return;
+        }
         const data = snap.exists() ? snap.data() : {};
         _cache      = data.history   || {};
         _excelData  = data.excelData || {};
         _airports   = data.airports  || {};
-        if (!_ukdaysSaving) _ukdays = data.ukdays || {};
-        if (!_dayMapSaving) {
+        // El primer snapshot siempre manda: un cambio local previo no debe sustituir los mapas de la nube
+        if (!cloud.hydrated || !_ukdaysSaving) _ukdays = data.ukdays || {};
+        if (!cloud.hydrated || !_dayMapSaving) {
           _dayMap = data.dayMap || {};
           try { localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap)); } catch {}
         }
-        backfillUKDays();
+        const firstSnapshot = !cloud.hydrated;
         cloud.hydrated = true;
+        backfillUKDays();
+        if (firstSnapshot && cloud.pendingWrite) {
+          cloud.pendingWrite = false;
+          showStatus('warn', 'Se cargaron los datos de la nube. Repite el último cambio si no aparece.');
+        }
         renderHistory();
         renderAirports();
         renderCalendar();
@@ -1911,6 +1934,7 @@ function switchMode() {
   if (!confirm(msg)) return;
   // tear down cloud listener if any
   if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
+  cloud.hydrated = false; cloud.pendingWrite = false;
   _cache = {};
   setMode(other);
   if (other === 'local') applyLocalMode();
@@ -2123,11 +2147,12 @@ function loadDayMap() {
 function saveDayMap() {
   localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap));
   if (getMode() === 'cloud') {
+    if (!cloud.hydrated) { blockedCloudWrite(); return; }
     _dayMapSaving = true;
     (async () => {
       try {
         const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
-        await setDoc(doc(cloud.db, 'users', cloud.user.uid), { dayMap: _dayMap }, { merge: true });
+        await setDoc(doc(cloud.db, 'users', cloud.user.uid), { dayMap: _dayMap }, { mergeFields: ['dayMap'] });
       } catch (e) { console.warn('saveDayMap cloud failed:', e); }
       finally { setTimeout(() => { _dayMapSaving = false; }, 2000); }
     })();

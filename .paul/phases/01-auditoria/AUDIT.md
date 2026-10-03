@@ -115,3 +115,9 @@
 - **REMARKS:** límite 50 caracteres (ahora = nº vuelo, OK).
 - **CREWLIST** multilínea y **AC_ENGTYPE** `Turbine (jet-fan)`: aceptados (se ven bien en la app) → H7 parcialmente cerrada.
 - Archivo de prueba: Escritorio `PRUEBA_C_delay_night.csv` = formato actual + `DELAY` (FR2134 `41|93`, FR2135 `93`) + `TIME_NIGHT` (1:35 / 2:36).
+
+### Informe de Issues del wizard (CSV habitual del usuario, 19 vuelos 14/09–02/10)
+- **19/19 "Invalid value for Aircraft Engine Type" → importado como "Jet"**: confirma commit 5079179. `AC_ENGTYPE` debe ser **`Jet`** (index.html:1056). H7-ENGTYPE cerrada.
+- **FLIGHTLOG >250 chars NO genera issue** (se descarta como causa de los Issues; posible truncado silencioso, sin importancia).
+- **Fila 14, 2026-09-18 STN-HAM: "PIC / Captain Name is missing"** → el parser no encontró capitán ese día (¿rol distinto de `CP`, sin sección Flight Deck Crew, o CP no verificado?). Nuevo bug → pedir ese email al usuario (fase 2).
+- Ningún issue menciona LDG/landing → LDG_NIGHT vacío sigue sin explicar; se resuelve con PRUEBA_C.

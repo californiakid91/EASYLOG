@@ -1,0 +1,25 @@
+{
+  "name": "EasyLog",
+  "version": "0.0.0",
+  "milestone": {
+    "name": "v0.1 Datos fiables",
+    "version": "0.1.0",
+    "status": "in_progress"
+  },
+  "phase": {
+    "number": 2,
+    "name": "CSV",
+    "status": "not_started"
+  },
+  "loop": {
+    "plan": null,
+    "position": "IDLE"
+  },
+  "timestamps": {
+    "created_at": "2026-10-03T12:31:08+01:00",
+    "updated_at": "2026-10-03T14:00:00+01:00"
+  },
+  "satellite": {
+    "groom": true
+  }
+}

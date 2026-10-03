@@ -8,7 +8,7 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 
 **v0.1 Datos fiables** (v0.1.0)
 Status: In progress
-Phases: 1 of 4 complete
+Phases: 2 of 4 complete
 
 ## Phases
 
@@ -17,7 +17,7 @@ Phases: 1 of 4 complete
 | 1 | Auditoría (arnés + causas raíz) | 1/1 | ✅ Complete | 2026-10-03 |
 | 1.1 | [INSERTED] Borrados persisten en la nube (merge:true) | 1/1 | ✅ Complete | 2026-10-03 |
 | 1.2 | [INSERTED] Botón "+ Añadir fecha" UK Days (petición usuario) | 1/1 | ✅ Complete | 2026-10-03 |
-| 2 | CSV: esquema validado + TIME_NIGHT + delays | TBD | Not started | - |
+| 2 | CSV: esquema validado + TIME_NIGHT + delays | 1/1 | ✅ Complete | 2026-10-03 |
 | 3 | UK Days: orden cronológico + recálculo | TBD | Not started | - |
 | 4 | Pista en uso (dialéctica de fuente + implementación) | TBD | Not started | - |
 
@@ -36,6 +36,7 @@ Phases: 1 of 4 complete
 ### Phase 2: CSV
 **Goal:** El CSV importa en PilotLog con T/O-LDG, night, delays y columnas correctas.
 **Depends on:** Phase 1 (AUDIT.md H1, H4, H7, H8)
+**Plans:** - [x] 02-01: DELAY único + TIME_NIGHT + ENGTYPE Jet + modelo temporal UTC por sector
 **Scope:** prueba de importación con el usuario (35 vs 37 cols, mapeo posicional H8; ENGTYPE/CREWLIST H7) → fijar esquema; TIME_NIGHT por interpolación; delays alfanuméricos + minutos; fecha de sectores post-medianoche.
 
 ### Phase 3: UK Days

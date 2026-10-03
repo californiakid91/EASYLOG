@@ -1,1 +1,6 @@
 .paul/phases/*/harness/fixtures/
+
+# Datos personales (Excel Tax Year) y sidecars de Windows — repo público
+*.xlsx
+*:Zone.Identifier
+*:mshield

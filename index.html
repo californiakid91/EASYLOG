@@ -656,45 +656,6 @@
 </div>
 
 <script>
-// ─── IATA AHM730 delay codes → CrewLounge PILOTLOG enum names ────────────────
-const DELAY_CODES = {
-  11:'BOARDING', 12:'BOARDING', 13:'BOARDING', 14:'OVERSALES', 15:'BOARDING',
-  16:'BOARDING', 17:'BOARDING', 18:'BOARDING', 19:'REDUCED MOBILITY',
-  21:'CARGO DOCUMENTATION', 22:'CARGO DOCUMENTATION', 23:'CARGO DOCUMENTATION',
-  24:'CARGO DOCUMENTATION', 25:'OVERSALES', 26:'CARGO DOCUMENTATION',
-  27:'CARGO DOCUMENTATION', 28:'LATE / INACCURATE AIRCRAFT DOCUMENTATION',
-  29:'CARGO DOCUMENTATION',
-  31:'LATE / INACCURATE AIRCRAFT DOCUMENTATION', 32:'LOADING / UNLOADING',
-  33:'TECHNICAL EQUIPMENT', 34:'TECHNICAL EQUIPMENT', 35:'AIRCRAFT CLEANING',
-  36:'FUELLING / DEFUELLING', 37:'LOADING / UNLOADING', 38:'LOADING / UNLOADING',
-  39:'TECHNICAL EQUIPMENT',
-  41:'TECHNICAL DEFECTS', 42:'SCHEDULED MAINTENANCE', 43:'NON-SCHEDULED MAINTENANCE',
-  44:'TECHNICAL EQUIPMENT', 45:'TECHNICAL EQUIPMENT', 46:'AIRCRAFT CHANGE',
-  47:'AIRCRAFT CHANGE', 48:'AIRCRAFT CHANGE',
-  51:'TECHNICAL DEFECTS', 52:'TECHNICAL DEFECTS',
-  55:'OPERATIONS CONTROL', 56:'CARGO DOCUMENTATION', 57:'FLIGHT PLANS',
-  58:'OPERATIONS CONTROL',
-  61:'FLIGHT PLANS', 62:'OPERATIONAL REQUIREMENT', 63:'OPERATIONAL REQUIREMENT',
-  64:'OPERATIONAL REQUIREMENT', 65:'OPERATIONAL REQUIREMENT',
-  66:'CABIN CREW ERROR OR SPECIAL REQUEST', 67:'CABIN CREW ERROR OR SPECIAL REQUEST',
-  68:'CABIN CREW ERROR OR SPECIAL REQUEST', 69:'MANDATORY SECURITY',
-  71:'OPERATIONAL REQUIREMENT', 72:'OPERATIONAL REQUIREMENT',
-  73:'OPERATIONAL REQUIREMENT', 75:'DE-ICING OF AIRCRAFT',
-  76:'REMOVAL OF SNOW, ICE, WATER OR SAND FROM AIRPORT',
-  77:'GROUND HANDLING IMPAIRED BY ADVERSE WEATHER CONDITIONS',
-  81:'ATFM DUE TO ATC EN-ROUTE DEMAND / CAPACITY',
-  82:'ATFM DUE TO ATC STAFF / EQUIPMENT ENROUTE',
-  83:'RESTRICTIONS AT AIRPORT OF DEPARTURE',
-  84:'OPERATIONAL REQUIREMENT', 85:'MANDATORY SECURITY',
-  86:'IMMIGRATION, CUSTOMS, HEALTH', 87:'AIRPORT FACILITIES',
-  88:'RESTRICTIONS AT AIRPORT OF DEPARTURE',
-  89:'RESTRICTIONS AT AIRPORT OF DEPARTURE',
-  91:'AIRCRAFT ROTATION', 92:'AIRCRAFT ROTATION', 93:'AIRCRAFT ROTATION',
-  94:'AIRCRAFT ROTATION', 95:'AIRCRAFT ROTATION', 96:'OPERATIONS CONTROL',
-  97:'OPERATIONAL REQUIREMENT', 98:'OPERATIONAL REQUIREMENT',
-  99:'OPERATIONAL REQUIREMENT',
-};
-
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -772,57 +733,35 @@ const AIRPORTS = {
   SSH:{lat:27.9773,lon:34.3947},
 };
 
-// ─── Solar position (NOAA-style, ~30 lines) ───────────────────────────────────
+// ─── Solar position (algoritmo NOAA, error < 0,01° frente a la hoja de cálculo NOAA) ─
 const RAD = Math.PI / 180;
-const DAY_MS = 86400000, J1970 = 2440588, J2000 = 2451545;
-const OBLIQ = RAD * 23.4397;
 
-function _toDays(date) { return date.valueOf() / DAY_MS - 0.5 + J1970 - J2000; }
-function _solarMeanAnomaly(d) { return RAD * (357.5291 + 0.98560028 * d); }
-function _eclipticLong(M) {
-  const C = RAD * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2*M) + 0.0003 * Math.sin(3*M));
-  return M + C + RAD * 102.9372 + Math.PI;
-}
-function _declination(L) { return Math.asin(Math.sin(0) * Math.cos(OBLIQ) + Math.cos(0) * Math.sin(OBLIQ) * Math.sin(L)); }
-function _approxTransit(Ht, lw, n) { return 0.0009 + (Ht + lw) / (2*Math.PI) + n; }
-function _solarTransitJ(ds, M, L) { return J2000 + ds + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2*L); }
-function _hourAngle(h, phi, d) {
-  return Math.acos((Math.sin(h) - Math.sin(phi)*Math.sin(d)) / (Math.cos(phi)*Math.cos(d)));
-}
-function _fromJulian(j) { return new Date((j + 0.5 - J1970) * DAY_MS); }
-
-// Returns { sunrise, sunset } as UTC Date objects for the given date+location
-function sunTimes(date, lat, lon) {
-  const lw = RAD * -lon;
+// Altura del centro del sol sobre el horizonte (grados) en un instante y posición.
+function sunAltitude(utcDate, lat, lon) {
+  const T  = (utcDate.getTime() / 86400000 + 2440587.5 - 2451545) / 36525; // siglos julianos
+  const L0 = (280.46646 + T * (36000.76983 + T * 0.0003032)) % 360;
+  const M  = RAD * (357.52911 + T * (35999.05029 - 0.0001537 * T));
+  const e  = 0.016708634 - T * (0.000042037 + 0.0000001267 * T);
+  const C  = Math.sin(M) * (1.914602 - T * (0.004817 + 0.000014 * T))
+           + Math.sin(2 * M) * (0.019993 - 0.000101 * T) + Math.sin(3 * M) * 0.000289;
+  const om  = RAD * (125.04 - 1934.136 * T);
+  const lam = RAD * (L0 + C - 0.00569 - 0.00478 * Math.sin(om));
+  const eps = RAD * (23 + (26 + (21.448 - T * (46.815 + T * (0.00059 - T * 0.001813))) / 60) / 60
+                     + 0.00256 * Math.cos(om));
+  const dec = Math.asin(Math.sin(eps) * Math.sin(lam));
+  const y = Math.tan(eps / 2) ** 2, l0 = RAD * L0;
+  const eot = 4 / RAD * (y * Math.sin(2 * l0) - 2 * e * Math.sin(M) + 4 * e * y * Math.sin(M) * Math.cos(2 * l0)
+                         - 0.5 * y * y * Math.sin(4 * l0) - 1.25 * e * e * Math.sin(2 * M)); // minutos
+  const minUTC = utcDate.getUTCHours() * 60 + utcDate.getUTCMinutes() + utcDate.getUTCSeconds() / 60;
+  const ha = RAD * ((((minUTC + eot + 4 * lon) % 1440 + 1440) % 1440) / 4 - 180); // ángulo horario
   const phi = RAD * lat;
-  const d = _toDays(date);
-  const n = Math.round(d - 0.0009 - lw / (2*Math.PI));
-  const ds = _approxTransit(0, lw, n);
-  const M = _solarMeanAnomaly(ds);
-  const L = _eclipticLong(M);
-  const dec = _declination(L);
-  const Jnoon = _solarTransitJ(ds, M, L);
-  const h0 = RAD * -0.833; // sun upper limb + atmospheric refraction
-  const w = _hourAngle(h0, phi, dec);
-  if (isNaN(w)) return null; // polar day/night
-  const Jset = _solarTransitJ(_approxTransit(w, lw, n), M, L);
-  const Jrise = Jnoon - (Jset - Jnoon);
-  return { sunrise: _fromJulian(Jrise), sunset: _fromJulian(Jset) };
+  return Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(ha)) / RAD;
 }
 
-// EASA "night" = sun centre 6° below horizon, i.e. end of civil twilight.
-// Easier proxy: sunset + 30 min → sunrise - 30 min.
+// Noche EASA (licencia IAA): entre el final del crepúsculo civil vespertino y el comienzo
+// del matutino, es decir, centro del sol más de 6° por debajo del horizonte.
 function isNightAt(utcDate, lat, lon) {
-  const t = sunTimes(utcDate, lat, lon);
-  if (!t) {
-    // polar: if it's permanent day or night, fall back to local hour
-    return false;
-  }
-  const startNight = t.sunset.getTime() + 30 * 60000;
-  const endNight   = t.sunrise.getTime() - 30 * 60000;
-  const ts = utcDate.getTime();
-  if (startNight < endNight) return ts >= startNight && ts <= endNight;
-  return ts >= startNight || ts <= endNight;
+  return sunAltitude(utcDate, lat, lon) < -6;
 }
 
 function buildUTCDate(dateRaw, hm) {
@@ -937,12 +876,12 @@ const SEP = ';';
 const HEADER = [
   'PILOTLOG_DATE','FLIGHTNUMBER','AF_DEP','AF_ARR',
   'TIME_DEP','TIME_DEPSCH','TIME_ARR','TIME_ARRSCH','TIME_TO','TIME_LDG',
-  'TIME_AIR','TIME_TOTAL','TIME_PIC','TIME_SIC','TIME_IFR',
+  'TIME_AIR','TIME_TOTAL','TIME_PIC','TIME_SIC','TIME_IFR','TIME_NIGHT',
   'OPERATOR',
   'PILOT1_ID','PILOT1_NAME','PILOT2_ID','PILOT2_NAME',
   'TO_DAY','TO_NIGHT','LDG_DAY','LDG_NIGHT','PF',
   'REMARKS','CREWLIST','FLIGHTLOG',
-  'PAX','FUEL','FUELUSED','TAG_DELAY',
+  'PAX','FUEL','FUELUSED','DELAY',
   'AC_MAKE','AC_MODEL','AC_VARIANT','AC_REG','AC_ENGTYPE',
 ].join(SEP);
 
@@ -965,11 +904,78 @@ function stripLeadingZero(s) {
   return s.replace(/^0(\d:\d{2})$/, '$1');
 }
 
-function toRow(f, r) {
+function minToHM(min) {
+  return Math.floor(min / 60) + ':' + String(min % 60).padStart(2, '0');
+}
+
+function addDaysRaw(dateRaw, n) {
+  // dateRaw: "YYYY/MM/DD" → misma forma, n días después
+  const [yy, mm, dd] = dateRaw.split('/').map(Number);
+  return new Date(Date.UTC(yy, mm - 1, dd + n)).toISOString().slice(0, 10).replace(/-/g, '/');
+}
+
+// Delays del email → [{ code, min }] ordenados por minutos desc (estable: empate → orden del email).
+// Un tiempo sin código se conserva como '?' (solo va a notas).
+function parseDelays(d) {
+  const out = [];
+  for (let n = 1; n <= 9; n++) {
+    const code = (d[`Delay Code ${n}`] || '').trim().toUpperCase();
+    const time = d[`Delay Time ${n}`] || '';
+    if (!code && !time) continue;
+    out.push({ code: code || '?', min: hmToMin(time) || 0 });
+  }
+  return out.sort((a, b) => b.min - a.min);
+}
+
+// Días que hay que sumar a la fecha del duty para cada sector (en orden del email),
+// para sectores que salen pasada la medianoche UTC. Señales: Off Block anterior al
+// On Block del sector previo, u Off Block más de 12 h antes que su STD.
+function sectorDayOffsets(flights) {
+  let offset = 0, lastOnAbs = null;
+  return flights.map(f => {
+    const off = hmToMin(f.d['Off Block']);
+    if (off === '') return offset;
+    const std = hmToMin(f.d['STD']);
+    if (std !== '' && off - std < -720) offset = Math.max(offset, 1);
+    let offAbs = offset * 1440 + off;
+    while (lastOnAbs !== null && offAbs < lastOnAbs) { offset++; offAbs += 1440; }
+    const on = hmToMin(f.d['On Block']);
+    lastOnAbs = on === '' ? offAbs : offAbs + ((on - off + 1440) % 1440);
+    return offset;
+  });
+}
+
+// Instantes UTC del sector. Cadena monótona: si un instante es anterior al previo → +1 día.
+function sectorUTC(f, dayOffset = 0) {
+  const base = addDaysRaw(f.date, dayOffset);
+  const out = {};
+  let prev = null;
+  [['off', 'Off Block'], ['airborne', 'Airborne'], ['landed', 'Landed'], ['on', 'On Block']].forEach(([k, field]) => {
+    let t = buildUTCDate(base, f.d[field]);
+    while (t && prev && t < prev) t = new Date(t.getTime() + 86400000);
+    out[k] = t;
+    if (t) prev = t;
+  });
+  return out;
+}
+
+// Minutos de noche entre calzos: posición interpolada dep→arr minuto a minuto + isNightAt.
+function nightMinutes(off, on, a, b) {
+  if (!off || !on || !a || !b) return '';
+  const n = Math.round((on - off) / 60000);
+  let night = 0;
+  for (let i = 0; i < n; i++) {
+    const k = (i + 0.5) / n;
+    if (isNightAt(new Date(off.getTime() + (i + 0.5) * 60000), a.lat + (b.lat - a.lat) * k, a.lon + (b.lon - a.lon) * k)) night++;
+  }
+  return minToHM(night);
+}
+
+function toRow(f, r, dayOffset = 0) {
   const isCPT   = r === 'CPT';
   const d       = f.d;
-  const [yy, mm, dd] = f.date.split('/');
-  const date    = `${yy}-${mm}-${dd}`;
+  const t       = sectorUTC(f, dayOffset);
+  const date    = (t.off ? t.off.toISOString().slice(0, 10) : addDaysRaw(f.date, dayOffset).replace(/\//g, '-'));
   const [dep, arr] = (d['City Pair'] || '').split(' - ');
   const reg     = formatReg(d['Registration'] || '');
   const variant = getVariant(d['Registration'] || '');
@@ -986,17 +992,13 @@ function toRow(f, r) {
   let ldgNight = '0';
   const depCoords = resolveAirport(dep);
   const arrCoords = resolveAirport(arr);
-  if (isMyTO && depCoords && d['Airborne']) {
-    const utc = buildUTCDate(f.date, d['Airborne']);
-    if (utc && isNightAt(utc, depCoords.lat, depCoords.lon)) { toDay = '0'; toNight = '1'; }
+  if (isMyTO && depCoords && t.airborne && isNightAt(t.airborne, depCoords.lat, depCoords.lon)) {
+    toDay = '0'; toNight = '1';
   }
-  if (isMyLDG && arrCoords && d['Landed']) {
-    // If landed time < airborne time, flight crossed midnight UTC — bump landed date by 1 day
-    let utc = buildUTCDate(f.date, d['Landed']);
-    const utcTO = buildUTCDate(f.date, d['Airborne'] || '');
-    if (utc && utcTO && utc < utcTO) utc = new Date(utc.getTime() + 86400000);
-    if (utc && isNightAt(utc, arrCoords.lat, arrCoords.lon)) { ldgDay = '0'; ldgNight = '1'; }
+  if (isMyLDG && arrCoords && t.landed && isNightAt(t.landed, arrCoords.lat, arrCoords.lon)) {
+    ldgDay = '0'; ldgNight = '1';
   }
+  const timeNight = nightMinutes(t.off, t.on, depCoords, arrCoords);
 
   const meRole = isCPT ? 'CP' : 'FO';
   const crewLines = ['Flight Deck Crew'];
@@ -1016,22 +1018,19 @@ function toRow(f, r) {
   const timePic = isCPT ? blockMin : '';
   const timeSic = isCPT ? ''       : blockMin;
 
-  const delayNames = [];
-  const delayParts = [];
-  for (let n = 1; n <= 9; n++) {
-    const c = d[`Delay Code ${n}`];
-    if (!c) continue;
-    const name = DELAY_CODES[Number(c)];
-    if (name && !delayNames.includes(name)) delayNames.push(name);
-    delayParts.push(`${c}${name ? ' (' + name + ')' : ''}`);
-  }
-  const delayCode = delayNames.join('|');
+  // El importer de PilotLog solo acepta UN código IATA numérico: el de más minutos.
+  // Todos los códigos con sus minutos van en la primera línea de FLIGHTLOG.
+  const delays    = parseDelays(d);
+  const mainDelay = delays.find(x => /^\d{2}/.test(x.code));
+  const delayCode = mainDelay ? mainDelay.code.slice(0, 2) : '';
 
   const captRem  = d['Captain Remarks'] || 'No Data Available';
   const fInfoRaw = d['Reason For Extra Fuel'] || '';
   const fInfo    = fInfoRaw.split('(')[0].trim().replace(/\s*-\s*$/, '');
   const noUplift = d['Reason for 0 Uplift'] || '';
-  const logLines = [
+  const logLines = [];
+  if (delays.length) logLines.push(`Delays: ${delays.map(x => `${x.code} ${minToHM(x.min)}`).join(', ')}`);
+  logLines.push(
     `F/Block: ${d['Block'] || ''}`,
     `F/Trip: ${d['Trip+Taxi'] || ''}`,
     `F/Res: ${d['Reserves'] || ''}`,
@@ -1045,11 +1044,7 @@ function toRow(f, r) {
     `Pax/I: ${d['Infant'] || ''}`,
     `Cargo: ${d['Freight'] || ''}`,
     `PW: ${d['Placard Weight'] || ''}`,
-  ];
-  for (let n = 1; n <= 9; n++) {
-    const t = d[`Delay Time ${n}`];
-    if (t) logLines.push(`DT/${n}: ${t}`);
-  }
+  );
   logLines.push(`Report: ${captRem}`);
   const flightLog = logLines.join('\n');
 
@@ -1058,21 +1053,29 @@ function toRow(f, r) {
     dep || '', arr || '',
     d['Off Block'] || '', d['STD'] || '', d['On Block'] || '', d['STA'] || '',
     d['Airborne'] || '', d['Landed'] || '',
-    airHM, blockMin, timePic, timeSic, blockMin,
+    airHM, blockMin, timePic, timeSic, blockMin, timeNight,
     'RYANAIR',
     pilot1Id, pilot1Name, pilot2Id, pilot2Name,
     toDay, toNight, ldgDay, ldgNight,
     (isMyTO || isMyLDG) ? 'TRUE' : 'FALSE',
     flightNo, crewList, flightLog,
     d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '', delayCode,
-    'Boeing', 'B737', variant, reg, 'Turbine (jet-fan)',
+    'Boeing', 'B737', variant, reg, 'Jet',
   ];
 
   return vals.map(csv).join(SEP);
 }
 
 function buildCSV(flightsWithRole) {
-  const rows = flightsWithRole.map(({ flight, role }) => toRow(flight, role));
+  // Desplazamiento de día por sector, calculado por duty (vuelos consecutivos con la misma fecha)
+  const offsets = [];
+  for (let i = 0; i < flightsWithRole.length;) {
+    let j = i;
+    while (j < flightsWithRole.length && flightsWithRole[j].flight.date === flightsWithRole[i].flight.date) j++;
+    offsets.push(...sectorDayOffsets(flightsWithRole.slice(i, j).map(x => x.flight)));
+    i = j;
+  }
+  const rows = flightsWithRole.map(({ flight, role }, i) => toRow(flight, role, offsets[i]));
   return '﻿' + HEADER + '\r\n' + rows.join('\r\n');
 }
 
@@ -1397,6 +1400,21 @@ function allFlights() {
   return out;
 }
 
+// IATA sin coordenadas en la lista → esos vuelos salen sin TIME_NIGHT ni TO/LDG noche
+function airportsWithoutCoords(list) {
+  const missing = new Set();
+  list.forEach(({ flight }) => (flight.d['City Pair'] || '').split(' - ').forEach(c => {
+    if (c && !resolveAirport(c)) missing.add(c.trim().toUpperCase());
+  }));
+  return [...missing];
+}
+
+function showDownloadStatus(list, okMsg) {
+  const missing = airportsWithoutCoords(list);
+  if (missing.length) showStatus('warn', `${okMsg} Sin coordenadas (no se calcula la noche): ${missing.join(', ')}. Vuelve a pegar el email de ese día para introducir sus coordenadas y descarga de nuevo.`);
+  else showStatus('ok', okMsg);
+}
+
 function triggerDownload(csvText, filename) {
   const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);
@@ -1409,7 +1427,7 @@ function downloadAllCSV() {
   const list = allFlights();
   if (!list.length) { showStatus('err', 'No hay vuelos guardados.'); return; }
   triggerDownload(buildCSV(list), `pilotlog_${new Date().toISOString().slice(0,10)}.csv`);
-  showStatus('ok', `Descargados ${list.length} vuelos.`);
+  showDownloadStatus(list, `Descargados ${list.length} vuelos.`);
   setTimeout(() => {
     const where = getMode() === 'cloud' ? 'la nube' : 'este navegador';
     if (confirm(`CSV descargado (${list.length} vuelos).\n\n¿Borrar ahora todo el historial de ${where}?\n\nRecomendado tras confirmar el import en PilotLog.`)) {
@@ -1424,7 +1442,7 @@ function downloadMonthCSV(mk) {
   const list = flightsForMonth(mk);
   if (!list.length) return;
   triggerDownload(buildCSV(list), `pilotlog_${mk}.csv`);
-  showStatus('ok', `Descargados ${list.length} vuelos de ${monthLabel(mk)}.`);
+  showDownloadStatus(list, `Descargados ${list.length} vuelos de ${monthLabel(mk)}.`);
   setTimeout(() => {
     const where = getMode() === 'cloud' ? 'la nube' : 'este navegador';
     if (confirm(`CSV de ${monthLabel(mk)} descargado (${list.length} vuelos).\n\n¿Borrar ${monthLabel(mk)} de ${where}?\n\nRecomendado tras confirmar el import en PilotLog.`)) {

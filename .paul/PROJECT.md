@@ -14,7 +14,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 (en producción, sin versionado formal) |
-| Status | Production — auditoría completa, fixes pendientes |
+| Status | Production — CSV corregido (Fase 2); UK Days y pistas pendientes |
 | Last Updated | 2026-10-03 |
 
 **Production URLs:**
@@ -35,6 +35,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - [x] Auditoría con causa raíz de los 5 fallos (AUDIT.md) — Phase 1
 - [x] Borrados persisten en la nube (UK Days, días guardados, calendario) — Phase 1.1
 - [x] Botón "+ Añadir fecha" para UK Days manuales — Phase 1.2
+- [x] CSV con DELAY (1 código), TIME_NIGHT EASA, AC_ENGTYPE Jet, delays en notas y fechas UTC post-medianoche — importa con 0 errores/0 issues — Phase 2
 
 - [x] CSV importa en PilotLog (separador `;`, minutos, PF TRUE/FALSE, SELF)
 - [x] Excel Tax Year con fechas dd/mm/yyyy y prefijo FR
@@ -42,17 +43,13 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ### Active (In Progress)
 
-- [ ] Phase 2: arreglo CSV con esquema validado por importación real
+- [ ] Phase 3: UK Days (orden cronológico + recálculo)
+- [ ] Comprobar histórico ya importado en PilotLog (sin NIGHT; posibles fechas post-medianoche) con informe sobre export de PilotLog
 
 ### Planned (Next)
 
-- [ ] CSV: horas de night (TIME_NIGHT, TO_NIGHT, LDG_NIGHT) no aparecen
 - [ ] CSV: pista en uso (DEP_RWY / ARR_RWY) vacía — usuario propone derivarla de Flightradar (rumbo al despegue y justo antes de aterrizar)
-- [ ] CSV: T/O y landing (TO_DAY/LDG_DAY…) a veces no se ponen
-- [ ] CSV: delays (TAG_DELAY) salen "muy raros"
 - [ ] UK Days: a veces no coge bien la hora de on-block del último vuelo
-- [ ] Resolver contradicción AC_ENGTYPE (`Turbine (jet-fan)` actual vs `Jet` que el importer aceptaba), CREWLIST y FLIGHTLOG — requiere prueba de importación
-- [ ] Minutos de delay y códigos alfanuméricos se pierden
 
 ### Out of Scope
 
@@ -89,13 +86,15 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Testear index.html vía node:vm sin copiar código | Evita desincronización; arnés reutilizable | 2026-10-03 | Active |
 | UK Day = on-block último vuelo antes de 00:00 hora Londres (sin exigir aeropuerto UK) | Confirmado por usuario + REGLAS_EXCEL_TAX_YEAR.md | 2026-10-03 | Active |
 | Pistas: sin claves secretas en cliente; fuente a decidir por dialéctica | Seguridad #1; app sin servidor | 2026-10-03 | Active |
+| Noche = EASA (licencia IAA): sol < −6° (crepúsculo civil), no sunset+30 | Usuario con licencia irlandesa; validado vs PyEphem ≤10 s | 2026-10-03 | Active |
+| DELAY = 1 código (el de más minutos); resto a FLIGHTLOG; PILOTLOG_DATE = fecha UTC off-block | Importer acepta 1 código; convención PilotLog UTC | 2026-10-03 | Active |
 | Firestore: mergeFields por campo + no escribir antes del primer snapshot del servidor | merge:true no borraba claves; evitar pisar la nube desde caché offline | 2026-10-03 | Active |
 
 ## Success Metrics
 
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
-| CSV importa en PilotLog con night, pistas, T/O-LDG y delays correctos | 100% de vuelos de prueba | Fallos en 4 áreas | Not started |
+| CSV importa en PilotLog con night, pistas, T/O-LDG y delays correctos | 100% de vuelos de prueba | Night/T-O-LDG/delays OK (0 errores); pistas pendientes (Fase 4) | In progress |
 | UK Days usa on-block correcto del último vuelo | 100% de días de prueba | Falla a veces | Not started |
 
 ## Tech Stack / Tools
@@ -117,4 +116,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-03 after Phase 1.2*
+*Last updated: 2026-10-03 after Phase 2*

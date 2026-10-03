@@ -45,13 +45,14 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | removeDay no borra UK Day; día en _excelData imborrable si historial limpiado (18/09 espurio, día de SIM) | Phase 1 | S | Fase 3 |
 | Histórico ya importado en PilotLog: sin NIGHT y posibles fechas post-medianoche → informe sobre export de PilotLog (no reimportar meses) | Phase 2 | S | antes de Fase 3 |
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
+| semgrep: <script> CDN sin atributo integrity (SRI) en index.html:462 (preexistente) | Phase 2 | S | Aegis pre-deploy |
 | UX: UK Days y calendario se ven vacíos durante la carga de la nube (usuario se alarmó: "han desaparecido") → mostrar "Cargando…" mientras !cloud.hydrated | Phase 1.2 | S | Fase 3 |
 
 ### Blockers/Concerns
 - Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
 
 ### Git State
-Last commit: (ver git log — feat(01-auditoria))
+Last commit: faca7df feat(02-csv) — NO pusheado (push pendiente de OK del usuario)
 Branch: main
 
 ## Session Continuity
@@ -59,7 +60,7 @@ Branch: main
 Last session: 2026-10-03
 Stopped at: Phase 2 complete (código en commit local; push pendiente de OK del usuario)
 Next action: informe de verificación del histórico con export de PilotLog; luego /paul:plan Phase 3
-Resume file: .paul/phases/02-csv/02-01-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-03-fase2.md
 
 ---
 *STATE.md — Updated after every significant action*

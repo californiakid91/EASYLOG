@@ -140,3 +140,8 @@
 | `TO_DAY/TO_NIGHT/LDG_DAY/LDG_NIGHT` | 0/1 (funciona) |
 | `AC_ENGTYPE` | `Jet` |
 | `RWY_DEP/RWY_ARR` | designador (`22`, `36R`) — sin probar aún |
+
+### CSV habitual del usuario (pilotlog_2026-10-03.csv, 19 vuelos, generado por la app actual)
+- FR2134 trae **igual** que PRUEBA_C: `TO_DAY=1 TO_NIGHT=0 LDG_DAY=0 LDG_NIGHT=1`. Diferencias con PRUEBA_C: sin `TIME_NIGHT` y con `TAG_DELAY` (ignorada).
+- **H9 (nueva, muy probable):** PilotLog descarta TO/LDG nocturnos cuando el vuelo no trae tiempo de noche (`TIME_NIGHT` vacío → noche 0 → aterrizaje nocturno incoherente). Con TIME_NIGHT=1:35 el LDG_NIGHT sí entró. → Añadir TIME_NIGHT (fase 2) lo arregla. Verificación barata: FR3591 15/09 y FR5681 16/09 llevan TO_NIGHT=1/LDG_NIGHT=1 en el CSV → si en PilotLog salen vacíos, H9 confirmada.
+- **18/09 "PIC missing":** la fila 2026-09-18 FR1520 STN-HAM es **idéntica** (horas, fuel, PAX, matrícula) al FR1520 del 19/09, pero con crew solo VEGRIC y sin vuelo de vuelta → no es un fallo del parser: parece un email duplicado/incompleto pegado en el 18/09. Pendiente confirmar con el usuario.

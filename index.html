@@ -544,13 +544,7 @@
       </span>
     </div>
     <div style="display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap;">
-      <label class="btn btn-blue btn-sm" style="position:relative; overflow:hidden;">+ Añadir fecha
-        <!-- input de fecha invisible encima del botón: al tocarlo iOS abre su selector nativo -->
-        <input type="date" id="ukday-date" min="2026-04-06" max="2027-04-07"
-               style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"
-               onclick="try { this.showPicker(); } catch (e) {}"
-               onchange="pickUKDayDate(this)">
-      </label>
+      <button class="btn btn-blue btn-sm" onclick="openUKDateModal()">+ Añadir fecha</button>
       <button class="btn btn-ghost btn-sm" onclick="emailUKDaysBackup()">📧 Backup</button>
     </div>
     <div id="ukdays-body"></div>
@@ -638,6 +632,18 @@
         <button class="day-opt opt-sim"  onclick="setDayStatus('sim')">SIM</button>
       </div>
       <button class="day-modal-cancel" onclick="closeDayModal()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Ventana "+ Añadir fecha" de UK Days: solo añade al pulsar Añadir (iOS autocompleta hoy al abrir el selector) -->
+  <div id="ukdate-modal" class="day-modal hidden" onclick="closeUKDateModal()">
+    <div class="day-modal-box" onclick="event.stopPropagation()">
+      <div class="day-modal-handle"></div>
+      <div class="day-modal-date">Añadir UK Day</div>
+      <input type="date" id="ukday-date" min="2026-04-06" max="2027-04-07"
+             style="width:100%; font-size:16px; padding:.75rem; margin-bottom:1rem; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); box-sizing:border-box;">
+      <button class="btn btn-blue" style="width:100%; margin-bottom:.5rem;" onclick="confirmUKDateModal()">Añadir</button>
+      <button class="day-modal-cancel" onclick="closeUKDateModal()">Cancelar</button>
     </div>
   </div>
 
@@ -1668,13 +1674,21 @@ function toggleUKDays() {
   if (chev) chev.style.transform = open ? 'rotate(0deg)' : 'rotate(-90deg)';
 }
 
-// Selector de fecha del botón "+ Añadir fecha": confirma antes de añadir (en iOS el change puede saltar con cada toque)
-function pickUKDayDate(input) {
-  const iso = input.value;
-  input.value = '';
-  input.blur();
-  if (!iso) return;
-  if (!confirm(`¿Añadir ${dateISOToDisplay(iso)} como UK Day?`)) return;
+// Ventana "+ Añadir fecha": la fecha solo se añade al pulsar "Añadir"
+function openUKDateModal() {
+  document.getElementById('ukday-date').value = '';
+  document.getElementById('ukdate-modal').classList.remove('hidden');
+}
+function closeUKDateModal() {
+  document.getElementById('ukdate-modal').classList.add('hidden');
+}
+function confirmUKDateModal() {
+  const iso = document.getElementById('ukday-date').value;
+  // Avisos con alert: la línea de estado está lejos (en "Añadir día") y no se vería desde UK Days
+  if (!iso) { alert('Elige una fecha primero.'); return; }
+  if (iso < UK_DAYS_START || iso > UK_DAYS_END) { alert(`${dateISOToDisplay(iso)} está fuera del periodo UK Days (6 abr 2026 – 7 abr 2027).`); return; }
+  if (_ukdays[iso]) { alert(`${dateISOToDisplay(iso)} ya está registrado como UK Day.`); return; }
+  closeUKDateModal();
   addUKDayManual(iso);
 }
 

@@ -59,7 +59,7 @@ Branch: main
 
 Last session: 2026-10-03
 Stopped at: Phase 2 complete, desplegada
-Next action: informe de verificación del histórico con export de PilotLog; luego /paul:plan Phase 3
+Next action: usuario descargará desde el PC el CSV de CrewLounge (últimos 2 años) → leer de /mnt/c/Users/Ricardo/Downloads → informe vuelo a vuelo (fuera del repo); luego /paul:plan Phase 3
 Resume file: .paul/HANDOFF-2026-10-03-fase2.md
 
 ---

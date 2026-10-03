@@ -99,3 +99,19 @@
 - **Fase 2 — CSV:** (a) prueba de importación H8/H7 con el usuario → fijar esquema; (b) TIME_NIGHT; (c) delays: alfanuméricos + minutos donde PilotLog los acepte; (d) fecha de sectores post-medianoche.
 - **Fase 3 — UK Days:** orden cronológico de sectores con cruce de medianoche; recalcular al reemplazar un día; tests con fixtures 01/90/91.
 - **Fase 4 — Pistas:** dialéctica sobre la fuente (viento+OurAirports vs FR24+proxy vs manual) → implementación.
+
+---
+
+## Addendum 2026-10-03 — Prueba 1 del usuario (capturas PilotLog FR2134) + docs oficiales
+
+**Fuente:** capturas del usuario + [CrewLounge: import flight records](https://support.crewlounge.aero/support/solutions/articles/24000034487-import-flight-records-from-another-logbook-or-my-excel-sheet)
+
+- **H8 REFUTADA:** el importer mapea por **nombre de cabecera** (docs: "columns in any order, not case sensitive"). PAX 185, FUEL 7160, FUEL USED 4550, avión 9H-VUL B737-8200 correctos.
+- **Delays — CAUSA REAL:** el wizard avisa en cada importación *"column headers not recognized: tag_delay … data ignored"*. `TAG_DELAY` es nombre del *export*, no del *import*. La cabecera de import es **`DELAY`** con códigos IATA **numéricos**. → Fase 2: renombrar + mandar códigos (separador múltiple por confirmar con PRUEBA_C).
+- **Pistas:** cabeceras de import son **`RWY_DEP` / `RWY_ARR`** (no DEP_RWY/ARR_RWY como en el export).
+- **TIME_NIGHT:** cabecera aceptada; además PilotLog puede **recalcular night time y TO/LDG día/noche** en bloque (Multiselect en Flights) con coordenadas de aeródromo → posible solución sin código.
+- **T/O-LDG:** FR2134 muestra TO DAY=1 ✓, pero LDG NIGHT vacío aunque el CSV envía `LDG_NIGHT=1` → pendiente: ver informe de "Issues" del wizard (19/19 registros con Issues).
+- **FLIGHTLOG:** límite 250 caracteres; la app manda ~480-490 → probable causa de los Issues en todos los registros.
+- **REMARKS:** límite 50 caracteres (ahora = nº vuelo, OK).
+- **CREWLIST** multilínea y **AC_ENGTYPE** `Turbine (jet-fan)`: aceptados (se ven bien en la app) → H7 parcialmente cerrada.
+- Archivo de prueba: Escritorio `PRUEBA_C_delay_night.csv` = formato actual + `DELAY` (FR2134 `41|93`, FR2135 `93`) + `TIME_NIGHT` (1:35 / 2:36).

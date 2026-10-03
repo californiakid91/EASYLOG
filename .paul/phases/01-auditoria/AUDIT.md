@@ -161,3 +161,9 @@
 
 - **CORRECCIÓN (14:39):** captura del usuario muestra "Días guardados: 0 días · 0 vuelos" → `_cache` vacío → `backfillUKDays` NO puede recrear el 18/09. La hipótesis de resurrección por backfill es **refutada para este caso** (sigue siendo un riesgo real cuando el día está en historial). Causa real pendiente: (a) confirm() no aparece, (b) onSnapshot sobrescribe tras la ventana de 3 s de `_ukdaysSaving`, (c) PWA iOS con versión cacheada sin el fix 1b9c240. Preguntado al usuario.
 - Confirmado: el vuelo falso del 18/09 sigue en `_excelData` sin forma de borrarlo desde la UI (historial vacío) → fila fantasma en Excel Tax Year.
+
+### CAUSA RAÍZ: borrados no llegan a la nube (usuario: opción C — desaparece y vuelve al recargar)
+- `persistCloud` (index.html:1129-1143) usa `setDoc(..., { history, excelData, airports, ukdays }, { merge: true })`. Con `merge:true` Firestore **fusiona mapas anidados por claves**: las claves eliminadas del objeto local **no se borran** en el documento. Al recargar, `onSnapshot` (1865-1869) restaura el valor de la nube.
+- Afecta a: `removeUKDay`, `removeDay` (borrar un día), y `saveDayMap` (2123, también `merge:true`) al quitar el estado de un día del calendario → probable causa raíz de los bugs de calendario de mayo (ee098a5, 31569fb, 3066643 trataron síntomas).
+- `clearHistory` sí funciona porque guarda un mapa vacío `{}` (leaf → reemplaza el campo).
+- **Fix propuesto (prioritario, plan propio antes de fase 2):** `setDoc(ref, data, { mergeFields: ['history','excelData','airports','ukdays','updatedAt'] })` (reemplaza esos campos enteros sin tocar `dayMap`) y `mergeFields: ['dayMap']` en saveDayMap. Verificar API con context7 (G3/G5) y probar con el 18/09.

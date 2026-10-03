@@ -5,12 +5,12 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.1 Datos fiables — Phase 2 (CSV)
+**Current focus:** v0.1 Datos fiables — Phase 1.1 (borrados en la nube), luego Phase 2 (CSV)
 
 ## Current Position
 
 Milestone: v0.1 Datos fiables
-Phase: 2 of 4 (CSV: esquema validado + TIME_NIGHT + delays)
+Phase: 1.1 [INSERTED] (Borrados persisten en la nube)
 Plan: Not started
 Status: Ready to plan
 Last activity: 2026-10-03 — Phase 1 complete, transitioned to Phase 2
@@ -53,7 +53,7 @@ Branch: main
 
 Last session: 2026-10-03
 Stopped at: Phase 1 complete, ready to plan Phase 2
-Next action: /paul:plan para Phase 2 (esquema ya validado: DELAY 1 código, TIME_NIGHT H:MM, ENGTYPE Jet)
+Next action: /paul:plan para Phase 1.1 (quick-fix mergeFields), después Phase 2
 Resume file: .paul/phases/01-auditoria/AUDIT.md
 
 ---

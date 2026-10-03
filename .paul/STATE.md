@@ -11,8 +11,8 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 
 Milestone: v0.1 Datos fiables
 Phase: 1.1 [INSERTED] (Borrados persisten en la nube)
-Plan: Not started
-Status: Ready to plan
+Plan: 01.1-01 created, awaiting approval
+Status: PLAN created, ready for APPLY
 Last activity: 2026-10-03 — Phase 1 complete, transitioned to Phase 2
 
 Progress:
@@ -24,7 +24,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete - ready for next PLAN]
+  ✓        ○        ○     [Plan created, awaiting approval]
 ```
 
 ## Accumulated Context
@@ -53,8 +53,8 @@ Branch: main
 
 Last session: 2026-10-03
 Stopped at: Phase 1 complete, ready to plan Phase 2
-Next action: /paul:plan para Phase 1.1 (quick-fix mergeFields), después Phase 2
-Resume file: .paul/phases/01-auditoria/AUDIT.md
+Next action: aprobar y /paul:apply .paul/phases/01.1-borrados-nube/01.1-01-PLAN.md
+Resume file: .paul/phases/01.1-borrados-nube/01.1-01-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

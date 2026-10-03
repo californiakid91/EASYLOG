@@ -39,7 +39,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Issue | Origin | Effort | Revisit |
 |-------|--------|--------|---------|
 | Landing ausente en el CSV habitual del usuario (con PRUEBA_C sí importa) — pedido el CSV original | Phase 1 | S | Fase 2 |
-| 18/09 STN-HAM: "PIC / Captain missing" — pedido el email | Phase 1 | S | Fase 2 |
+| removeDay no borra UK Day; día en _excelData imborrable si historial limpiado (18/09 espurio, día de SIM) | Phase 1 | S | Fase 3 |
 | Fecha PILOTLOG_DATE de sectores post-medianoche | Phase 1 | S | Fase 2 |
 
 ### Blockers/Concerns

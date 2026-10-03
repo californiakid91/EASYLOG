@@ -149,3 +149,7 @@
 ### Verificación H9 (FR3591 15/09 en PilotLog)
 - FR3591 (TO_NIGHT=1, LDG_NIGHT=1, sin TIME_NIGHT) → PilotLog muestra **TO NIGHT 1 / LDG NIGHT 1**, NIGHT vacío → **H9 REFUTADA** en su forma general.
 - FR2134 (mixto: TO_DAY=1 + LDG_NIGHT=1) sin TIME_NIGHT → LDG perdido; con TIME_NIGHT (PRUEBA_C) → OK. Causa exacta desconocida (posible validación del importer en vuelos mixtos o import previo distinto). **Decisión:** no investigar más; la fase 2 manda siempre TIME_NIGHT y se verifica con el primer vuelo mixto real tras el fix.
+
+### 18/09 confirmado espurio (usuario: "no volé, tuve simulador")
+- Vuelo FR1520 del 18/09 = copia del 19/09 → borrar en PilotLog y en la app.
+- **Bug colateral (fase 3):** `removeDay` (index.html:1334) borra `_cache` y `_excelData` pero **no** `_ukdays` → UK Day huérfano con ruta falsa. Y si el historial ya se limpió tras exportar (`clearHistory`), el día sigue en `_excelData` sin forma de borrarlo desde la UI → aparecería un vuelo fantasma en el Excel Tax Year en un día de SIM.

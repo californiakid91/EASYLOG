@@ -34,6 +34,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 - [x] Auditoría con causa raíz de los 5 fallos (AUDIT.md) — Phase 1
 - [x] Borrados persisten en la nube (UK Days, días guardados, calendario) — Phase 1.1
+- [x] Botón "+ Añadir fecha" para UK Days manuales — Phase 1.2
 
 - [x] CSV importa en PilotLog (separador `;`, minutos, PF TRUE/FALSE, SELF)
 - [x] Excel Tax Year con fechas dd/mm/yyyy y prefijo FR
@@ -41,7 +42,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ### Active (In Progress)
 
-- [ ] Botón "📅 Añadir otra fecha" en UK Days (petición usuario)
+- [ ] Phase 2: arreglo CSV con esquema validado por importación real
 
 ### Planned (Next)
 
@@ -116,4 +117,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-03 after Phase 1.1*
+*Last updated: 2026-10-03 after Phase 1.2*

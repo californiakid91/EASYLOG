@@ -16,7 +16,7 @@ Phases: 1 of 4 complete
 |-------|------|-------|--------|-----------|
 | 1 | Auditoría (arnés + causas raíz) | 1/1 | ✅ Complete | 2026-10-03 |
 | 1.1 | [INSERTED] Borrados persisten en la nube (merge:true) | 1/1 | ✅ Complete | 2026-10-03 |
-| 1.2 | [INSERTED] Botón "📅 Otra fecha" UK Days (petición usuario) | 1 | Planning | - |
+| 1.2 | [INSERTED] Botón "+ Añadir fecha" UK Days (petición usuario) | 1/1 | ✅ Complete | 2026-10-03 |
 | 2 | CSV: esquema validado + TIME_NIGHT + delays | TBD | Not started | - |
 | 3 | UK Days: orden cronológico + recálculo | TBD | Not started | - |
 | 4 | Pista en uso (dialéctica de fuente + implementación) | TBD | Not started | - |

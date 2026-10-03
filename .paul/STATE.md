@@ -52,13 +52,13 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
 
 ### Git State
-Last commit: faca7df feat(02-csv) — NO pusheado (push pendiente de OK del usuario)
+Last commit: add2d91 — pusheado y desplegado en GitHub Pages (verificado 2026-10-03)
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-03
-Stopped at: Phase 2 complete (código en commit local; push pendiente de OK del usuario)
+Stopped at: Phase 2 complete, desplegada
 Next action: informe de verificación del histórico con export de PilotLog; luego /paul:plan Phase 3
 Resume file: .paul/HANDOFF-2026-10-03-fase2.md
 

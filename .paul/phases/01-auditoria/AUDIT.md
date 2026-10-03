@@ -145,3 +145,7 @@
 - FR2134 trae **igual** que PRUEBA_C: `TO_DAY=1 TO_NIGHT=0 LDG_DAY=0 LDG_NIGHT=1`. Diferencias con PRUEBA_C: sin `TIME_NIGHT` y con `TAG_DELAY` (ignorada).
 - **H9 (nueva, muy probable):** PilotLog descarta TO/LDG nocturnos cuando el vuelo no trae tiempo de noche (`TIME_NIGHT` vacío → noche 0 → aterrizaje nocturno incoherente). Con TIME_NIGHT=1:35 el LDG_NIGHT sí entró. → Añadir TIME_NIGHT (fase 2) lo arregla. Verificación barata: FR3591 15/09 y FR5681 16/09 llevan TO_NIGHT=1/LDG_NIGHT=1 en el CSV → si en PilotLog salen vacíos, H9 confirmada.
 - **18/09 "PIC missing":** la fila 2026-09-18 FR1520 STN-HAM es **idéntica** (horas, fuel, PAX, matrícula) al FR1520 del 19/09, pero con crew solo VEGRIC y sin vuelo de vuelta → no es un fallo del parser: parece un email duplicado/incompleto pegado en el 18/09. Pendiente confirmar con el usuario.
+
+### Verificación H9 (FR3591 15/09 en PilotLog)
+- FR3591 (TO_NIGHT=1, LDG_NIGHT=1, sin TIME_NIGHT) → PilotLog muestra **TO NIGHT 1 / LDG NIGHT 1**, NIGHT vacío → **H9 REFUTADA** en su forma general.
+- FR2134 (mixto: TO_DAY=1 + LDG_NIGHT=1) sin TIME_NIGHT → LDG perdido; con TIME_NIGHT (PRUEBA_C) → OK. Causa exacta desconocida (posible validación del importer en vuelos mixtos o import previo distinto). **Decisión:** no investigar más; la fase 2 manda siempre TIME_NIGHT y se verifica con el primer vuelo mixto real tras el fix.

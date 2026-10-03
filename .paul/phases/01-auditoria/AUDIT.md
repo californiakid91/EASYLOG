@@ -153,3 +153,8 @@
 ### 18/09 confirmado espurio (usuario: "no volé, tuve simulador")
 - Vuelo FR1520 del 18/09 = copia del 19/09 → borrar en PilotLog y en la app.
 - **Bug colateral (fase 3):** `removeDay` (index.html:1334) borra `_cache` y `_excelData` pero **no** `_ukdays` → UK Day huérfano con ruta falsa. Y si el historial ya se limpió tras exportar (`clearHistory`), el día sigue en `_excelData` sin forma de borrarlo desde la UI → aparecería un vuelo fantasma en el Excel Tax Year en un día de SIM.
+
+### Bug UK Days "no me deja borrar" (reportado 2026-10-03 14:36)
+- `removeUKDay` (index.html:1704) borra, pero `backfillUKDays()` se ejecuta en cada `onSnapshot` (index.html:1874) y al cargar modo local (1823) → **recrea** el UK Day desde `_cache` mientras el día siga en el historial. El borrado "no funciona" para cualquier día con vuelos en historial.
+- Workaround dado al usuario: borrar primero el día en Historial (`removeDay`), luego el UK Day, y re-añadirlo manual con el comando `añade uk days 18 septiembre`.
+- Fix fase 3: backfill no debe resucitar días borrados explícitamente (p.ej. marca `deleted`/tombstone, o backfill solo en primera migración).

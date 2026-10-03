@@ -38,11 +38,12 @@ PLAN ──▶ APPLY ──▶ UNIFY
 ### Deferred Issues
 | Issue | Origin | Effort | Revisit |
 |-------|--------|--------|---------|
-| Preguntas H8 al usuario: qué muestra PilotLog en FR2134 02/10 (Delay/PAX/Fuel/modelo) y si usa plantilla de mapeo | Phase 1 | S | Inicio fase 2 |
+| Landing ausente en el CSV habitual del usuario (con PRUEBA_C sí importa) — pedido el CSV original | Phase 1 | S | Fase 2 |
+| 18/09 STN-HAM: "PIC / Captain missing" — pedido el email | Phase 1 | S | Fase 2 |
 | Fecha PILOTLOG_DATE de sectores post-medianoche | Phase 1 | S | Fase 2 |
 
 ### Blockers/Concerns
-- Fase 2 necesita una importación de prueba real del usuario en PilotLog (H7/H8)
+- Ninguno: esquema de importación validado con el usuario (AUDIT.md, 'Esquema de importación validado')
 
 ### Git State
 Last commit: (ver git log — feat(01-auditoria))
@@ -52,7 +53,7 @@ Branch: main
 
 Last session: 2026-10-03
 Stopped at: Phase 1 complete, ready to plan Phase 2
-Next action: /paul:plan para Phase 2 (arrancar con preguntas H8 + CSV de prueba para importar)
+Next action: /paul:plan para Phase 2 (esquema ya validado: DELAY 1 código, TIME_NIGHT H:MM, ENGTYPE Jet)
 Resume file: .paul/phases/01-auditoria/AUDIT.md
 
 ---

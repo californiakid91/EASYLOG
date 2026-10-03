@@ -127,3 +127,16 @@
 - **TIME_NIGHT** en `H:MM` importa: FR2134 1:35 (Day 0:40), FR2135 2:36 ✓ → método de estimación validado
 - **LDG_NIGHT=1** importa en FR2134 ✓ (TO DAY 1) → el formato actual de T/O-LDG funciona; el landing ausente del CSV habitual queda por explicar (pedido el CSV original)
 - **DELAY** con un código (`93`) → "93 (RA)" ✓; con varios `41|93` → **vacío** ✗. PRUEBA_D prueba `41,93` y `93 62 15`.
+
+### PRUEBA_D importada (2026-10-03 14:27)
+- `41,93` → DELAY vacío ✗ · `93 62 15` → DELAY vacío ✗ (y `41|93` en PRUEBA_C vacío)
+- **Conclusión:** el importer acepta **un único código IATA numérico por vuelo**. Fix fase 2: `DELAY` = código con más minutos (FR2134 → 93/40min, FR2135 → 93/41min); resto de códigos + minutos a FLIGHTLOG (≤250 chars) / REMARKS (≤50).
+
+## Esquema de importación validado (base para fase 2)
+| Columna | Formato que funciona |
+|---|---|
+| `DELAY` (no `TAG_DELAY`) | 1 código numérico IATA |
+| `TIME_NIGHT` | `H:MM` |
+| `TO_DAY/TO_NIGHT/LDG_DAY/LDG_NIGHT` | 0/1 (funciona) |
+| `AC_ENGTYPE` | `Jet` |
+| `RWY_DEP/RWY_ARR` | designador (`22`, `36R`) — sin probar aún |

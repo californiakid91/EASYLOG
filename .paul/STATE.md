@@ -10,9 +10,9 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 ## Current Position
 
 Milestone: v0.1 Datos fiables
-Phase: 1.1 [INSERTED] complete → next: quick-fix botón fecha UK Days, luego Phase 2
-Plan: 01.1-01 complete
-Status: Ready to plan
+Phase: 1.2 [INSERTED] (Botón fecha manual UK Days) — Planning
+Plan: 01.2-01 created, awaiting approval
+Status: PLAN created, ready for APPLY
 Last activity: 2026-10-03 15:05 — Phase 1.1 complete, verificado en iPhone
 
 Progress:
@@ -24,7 +24,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete - ready for next PLAN]
+  ✓        ○        ○     [Plan created, awaiting approval]
 ```
 
 ## Accumulated Context
@@ -55,7 +55,7 @@ Branch: main
 
 Last session: 2026-10-03
 Stopped at: Phase 1.1 complete (deploy 7b922f7 verificado por usuario)
-Next action: /paul:plan quick-fix botón "📅 Añadir otra fecha" en UK Days; después Phase 2 (CSV)
+Next action: aprobar y /paul:apply .paul/phases/01.2-ukdays-fecha-manual/01.2-01-PLAN.md
 Resume file: .paul/phases/01.1-borrados-nube/01.1-01-SUMMARY.md
 
 ---

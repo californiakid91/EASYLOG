@@ -158,3 +158,6 @@
 - `removeUKDay` (index.html:1704) borra, pero `backfillUKDays()` se ejecuta en cada `onSnapshot` (index.html:1874) y al cargar modo local (1823) → **recrea** el UK Day desde `_cache` mientras el día siga en el historial. El borrado "no funciona" para cualquier día con vuelos en historial.
 - Workaround dado al usuario: borrar primero el día en Historial (`removeDay`), luego el UK Day, y re-añadirlo manual con el comando `añade uk days 18 septiembre`.
 - Fix fase 3: backfill no debe resucitar días borrados explícitamente (p.ej. marca `deleted`/tombstone, o backfill solo en primera migración).
+
+- **CORRECCIÓN (14:39):** captura del usuario muestra "Días guardados: 0 días · 0 vuelos" → `_cache` vacío → `backfillUKDays` NO puede recrear el 18/09. La hipótesis de resurrección por backfill es **refutada para este caso** (sigue siendo un riesgo real cuando el día está en historial). Causa real pendiente: (a) confirm() no aparece, (b) onSnapshot sobrescribe tras la ventana de 3 s de `_ukdaysSaving`, (c) PWA iOS con versión cacheada sin el fix 1b9c240. Preguntado al usuario.
+- Confirmado: el vuelo falso del 18/09 sigue en `_excelData` sin forma de borrarlo desde la UI (historial vacío) → fila fantasma en Excel Tax Year.

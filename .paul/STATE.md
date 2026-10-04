@@ -73,7 +73,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Phase 3: Safari/iPhone sirve versiones viejas en caché → ya causó pérdida de datos; auto-actualización PWA es la prioridad
 
 ### Git State
-Last commit: d052120 (código fase 3) — pusheado y desplegado en GitHub Pages, verificado en la web
+Last commit: 4910c67 (fase 3 completa) — pusheado y desplegado en GitHub Pages, verificado en la web
 Branch: main
 
 ## Session Continuity
@@ -81,7 +81,7 @@ Branch: main
 Last session: 2026-10-04
 Stopped at: Fase 3 completa (UNIFY 03-02 + transición)
 Next action: /paul:plan — plan de auto-actualización PWA (prioridad; insertar como fase 3.1 o primer plan de la fase 4)
-Resume file: .paul/phases/03-ukdays/03-02-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-04-fase3-completa.md
 
 ---
 *STATE.md — Updated after every significant action*

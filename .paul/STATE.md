@@ -10,10 +10,10 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 ## Current Position
 
 Milestone: v0.1 Datos fiables
-Phase: 3 of 4 (UK Days) — Planning
-Plan: 03-02 created, awaiting approval
-Status: PLAN created, ready for APPLY
-Last activity: 2026-10-04 — Dialéctica (wf_78cb92df-f8c) + plan 03-02 revisado por Fable (aprobar con cambios → aplicados)
+Phase: 3 of 4 (UK Days) — APPLY complete
+Plan: 03-02 ejecutado y verificado por el usuario en iPhone (54/91)
+Status: APPLY complete, ready for UNIFY
+Last activity: 2026-10-04 — Checkpoint 03-02 aprobado (commits 81f0fb4, d385896, f421617, 8b5394b)
 
 Progress:
 - Milestone: [██████░░░░] 60%
@@ -24,7 +24,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan created, awaiting approval]
+  ✓        ✓        ○     [APPLY complete, ready for UNIFY]
 ```
 
 ## Accumulated Context
@@ -39,6 +39,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - PILOTLOG_DATE = fecha UTC de off-block (sectores post-medianoche → día siguiente)
 - Escrituras a nube con mergeFields + guard hidratación (ignora fromCache); last-write-wins por campo aceptado
 - UK Day: computeUKDay tri-estado (último sector cronológico vía sectorUTC; sin On Block → no tocar); manual:true nunca se recalcula
+- Calzos a las 00:00 justas = UK Day (FA 2013 Sch 45 para 22, midnight test); solo después de 00:00 es No UK
 - UK Days 03-02 (dialéctica + Fable): regla cerrada R1/R2/R3 exigiendo aterrizar en UK (sustituye "sin exigir aeropuerto UK"); estados uk/no con source/reason; calendario _dayMap como declaración de días sin email; P = pendientes pasados, alarma solo con N
 - Días solo-Excel se borran sin tocar UK Days; "Cargando…" solo en UK Days (calendario desde caché local)
 
@@ -79,7 +80,11 @@ PLAN ──▶ APPLY ──▶ UNIFY
   - [!] Tras re-pegar: 80/91 sin "pend." → cuadra EXACTO con la versión ANTIGUA en caché (cuenta todas las claves de _ukdays: 25 man + 24 R1 + 29 R3 + 2 No UK manual = 80; el código viejo no crea R3 al pegar). Datos sanos: la versión nueva recrea los R3 de 26/09 y 03/10 al cargar → esperado 53/91. Pedir abrir con ?v=27
   - [x] Causa: el confirm() de "¿Borrar historial?" tras descargar el CSV se pierde en iPhone → usuario usó ✕. Decidido: botón fijo "🗑 Quitar de la lista" tras exportar + ✕ solo quita de la lista (Excel y UK Days se conservan)
   - [x] Con ?v=27 (versión nueva): 53/91 sin pendientes ✓ (verificado en iPhone 22:46)
-  - [ ] Comprobación final pendiente: luego backup → 09/04, 12/05, 20/05, 26/09 en No UK
+  - [x] Backup final verificado: 53 confirmados · 0 pendientes; 09/04 (00:53), 12/05 (00:10), 20/05 (00:59), 26/09 (00:10) en No UK R3; 23/09 R1 21:59; 06/05 y 24/09 No UK manual ✓
+- (pendiente personal del usuario — detalle en memoria local)
+  - [x] 54/91 sin pendientes verificado en iPhone (23:16) tras re-pegar 23/09, 24/09, 26/09, 02/10, 03/10 por 2.ª vez (los había borrado con ✕ en una pestaña ?v=27 con código viejo)
+  - [x] "Borrar historial completo" → lista vacía y sigue 54/91 ✓ (Excel y UK Days intactos)
+  - [x] Plan APROBADO por el usuario (2026-10-04 ~23:20). Pendiente para otra sesión: revisar uno a uno los 47 días previos (25 man + 22 R1)
   - [ ] luego: 48 previos mes a mes (abril 14 man, mayo 9 man + 3 R1, …)
 - [ ] 2. Lista "No UK": ¿algún día no encaja?
 - [ ] 3. 6 DUTY sin email (09/04, 12/05, 20/05, 23/09, 26/09, 27/09/2026): ¿vuelo sin pegar, tierra o marca errónea? (uno a uno)
@@ -96,8 +101,8 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-04
-Stopped at: Plan 03-02 created
-Next action: Review and approve plan, then run /paul:apply .paul/phases/03-ukdays/03-02-PLAN.md
+Stopped at: APPLY 03-02 completo (checkpoint aprobado)
+Next action: /paul:unify .paul/phases/03-ukdays/03-02-PLAN.md
 Resume file: .paul/phases/03-ukdays/03-02-PLAN.md
 
 ---

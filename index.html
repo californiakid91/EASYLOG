@@ -640,7 +640,7 @@
     <div class="day-modal-box" onclick="event.stopPropagation()">
       <div class="day-modal-handle"></div>
       <div class="day-modal-date">Añadir UK Day</div>
-      <input type="date" id="ukday-date" min="2026-04-06" max="2027-04-07"
+      <input type="date" id="ukday-date" min="2026-04-06" max="2027-04-05"
              style="width:100%; font-size:16px; padding:.75rem; margin-bottom:1rem; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); box-sizing:border-box;">
       <button class="btn btn-blue" style="width:100%; margin-bottom:.5rem;" onclick="confirmUKDateModal()">Añadir</button>
       <button class="day-modal-cancel" onclick="closeUKDateModal()">Cancelar</button>
@@ -1092,7 +1092,7 @@ let _excelData  = {};  // historial permanente para Excel: { iso: { role, flight
 let _airports   = {};  // custom airports: { IATA: { lat, lon } }
 let _ukdays     = {};  // UK Days: { iso: { route, onBlock, tz } } — persiste aunque se borre el historial
 // Cloud state (populated only when mode === 'cloud')
-let cloud = { app: null, auth: null, db: null, user: null, unsub: null, hydrated: false, pendingWrite: false };
+let cloud = { app: null, auth: null, db: null, user: null, unsub: null, hydrated: false, pendingWrite: false, loadError: false };
 let _dayMapSaving  = false; // evita que onSnapshot sobreescriba _dayMap mientras guardamos
 let _ukdaysSaving  = false; // evita que onSnapshot sobreescriba _ukdays mientras guardamos
 
@@ -1109,7 +1109,9 @@ function resolveAirport(iata) {
 
 function saveHistory(h) { _cache = h; persist(); }
 function saveAirports(a) { _airports = a; persist(); }
-function saveUKDays(u)   { _ukdays = u; _ukdaysSaving = true; persist(); setTimeout(() => { _ukdaysSaving = false; }, 3000); }
+// Cambia _ukdays sin escribir (para agrupar con otra escritura); el flag evita que onSnapshot lo pise mientras se guarda
+function setUKDays(u)    { _ukdays = u; _ukdaysSaving = true; setTimeout(() => { _ukdaysSaving = false; }, 3000); }
+function saveUKDays(u)   { setUKDays(u); persist(); }
 
 function persist() {
   const mode = getMode();
@@ -1229,8 +1231,7 @@ function tryParseUKDaysCommand(text) {
   }
   if (!month) return null;
 
-  // Infer year from UK Days range: may-dec → 2026, jan-mar → 2027, apr → 2026
-  const year = (month >= 1 && month <= 3) ? 2027 : 2026;
+  // Año según el periodo UK Days (6 abr 2026 – 5 abr 2027): ene-mar y 1-5 abr → 2027; resto → 2026
 
   // Extract day numbers (1-2 digits surrounded by word boundaries)
   const days = [...t.matchAll(/\b(\d{1,2})\b/g)]
@@ -1240,7 +1241,7 @@ function tryParseUKDaysCommand(text) {
   if (!days.length) return null;
 
   const dates = days
-    .map(d => `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`)
+    .map(d => `${(month <= 3 || (month === 4 && d <= 5)) ? 2027 : 2026}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`)
     .filter(iso => iso >= UK_DAYS_START && iso <= UK_DAYS_END);
 
   return dates.length ? { dates } : null;
@@ -1302,32 +1303,14 @@ function addDay() {
     flights,
   };
   _excelData[iso] = { role: role(), flights };
-  saveHistory(hist);
-
-  // Detectar y registrar UK Day de forma permanente
-  if (iso >= UK_DAYS_START && iso <= UK_DAYS_END && !_ukdays[iso]) {
-    const sorted = [...flights].sort((a, b) =>
-      +(( a.d['Off Block'] || '00:00').replace(':','')) -
-      +((b.d['Off Block'] || '00:00').replace(':',''))
-    );
-    const lastFlight = sorted[sorted.length - 1];
-    if (isUKDay(lastFlight, iso)) {
-      const fd = lastFlight.d;
-      const offsetMin = ukOffsetMin(iso);
-      const utc = buildUTCOnBlock(iso, fd['On Block'], fd['Off Block']);
-      let onBlock = fd['On Block'] || '--:--';
-      if (utc) {
-        const ld = new Date(utc.getTime() + offsetMin * 60000);
-        onBlock = `${String(ld.getUTCHours()).padStart(2,'0')}:${String(ld.getUTCMinutes()).padStart(2,'0')}`;
-      }
-      const [dep, arr] = (fd['City Pair'] || '').split(' - ');
-      saveUKDays({ ..._ukdays, [iso]: {
-        route: arr ? `${dep}→${arr}` : dep || '—',
-        onBlock,
-        tz: offsetMin ? 'BST' : 'GMT',
-      }});
+  // UK Day: se (re)calcula al pegar o re-pegar el día (las entradas manuales no se tocan). Una sola escritura con el historial.
+  if (iso >= UK_DAYS_START && iso <= UK_DAYS_END) {
+    const updated = { ..._ukdays };
+    if (applyUKDay(updated, iso, flights)) {
+      setUKDays(updated);
     }
   }
+  saveHistory(hist);
 
   document.getElementById('input').value = '';
   renderHistory();
@@ -1360,9 +1343,15 @@ function removeDay(iso) {
   const hist = loadHistory();
   if (!hist[iso]) return;
   const n = hist[iso].flights.length;
-  if (!confirm(`¿Borrar el día ${dateISOToDisplay(iso)} (${n} vuelo${n !== 1 ? 's' : ''}) de la lista y del Excel?`)) return;
+  const autoUK = _ukdays[iso] && !_ukdays[iso].manual;
+  if (!confirm(`¿Borrar el día ${dateISOToDisplay(iso)} (${n} vuelo${n !== 1 ? 's' : ''}) de la lista y del Excel${autoUK ? ' y su UK Day' : ''}?`)) return;
   delete hist[iso];
   delete _excelData[iso];
+  if (autoUK) {
+    const updated = { ..._ukdays };
+    delete updated[iso];
+    setUKDays(updated);
+  }
   saveHistory(hist);
   renderHistory();
   showStatus('ok', `Día ${dateISOToDisplay(iso)} eliminado.`);
@@ -1536,7 +1525,7 @@ function unknownAirportsInFlights(flights) {
 
 // ─── UK Days ──────────────────────────────────────────────────────────────────
 const UK_DAYS_START = '2026-04-06';
-const UK_DAYS_END   = '2027-04-07';
+const UK_DAYS_END   = '2027-04-05'; // tax year 6 abr – 5 abr
 
 function lastSundayOf(year, month0) {
   const lastDay = new Date(Date.UTC(year, month0 + 1, 0));
@@ -1552,31 +1541,47 @@ function ukOffsetMin(isoDate) {
   return (date >= bstStart && date < bstEnd) ? 60 : 0;
 }
 
-function buildUTCOnBlock(isoDate, onBlockStr, offBlockStr) {
-  const m = onBlockStr && onBlockStr.match(/^(\d{1,2}):(\d{2})$/);
-  if (!m) return null;
-  const h = +m[1], min = +m[2];
-  const [y, mo, d] = isoDate.split('-').map(Number);
-  let dt = new Date(Date.UTC(y, mo - 1, d, h, min));
-  if (offBlockStr) {
-    const om = offBlockStr.match(/^(\d{1,2}):(\d{2})$/);
-    if (om) {
-      const offMin = +om[1] * 60 + +om[2];
-      if (h * 60 + min < offMin) dt = new Date(dt.getTime() + 86400000);
-    }
-  }
-  return dt;
+// Offset de Londres (min) en un instante UTC exacto: BST desde 01:00Z del último domingo de marzo hasta 01:00Z del de octubre
+function ukOffsetAt(utc) {
+  const y = utc.getUTCFullYear();
+  const start = lastSundayOf(y, 2).getTime() + 3600000;
+  const end   = lastSundayOf(y, 9).getTime() + 3600000;
+  const t = utc.getTime();
+  return (t >= start && t < end) ? 60 : 0;
 }
 
-function isUKDay(flight, isoDate) {
-  const d = flight.d;
-  const utc = buildUTCOnBlock(isoDate, d['On Block'], d['Off Block']);
-  if (!utc) return false;
-  const localMs = utc.getTime() + ukOffsetMin(isoDate) * 60000;
-  const ld = new Date(localMs);
-  const [y, mo, day] = isoDate.split('-').map(Number);
-  // UK Day: on block local = mismo día que el vuelo (antes de medianoche LT)
-  return Date.UTC(ld.getUTCFullYear(), ld.getUTCMonth(), ld.getUTCDate()) === Date.UTC(y, mo - 1, day);
+// UK Day del duty `iso` según el último sector cronológico (con cruce de medianoche, vía sectorDayOffsets/sectorUTC).
+// Devuelve { route, onBlock, tz } si es UK Day, null si no lo es, undefined si faltan datos (último sector sin On Block).
+function computeUKDay(iso, flights) {
+  if (!flights || !flights.length) return undefined;
+  const offs = sectorDayOffsets(flights);
+  let last = null, lastAt = null;
+  flights.forEach((f, i) => {
+    const t = sectorUTC(f, offs[i]);
+    const at = t.on || t.landed || t.airborne || t.off;
+    if (at && (!lastAt || at >= lastAt)) { lastAt = at; last = { f, on: t.on }; }
+  });
+  if (!last || !last.on) return undefined;
+  const offsetMin = ukOffsetAt(last.on);
+  const ld = new Date(last.on.getTime() + offsetMin * 60000);
+  if (ld.toISOString().slice(0, 10) !== iso) return null;
+  const [dep, arr] = (last.f.d['City Pair'] || '').split(' - ');
+  return {
+    route: arr ? `${dep}→${arr}` : dep || '—',
+    onBlock: ld.toISOString().slice(11, 16),
+    tz: offsetMin ? 'BST' : 'GMT',
+  };
+}
+
+// Aplica el cálculo a `uk` (mutándolo). Las entradas manuales no se tocan; sin datos → no se toca.
+function applyUKDay(uk, iso, flights) {
+  if (uk[iso]?.manual) return false;
+  const r = computeUKDay(iso, flights);
+  if (r === undefined) return false;
+  if (r === null) { if (!uk[iso]) return false; delete uk[iso]; return true; }
+  if (uk[iso] && uk[iso].route === r.route && uk[iso].onBlock === r.onBlock && uk[iso].tz === r.tz) return false;
+  uk[iso] = r;
+  return true;
 }
 
 function backfillUKDays() {
@@ -1585,25 +1590,8 @@ function backfillUKDays() {
   let changed = false;
   Object.keys(hist).forEach(iso => {
     if (iso < UK_DAYS_START || iso > UK_DAYS_END || updated[iso]) return;
-    const day = hist[iso];
-    if (!day.flights || !day.flights.length) return;
-    const sorted = [...day.flights].sort((a, b) =>
-      +((a.d['Off Block'] || '00:00').replace(':', '')) -
-      +((b.d['Off Block'] || '00:00').replace(':', ''))
-    );
-    const lastFlight = sorted[sorted.length - 1];
-    if (!isUKDay(lastFlight, iso)) return;
-    const fd = lastFlight.d;
-    const offsetMin = ukOffsetMin(iso);
-    const utc = buildUTCOnBlock(iso, fd['On Block'], fd['Off Block']);
-    let onBlock = fd['On Block'] || '--:--';
-    if (utc) {
-      const ld = new Date(utc.getTime() + offsetMin * 60000);
-      onBlock = `${String(ld.getUTCHours()).padStart(2,'0')}:${String(ld.getUTCMinutes()).padStart(2,'0')}`;
-    }
-    const [dep, arr] = (fd['City Pair'] || '').split(' - ');
-    updated[iso] = { route: arr ? `${dep}→${arr}` : dep || '—', onBlock, tz: offsetMin ? 'BST' : 'GMT' };
-    changed = true;
+    const r = computeUKDay(iso, hist[iso].flights);
+    if (r) { updated[iso] = r; changed = true; }
   });
   if (changed) saveUKDays(updated);
 }
@@ -1611,8 +1599,15 @@ function backfillUKDays() {
 function renderUKDays() {
   const host = document.getElementById('ukdays-body');
   if (!host) return;
-  const isoList = Object.keys(_ukdays).sort();
   const countEl = document.getElementById('ukdays-count');
+  // Modo nube antes del primer snapshot del servidor: no enseñar "0 / 91" como si se hubieran perdido los datos
+  if (getMode() === 'cloud' && !cloud.hydrated) {
+    const offline = cloud.loadError || navigator.onLine === false;
+    if (countEl) countEl.textContent = '… / 91';
+    host.innerHTML = `<div class="empty">${offline ? 'Sin conexión — UK Days no cargados' : 'Cargando…'}</div>`;
+    return;
+  }
+  const isoList = Object.keys(_ukdays).sort();
   if (countEl) countEl.textContent = `${isoList.length} / 91`;
 
   const MAX = 91;
@@ -1638,7 +1633,7 @@ function renderUKDays() {
         <div class="uk-progress-fill ${cls}" style="width:${pct.toFixed(2)}%"></div>
       </div>
       <div class="uk-progress-footer">
-        <span>6 abr 2026 – 7 abr 2027</span>
+        <span>6 abr 2026 – 5 abr 2027</span>
         <span>${left} día${left !== 1 ? 's' : ''} restante${left !== 1 ? 's' : ''}</span>
       </div>
       <div class="uk-status ${cls}">${statusText}</div>
@@ -1704,7 +1699,7 @@ function confirmUKDateModal() {
   const iso = document.getElementById('ukday-date').value;
   // Avisos con alert: la línea de estado está lejos (en "Añadir día") y no se vería desde UK Days
   if (!iso) { alert('Elige una fecha primero.'); return; }
-  if (iso < UK_DAYS_START || iso > UK_DAYS_END) { alert(`${dateISOToDisplay(iso)} está fuera del periodo UK Days (6 abr 2026 – 7 abr 2027).`); return; }
+  if (iso < UK_DAYS_START || iso > UK_DAYS_END) { alert(`${dateISOToDisplay(iso)} está fuera del periodo UK Days (6 abr 2026 – 5 abr 2027).`); return; }
   if (_ukdays[iso]) { alert(`${dateISOToDisplay(iso)} ya está registrado como UK Day.`); return; }
   closeUKDateModal();
   addUKDayManual(iso);
@@ -1714,7 +1709,7 @@ function confirmUKDateModal() {
 function addUKDayManual(iso) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
   if (iso < UK_DAYS_START || iso > UK_DAYS_END) {
-    showStatus('warn', `${dateISOToDisplay(iso)} está fuera del rango UK Days (6 abr 2026 – 7 abr 2027).`);
+    showStatus('warn', `${dateISOToDisplay(iso)} está fuera del rango UK Days (6 abr 2026 – 5 abr 2027).`);
     return;
   }
   if (_ukdays[iso]) {
@@ -1782,7 +1777,7 @@ function renderHistory() {
   const clearBtn = document.getElementById('btn-clear-all');
 
   if (!totalDays) {
-    host.innerHTML = `<div class="empty">Aún no has guardado ningún día. Pega tu primer email arriba ↑</div>`;
+    host.innerHTML = `<div class="empty">Aún no has guardado ningún día. Pega tu primer email arriba ↑</div>` + excelOnlyHTML(hist);
     dlAllBtn.disabled = true;
     clearBtn.disabled = true;
     renderUKDays();
@@ -1828,8 +1823,40 @@ function renderHistory() {
         </div>
         <div class="day-list">${items}</div>
       </div>`;
-  }).join('');
+  }).join('') + excelOnlyHTML(hist);
   renderUKDays();
+}
+
+// Días que siguen en el Excel Tax Year pero ya no en el historial (p. ej. tras "Borrar historial"): sección plegada para poder borrarlos
+function excelOnlyHTML(hist) {
+  const list = Object.keys(_excelData).filter(iso => !hist[iso]).sort().reverse();
+  if (!list.length) return '';
+  const items = list.map(iso => `
+        <div class="day-item">
+          <span class="day-date">${dateISOToDisplay(iso)}</span>
+          <span class="day-route">${routeOfDay(_excelData[iso].flights || []) || '—'}</span>
+          <span class="day-count">solo Excel</span>
+          <button class="day-del" title="Borrar del Excel" onclick="removeExcelOnlyDay('${iso}')">✕</button>
+        </div>`).join('');
+  return `
+      <div class="month-group collapsed" data-month="excel-only">
+        <div class="month-header" onclick="toggleMonth('excel-only')">
+          <span class="chev">▾</span>
+          <span>Días en Excel sin historial</span>
+          <span class="meta">${list.length} día${list.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="day-list">${items}</div>
+      </div>`;
+}
+
+// Borra un día solo del Excel. No toca UK Days: sobreviven al borrado del historial a propósito.
+function removeExcelOnlyDay(iso) {
+  if (!_excelData[iso]) return;
+  if (!confirm(`¿Borrar el ${dateISOToDisplay(iso)} del Excel Tax Year? (No afecta a UK Days.)`)) return;
+  delete _excelData[iso];
+  persist();
+  renderHistory();
+  showStatus('ok', `${dateISOToDisplay(iso)} borrado del Excel.`);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1901,7 +1928,7 @@ async function applyCloudMode() {
     authMod.onAuthStateChanged(cloud.auth, async (u) => {
       if (!u) {
         cloud.user = null;
-        cloud.hydrated = false; cloud.pendingWrite = false;
+        cloud.hydrated = false; cloud.pendingWrite = false; cloud.loadError = false;
         if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
         _cache = {};
         renderHistory();
@@ -1925,6 +1952,8 @@ async function applyCloudMode() {
         // porque al guardar con mergeFields se sustituiría el historial de la nube por ese estado parcial
         if (!cloud.hydrated && snap.metadata.fromCache) {
           setSync('err', 'Sin conexión con la nube');
+          cloud.loadError = true;
+          renderUKDays();
           return;
         }
         const data = snap.exists() ? snap.data() : {};
@@ -1939,6 +1968,7 @@ async function applyCloudMode() {
         }
         const firstSnapshot = !cloud.hydrated;
         cloud.hydrated = true;
+        cloud.loadError = false;
         backfillUKDays();
         if (firstSnapshot && cloud.pendingWrite) {
           cloud.pendingWrite = false;
@@ -1951,6 +1981,8 @@ async function applyCloudMode() {
       }, (err) => {
         console.error('Snapshot error:', err);
         setSync('err', 'Error al cargar');
+        cloud.loadError = true;
+        renderUKDays();
       });
     });
 
@@ -1982,7 +2014,7 @@ function switchMode() {
   if (!confirm(msg)) return;
   // tear down cloud listener if any
   if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
-  cloud.hydrated = false; cloud.pendingWrite = false;
+  cloud.hydrated = false; cloud.pendingWrite = false; cloud.loadError = false;
   _cache = {};
   setMode(other);
   if (other === 'local') applyLocalMode();
@@ -2051,8 +2083,8 @@ function isoToExcelSerial(iso) {
 }
 
 function downloadTaxExcel() {
-  const TAX_START = '2026-04-06';
-  const TAX_END   = '2027-04-05';
+  const TAX_START = UK_DAYS_START;
+  const TAX_END   = UK_DAYS_END;
   const MONTHS_EN = ['January','February','March','April','May','June',
                      'July','August','September','October','November','December'];
 

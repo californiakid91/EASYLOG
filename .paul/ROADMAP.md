@@ -18,7 +18,7 @@ Phases: 2 of 4 complete
 | 1.1 | [INSERTED] Borrados persisten en la nube (merge:true) | 1/1 | ✅ Complete | 2026-10-03 |
 | 1.2 | [INSERTED] Botón "+ Añadir fecha" UK Days (petición usuario) | 1/1 | ✅ Complete | 2026-10-03 |
 | 2 | CSV: esquema validado + TIME_NIGHT + delays | 1/1 | ✅ Complete | 2026-10-03 |
-| 3 | UK Days: orden cronológico + recálculo | TBD | Not started | - |
+| 3 | UK Days: fixes (03-01) + reglas reales (03-02, dialéctica) | 0/2 | Planning | - |
 | 4 | Pista en uso (dialéctica de fuente + implementación) | TBD | Not started | - |
 
 ## Phase Details
@@ -43,6 +43,9 @@ Phases: 2 of 4 complete
 **Goal:** El UK Day usa siempre el on-block del último sector real.
 **Depends on:** Phase 1 (H5, H5b, H6)
 **Scope:** orden cronológico con cruce de medianoche; recalcular al reemplazar un día (no `manual`); tests con fixtures 01/90/91.
+**Plans:**
+- [ ] 03-01: fixes H5/H6, removeDay, solo-Excel, periodo 05-04, Cargando…
+- [ ] 03-02: reglas reales (medianoche en UK, VLC, HSBY, INTSP) — dialéctica primero
 
 ### Phase 4: Pista en uso
 **Goal:** DEP_RWY/ARR_RWY rellenos sin servidor ni claves públicas.

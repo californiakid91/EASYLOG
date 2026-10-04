@@ -10,10 +10,10 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 ## Current Position
 
 Milestone: v0.1 Datos fiables
-Phase: 3 of 4 (UK Days) — Not started
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-04 — Revisión de datos fuera de PAUL (logbook vs plan de empresa, reglas UK Days); Fase 3 sin empezar
+Phase: 3 of 4 (UK Days) — Planning
+Plan: 03-01 created, awaiting approval (fixes; 03-02 = reglas reales tras dialéctica)
+Status: PLAN created, ready for APPLY
+Last activity: 2026-10-04 — Created .paul/phases/03-ukdays/03-01-PLAN.md (revisado por Fable en modo adversario)
 
 Progress:
 - Milestone: [█████░░░░░] 50%
@@ -24,7 +24,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete - ready for next PLAN]
+  ✓        ○        ○     [Plan created, awaiting approval]
 ```
 
 ## Accumulated Context
@@ -43,7 +43,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Issue | Origin | Effort | Revisit |
 |-------|--------|--------|---------|
 | UK Days: el tracker usa reglas incompletas. Reglas reales (medianoche en UK, HSBY, INTSP/OOB, ida/vuelta VLC, lates desde 05/08/2025, UW = duty que EMPIEZA en UK) en memoria project_excel_tax_rules → base del diseño de Fase 3 | 2026-10-04 | M | Fase 3 |
-| PilotLog: fichero de cambios 2025 entregado al usuario (fuera del repo); pendiente que lo aplique y re-exporte para re-verificar. 2024 y 2026 pendientes de sus planes | 2026-10-04 | S | — |
+| PilotLog: fichero de cambios 2025 entregado al usuario (fuera del repo); pendiente que lo aplique y re-exporte para re-verificar. Resto de años (2023, 2024, 2026) cuando el usuario reciba el roster plan completo desde que empezó a volar (ya pedido) | 2026-10-04 | S | — |
 | removeDay no borra UK Day; día en _excelData imborrable si historial limpiado (18/09 espurio, día de SIM) | Phase 1 | S | Fase 3 |
 | Histórico ya importado en PilotLog: sin NIGHT y posibles fechas post-medianoche → informe sobre export de PilotLog (no reimportar meses) | Phase 2 | S | antes de Fase 3 |
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
@@ -61,10 +61,10 @@ Branch: main
 
 ## Session Continuity
 
-Last session: 2026-10-03
-Stopped at: Sesión 2026-10-04 de verificación de datos (fuera del loop) cerrada; código sin cambios
-Next action: /paul:plan Phase 3 (UK Days) usando las reglas de memoria; antes, preguntar al usuario por sus pendientes personales (ver handoff)
-Resume file: .paul/HANDOFF-2026-10-04-datos.md
+Last session: 2026-10-04
+Stopped at: Plan 03-01 created
+Next action: Review and approve plan, then run /paul:apply .paul/phases/03-ukdays/03-01-PLAN.md
+Resume file: .paul/phases/03-ukdays/03-01-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

@@ -662,7 +662,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.04-224937';
+const APP_VERSION = '2026.10.04-225314';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -2544,7 +2544,7 @@ document.getElementById('cal-grid').addEventListener('click', e => {
 });
 
 // ─── Auto-actualización ──────────────────────────────────────────────────────
-// (Probado en el iPhone en el checkpoint 03.1-01: recarga sola y bloqueo con texto pegado.)
+// (Probado en el iPhone en el checkpoint 03.1-01: recarga sola, bloqueos y texto pegado conservado.)
 // Sin service worker: el problema es la caché HTTP (max-age=600) y que iOS reanuda la PWA sin navegar.
 // Al arrancar y al volver a primer plano se baja index.html sin caché; si su APP_VERSION es otra, se recarga
 // a ?v=<nueva> (URL nueva → el iPhone no puede servir la vieja), salvo que recargar pierda algo.

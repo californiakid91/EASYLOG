@@ -70,10 +70,11 @@ check('addDay: una sola escritura persist() por pegado', (reset(), paste(UKD), r
 
 // ── AC-4: removeDay
 reset(); paste(UKD); run('__persists = 0'); confirms.length = 0; run(`removeDay('2026-11-10')`);
-check('removeDay borra el UK Day automático', uk('2026-11-10') === 'null');
+// 03-02 (decisión del usuario en el checkpoint): ✕ solo quita de la lista; el UK Day y el Excel se conservan
+check('removeDay conserva el UK Day automático (03-02)', uk('2026-11-10') !== 'null');
 check('removeDay: el confirm menciona el UK Day', /UK Day/.test(confirms.at(-1) || ''), confirms.at(-1));
 check('removeDay: una sola escritura persist()', run('__persists') === 1, `persists=${run('__persists')}`);
-check('removeDay: persistido en localStorage', !('2026-11-10' in JSON.parse(ls.get('easylog_ukdays_v1'))));
+check('removeDay: persistido en localStorage (UK Day sigue)', '2026-11-10' in JSON.parse(ls.get('easylog_ukdays_v1')));
 reset(); paste(NOT); run(`_ukdays = { '2026-11-10': { route: '—', onBlock: '--:--', tz: 'GMT', manual: true } };`); run(`removeDay('2026-11-10')`);
 check('removeDay conserva UK Day manual', JSON.parse(uk('2026-11-10'))?.manual === true);
 

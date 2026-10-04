@@ -46,19 +46,40 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Issue | Origin | Effort | Revisit |
 |-------|--------|--------|---------|
 | UK Days → plan 03-02 (dialéctica primero; incluir sector post-medianoche pegado como día aparte): el tracker usa reglas incompletas. Reglas reales (medianoche en UK, HSBY, INTSP/OOB, ida/vuelta VLC, lates desde 05/08/2025, UW = duty que EMPIEZA en UK) en memoria project_excel_tax_rules → base del diseño de Fase 3 | 2026-10-04 | M | Fase 3 |
-| PilotLog: fichero de cambios 2025 entregado al usuario (fuera del repo); pendiente que lo aplique y re-exporte para re-verificar. Resto de años (2023, 2024, 2026) cuando el usuario reciba el roster plan completo desde que empezó a volar (ya pedido) | 2026-10-04 | S | — |
+| PilotLog: fichero de cambios 2025 APLICADO por el usuario (2026-10-04); falta re-exportar CSV de PilotLog para re-verificar. Resto de años (2023, 2024, 2026) cuando el usuario reciba el roster plan completo desde que empezó a volar (ya pedido) | 2026-10-04 | S | — |
 | Histórico ya importado en PilotLog: sin NIGHT y posibles fechas post-medianoche → informe sobre export de PilotLog (no reimportar meses) | Phase 2 | S | antes de Fase 3 |
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
 | Avisos muestran fecha sin año ("04/10" para 04/10/2027) — dateISOToDisplay | 03-01 | XS | — |
 | Literal 'Tax Year 2025-2026' en downloadTaxExcel | 03-01 | XS | — |
+| iPhone sirve la versión antigua en caché sin ?v=N (pasó en el checkpoint 03-02: contó 80 en vez de 53) → mostrar versión en la app / cache-busting | 03-02 checkpoint | S | 03-03 |
+| IDEA usuario: al pegar, detectar vuelo duplicado (ya en historial/Excel): si es idéntico → avisar "duplicado" y no guardar; si difiere → mostrar discrepancias campo a campo. Hoy addDay solo mira el historial (no _excelData) | 03-02 checkpoint | S-M | 03-03 (aclarar alcance) |
+| Auto-actualización de la PWA (como Toca Cabeza): versión embebida + comprobación al abrir/volver → recarga sola | 03-02 checkpoint | S | siguiente plan (prioridad) |
+| Calendario sin estado SD/ground duty (meeting): 06/05/2026 marcado SBY → Excel pone SBY U=1 aunque durmió en VLC | 03-02 checkpoint | S | 03-03 |
 | semgrep: <script> CDN sin atributo integrity (SRI) en index.html:462 (preexistente) | Phase 2 | S | Aegis pre-deploy |
 | UK Days: reglas reales del usuario (medianoche en UK; HSBY activado; INTSP; ida/vuelta VLC en OFF/A/L) — ver memoria project_excel_tax_rules; reconstrucción por tax year desde el plan ROCS | Phase 2 | M | Fase 3 |
 
 ### Preguntas pendientes al usuario (checkpoint 03-02) — de UNA en UNA
 - [x] 01/10/2026 → OFF (marcado por el usuario)
 - [~] 1. ¿Cuadra el total de 54 UK Days? → repaso uno por uno con el backup (54 = 48 previos + 6 SBY del calendario)
-  - [x] 06/05 SBY(cal) → NO UK: meeting por la mañana y a VLC por la tarde (falta: usuario pulsa ✕ tras deploy). Nota: el Excel lo pondrá como SBY U=1 → divergencia
-  - [ ] 25/07 SBY · [ ] 03/08 SBY · [ ] 06/09 SBY · [ ] 24/09 SBY · [ ] 25/09 SBY
+  - [x] 06/05 → NO UK: era SD (special duty, meeting por la mañana), no SBY; a VLC por la tarde. Confirmado: 53/91. Nota: el calendario no tiene estado SD → el Excel lo pondrá como SBY U=1 (diferido)
+  - [x] 25/07 SBY → UK ✓ (no activado, durmió en UK)
+  - [x] contador 53/91 tras ✕ del 06/05 ✓ (verificado por el usuario en iPhone)
+  - [x] 03/08 SBY → UK ✓ (no activado, durmió en UK)
+  - [x] 06/09 SBY → UK ✓ (no activado, durmió en UK)
+  - [x] 24/09 SBY → NO UK: activado, durmió en BLQ — ✕ pulsado, 52/91 ✓
+  - [x] 25/09 → UK ✓ (resultado correcto, motivo no: no era SBY sino INTSP en BLQ + DH FR1195 BLQ→STN 15:20Z, durmió en STN). Calendario dice SBY: se deja (cuenta bien)
+  - Roster 26/09 (captura): STN-OTP-STN, on-block 23:10Z = 00:10 BST → con email sería R3 (NO UK)
+  - [x] Emails pegados por el usuario: 23/09 STN-REU-STN (calzos 20:59Z → R1 UK), 24/09 LTN-BLQ (sigue No UK manual), 26/09 STN-OTP-STN (R3) → 53/91 ✓
+  - [x] 27/09 → VTO (= OFF, en VLC) → NO UK: usuario cambia en el calendario DUTY→OFF
+  - [x] 09/04 → vuelo pegado, calzos 23:53Z = 00:53 BST del 10/04 → esperado R3 (No UK); comprobar al final en "No UK"
+  - [x] 12/05 → pegado (BGY→STN), calzos 23:10Z = 00:10 BST del 13/05 → esperado R3 (No UK); comprobar al final
+  - [x] 20/05 → pegado, calzos 23:59Z = 00:59 BST del 21/05 → esperado R3 (No UK); comprobar al final
+  - [!] HALLAZGO checkpoint: el usuario pulsa ✕ en "Días guardados" tras descargar el CSV para limpiar la lista → removeDay borra historial + Excel + UK Day automático (este último desde 03-01). Perdió 23/09, 24/09, 26/09, 02/10, 03/10 (51/91). Recuperación: re-pegar esos 5 emails. Propuesta: ✕ = solo quitar de la lista (como "Borrar historial"); borrar del Excel solo desde "Días en Excel sin historial"
+  - [x] Usuario re-pegó los 5 emails (23/09, 24/09, 26/09, 02/10, 03/10)
+  - [!] Tras re-pegar: 80/91 sin "pend." → cuadra EXACTO con la versión ANTIGUA en caché (cuenta todas las claves de _ukdays: 25 man + 24 R1 + 29 R3 + 2 No UK manual = 80; el código viejo no crea R3 al pegar). Datos sanos: la versión nueva recrea los R3 de 26/09 y 03/10 al cargar → esperado 53/91. Pedir abrir con ?v=27
+  - [x] Causa: el confirm() de "¿Borrar historial?" tras descargar el CSV se pierde en iPhone → usuario usó ✕. Decidido: botón fijo "🗑 Quitar de la lista" tras exportar + ✕ solo quita de la lista (Excel y UK Days se conservan)
+  - [x] Con ?v=27 (versión nueva): 53/91 sin pendientes ✓ (verificado en iPhone 22:46)
+  - [ ] Comprobación final pendiente: luego backup → 09/04, 12/05, 20/05, 26/09 en No UK
   - [ ] luego: 48 previos mes a mes (abril 14 man, mayo 9 man + 3 R1, …)
 - [ ] 2. Lista "No UK": ¿algún día no encaja?
 - [ ] 3. 6 DUTY sin email (09/04, 12/05, 20/05, 23/09, 26/09, 27/09/2026): ¿vuelo sin pegar, tierra o marca errónea? (uno a uno)

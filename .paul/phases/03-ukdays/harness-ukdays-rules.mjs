@@ -9,7 +9,7 @@ const ls = new Map([['easylog_mode', 'local']]); const st = []; const confirms =
 const win = { location: {} };
 const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) || els.set(id, mk()), els.get(id)), querySelector: () => mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener() {} },
   localStorage: { getItem: k => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) },
-  window: win, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, confirm: m => (confirms.push(m), answer), prompt: () => null, alert: m => st.push('alert: ' + m),
+  window: win, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, Blob: class { constructor(p) { this.p = p; } }, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }, confirm: m => (confirms.push(m), answer), prompt: () => null, alert: m => st.push('alert: ' + m),
   setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, __st: st });
 let bootError = null;
 try { vm.runInContext(SCRIPT, ctx); } catch (e) { bootError = e; }
@@ -75,7 +75,17 @@ check('re-pegar no cambia un UK manual', E('2026-11-15')?.manual === true && E('
 run(`removeDay('2026-11-15')`);
 check('removeDay no toca la entrada manual', E('2026-11-15')?.manual === true);
 reset(); paste(email('2026/10/08', [{ cp: 'STN - LIS', off: '18:00', on: '21:00' }])); run(`removeDay('2026-10-08')`);
-check('removeDay borra el NO automático del día', e('2026-10-08') === 'null');
+check('✕ en Días guardados: quita de la lista y conserva Excel y UK Days', !run(`'2026-10-08' in _cache`) && run(`!!_excelData['2026-10-08']`) && E('2026-10-08')?.source === 'rule:R2', e('2026-10-08'));
+
+// Tras exportar: botón "Quitar de la lista" (sustituye al confirm que se perdía en iPhone)
+reset(); paste(email('2026/10/02', [{ cp: 'STN - RZE', off: '17:00', on: '19:15' }, { cp: 'RZE - STN', off: '20:00', on: '22:30' }]));
+paste(email('2026/09/23', [{ cp: 'STN - REU', off: '15:00', on: '17:00' }, { cp: 'REU - STN', off: '18:00', on: '20:59' }]));
+confirms.length = 0; run(`downloadMonthCSV('2026-10')`);
+check('exportar mes: sin confirm y con botón "Quitar de la lista"', confirms.length === 0 && /clearExported\(\)/.test(ctx.document.getElementById('history').innerHTML));
+run('clearExported()');
+check('Quitar de la lista: solo el mes exportado; Excel y UK Days intactos', !run(`'2026-10-02' in _cache`) && run(`'2026-09-23' in _cache`) && run(`!!_excelData['2026-10-02']`) && E('2026-10-02')?.state === 'uk');
+run(`downloadAllCSV()`); run('clearExported()');
+check('exportar todo + Quitar: lista vacía, Excel y UK Days intactos', run('Object.keys(_cache).length') === 0 && run(`!!_excelData['2026-09-23']`) && E('2026-09-23')?.state === 'uk');
 
 // ── AC-3: compatibilidad con la nube (entradas antiguas)
 reset(); run(`_ukdays = { '2026-09-19': { route: 'AOI→STN', onBlock: '23:45', tz: 'BST' }, '2026-09-20': { route: '—', onBlock: '--:--', tz: 'BST', manual: true }, '2026-09-18': { route: 'STN→HAM', onBlock: '15:20', tz: 'BST' } };`);

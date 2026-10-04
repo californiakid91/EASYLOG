@@ -1340,23 +1340,17 @@ function addDay() {
   }
 }
 
+// ✕ en "Días guardados": solo quita el día de la lista (CSV). El Excel Tax Year y los UK Days se conservan;
+// para borrar un día del Excel está la sección "Días en Excel sin historial".
 function removeDay(iso) {
   const hist = loadHistory();
   if (!hist[iso]) return;
   const n = hist[iso].flights.length;
-  const autoUK = _ukdays[iso] && !_ukdays[iso].manual;
-  const ukTxt = autoUK ? (ukEntryState(_ukdays[iso]) === 'uk' ? ' y su UK Day' : ' y su registro "No UK"') : '';
-  if (!confirm(`¿Borrar el día ${dateISOToDisplay(iso)} (${n} vuelo${n !== 1 ? 's' : ''}) de la lista y del Excel${ukTxt}?`)) return;
+  if (!confirm(`¿Quitar el ${dateISOToDisplay(iso)} (${n} vuelo${n !== 1 ? 's' : ''}) de la lista?\n\nSigue en el Excel Tax Year y en UK Days.`)) return;
   delete hist[iso];
-  delete _excelData[iso];
-  if (autoUK) {
-    const updated = { ..._ukdays };
-    delete updated[iso];
-    setUKDays(updated);
-  }
   saveHistory(hist);
   renderHistory();
-  showStatus('ok', `Día ${dateISOToDisplay(iso)} eliminado.`);
+  showStatus('ok', `Día ${dateISOToDisplay(iso)} quitado de la lista.`);
 }
 
 function clearHistory() {
@@ -1419,14 +1413,9 @@ function downloadAllCSV() {
   if (!list.length) { showStatus('err', 'No hay vuelos guardados.'); return; }
   triggerDownload(buildCSV(list), `pilotlog_${new Date().toISOString().slice(0,10)}.csv`);
   showDownloadStatus(list, `Descargados ${list.length} vuelos.`);
-  setTimeout(() => {
-    const where = getMode() === 'cloud' ? 'la nube' : 'este navegador';
-    if (confirm(`CSV descargado (${list.length} vuelos).\n\n¿Borrar ahora todo el historial de ${where}?\n\nRecomendado tras confirmar el import en PilotLog.`)) {
-      saveHistory({});
-      renderHistory();
-      showStatus('ok', 'Historial borrado.');
-    }
-  }, 400);
+  // En iPhone un confirm() tras la descarga se pierde (Safari muestra el fichero): botón fijo en "Días guardados"
+  _lastExport = { mk: null, n: list.length };
+  renderHistory();
 }
 
 function downloadMonthCSV(mk) {
@@ -1434,16 +1423,30 @@ function downloadMonthCSV(mk) {
   if (!list.length) return;
   triggerDownload(buildCSV(list), `pilotlog_${mk}.csv`);
   showDownloadStatus(list, `Descargados ${list.length} vuelos de ${monthLabel(mk)}.`);
-  setTimeout(() => {
-    const where = getMode() === 'cloud' ? 'la nube' : 'este navegador';
-    if (confirm(`CSV de ${monthLabel(mk)} descargado (${list.length} vuelos).\n\n¿Borrar ${monthLabel(mk)} de ${where}?\n\nRecomendado tras confirmar el import en PilotLog.`)) {
-      const hist = loadHistory();
-      Object.keys(hist).forEach(iso => { if (monthKey(iso) === mk) delete hist[iso]; });
-      saveHistory(hist);
-      renderHistory();
-      showStatus('ok', `${monthLabel(mk)} borrado.`);
-    }
-  }, 400);
+  _lastExport = { mk, n: list.length };
+  renderHistory();
+}
+
+// Tras exportar: quita de la lista lo exportado (todo o el mes). El Excel Tax Year y los UK Days se conservan.
+let _lastExport = null; // { mk: 'YYYY-MM' | null (todo), n }
+function clearExported() {
+  if (!_lastExport) return;
+  const { mk } = _lastExport;
+  const hist = loadHistory();
+  Object.keys(hist).forEach(iso => { if (!mk || monthKey(iso) === mk) delete hist[iso]; });
+  _lastExport = null;
+  saveHistory(hist);
+  renderHistory();
+  showStatus('ok', `${mk ? monthLabel(mk) : 'Lista'} vaciada. El Excel y los UK Days se conservan.`);
+}
+function exportedBarHTML() {
+  if (!_lastExport) return '';
+  const { mk, n } = _lastExport;
+  return `<div class="day-item" style="background:var(--surface2);border-radius:8px;margin-bottom:.75rem;flex-wrap:wrap;">
+      <span class="day-route" style="font-family:inherit">✅ CSV ${mk ? `de ${monthLabel(mk)}` : ''} descargado (${n} vuelos). Cuando esté importado en PilotLog:</span>
+      <button class="btn btn-ghost btn-sm" onclick="clearExported()">🗑 Quitar de la lista</button>
+      <button class="day-del" title="Cerrar" onclick="_lastExport = null; renderHistory();">✕</button>
+    </div>`;
 }
 
 function toggleMonth(mk) {
@@ -1969,6 +1972,7 @@ function renderHistory() {
   const clearBtn = document.getElementById('btn-clear-all');
 
   if (!totalDays) {
+    _lastExport = null;
     host.innerHTML = `<div class="empty">Aún no has guardado ningún día. Pega tu primer email arriba ↑</div>` + excelOnlyHTML(hist);
     dlAllBtn.disabled = true;
     clearBtn.disabled = true;
@@ -1987,7 +1991,7 @@ function renderHistory() {
   });
   const monthsDesc = Object.keys(byMonth).sort().reverse();
 
-  host.innerHTML = monthsDesc.map(mk => {
+  host.innerHTML = exportedBarHTML() + monthsDesc.map(mk => {
     const days = byMonth[mk];
     const fcount = days.reduce((s, iso) => s + hist[iso].flights.length, 0);
     const items = days.map(iso => {

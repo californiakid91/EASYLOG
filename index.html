@@ -1568,7 +1568,8 @@ function ukOffsetAt(utc) {
 // Criterio: estar en UK a las 00:00 de Londres al final del día.
 //   R1 on-block antes de 00:00 en aeropuerto UK → { state:'uk' }
 //   R2 on-block antes de 00:00 fuera de UK      → { state:'no' }
-//   R3 on-block a partir de 00:00 (día siguiente) → { state:'no' }
+//   R3 on-block después de 00:00 (día siguiente) → { state:'no' }
+// Calzos a las 00:00 justas = presente en UK "at the end of the day" (FA 2013 Sch 45 para 22) → cuenta como el día `iso`.
 // undefined si faltan datos (último sector sin On Block o sin destino) → no se toca nada.
 function computeUKDay(iso, flights) {
   if (!flights || !flights.length) return undefined;
@@ -1585,7 +1586,8 @@ function computeUKDay(iso, flights) {
   const offsetMin = ukOffsetAt(last.on);
   const ld = new Date(last.on.getTime() + offsetMin * 60000);
   const base = { route: `${dep}→${arr}`, onBlock: ld.toISOString().slice(11, 16), tz: offsetMin ? 'BST' : 'GMT' };
-  if (ld.toISOString().slice(0, 10) !== iso)
+  const atMidnight = ld.getTime() === new Date(addDaysISO(iso, 1) + 'T00:00:00Z').getTime();
+  if (ld.toISOString().slice(0, 10) !== iso && !atMidnight)
     return { state: 'no', ...base, source: 'rule:R3', reason: `on-block ${base.onBlock} ${base.tz} del día siguiente` };
   if (!UK_RES.has(arr))
     return { state: 'no', ...base, source: 'rule:R2', reason: `último sector → ${arr} (fuera de UK)` };
@@ -1610,13 +1612,18 @@ function applyUKDay(uk, iso, flights) {
 // Vuelos de un día: historial (manda) o, si se borró el historial, los guardados para el Excel
 function ukFlightsOf(iso) { return loadHistory()[iso]?.flights || _excelData[iso]?.flights; }
 
-// Crea entradas solo para días con email y sin entrada (no reescribe las existentes)
+// Crea entradas para días con email y sin entrada, y recalcula las que ya creó la regla (source 'rule:*') por si la regla cambió.
+// No toca las manuales ni las antiguas sin source (sin migración en caliente).
 function backfillUKDays() {
   const updated = { ..._ukdays };
   let changed = false;
   new Set([...Object.keys(loadHistory()), ...Object.keys(_excelData)]).forEach(iso => {
-    if (iso < UK_DAYS_START || iso > UK_DAYS_END || updated[iso]) return;
-    const r = computeUKDay(iso, ukFlightsOf(iso));
+    if (iso < UK_DAYS_START || iso > UK_DAYS_END) return;
+    const e = updated[iso];
+    if (e && (e.manual || !e.source)) return;
+    const fl = ukFlightsOf(iso);
+    if (e) { if (applyUKDay(updated, iso, fl)) changed = true; return; }
+    const r = computeUKDay(iso, fl);
     if (r) { updated[iso] = r; changed = true; }
   });
   if (changed) saveUKDays(updated);

@@ -126,6 +126,24 @@ now('2027-06-01T12:00:00Z');
 check('después del periodo, los días pasados acaban en 05/04/2027', run('ukPastDays().at(-1)') === '2027-04-05');
 delete win._ukNowOverride;
 
+// Calzos a las 00:00 justas = en UK al final del día (FA 2013 Sch 45 para 22) → UK Day; 00:01 → R3
+reset(); paste(email('2026/04/06', [{ cp: 'STN - DUB', off: '20:00', on: '21:10' }, { cp: 'DUB - STN', off: '21:50', on: '23:00' }]));
+x = E('2026-04-06');
+check('on-block 23:00Z = 00:00 BST justas → UK (R1), el día siguiente no se toca', x?.state === 'uk' && x.source === 'rule:R1' && x.onBlock === '00:00' && e('2026-04-07') === 'null', e('2026-04-06'));
+reset(); paste(email('2026/04/06', [{ cp: 'STN - DUB', off: '20:00', on: '21:10' }, { cp: 'DUB - STN', off: '21:50', on: '23:01' }]));
+check('on-block 00:01 BST → NO (R3)', E('2026-04-06')?.source === 'rule:R3', e('2026-04-06'));
+reset(); paste(email('2026/11/10', [{ cp: 'STN - DUB', off: '21:00', on: '22:10' }, { cp: 'DUB - STN', off: '22:50', on: '00:00' }]));
+check('GMT: on-block 00:00Z del día siguiente = 00:00 GMT → UK', E('2026-11-10')?.state === 'uk', e('2026-11-10'));
+// Entradas R3 guardadas con la regla anterior (00:00 → NO) se corrigen solas al cargar (backfill recalcula 'rule:*')
+reset(); paste(email('2026/04/06', [{ cp: 'STN - DUB', off: '20:00', on: '21:10' }, { cp: 'DUB - STN', off: '21:50', on: '23:00' }]));
+run(`_ukdays['2026-04-06'] = { state: 'no', route: 'DUB→STN', onBlock: '00:00', tz: 'BST', source: 'rule:R3', reason: 'on-block 00:00 BST del día siguiente' };`);
+run('backfillUKDays()');
+check('backfill corrige el R3 antiguo de 00:00 → UK', E('2026-04-06')?.state === 'uk', e('2026-04-06'));
+run(`_ukdays['2026-04-06'] = { state: 'no', route: 'DUB→STN', onBlock: '00:00', tz: 'BST', manual: true, source: 'manual' };`); run('backfillUKDays()');
+check('backfill no toca un No UK manual', E('2026-04-06')?.manual === true && E('2026-04-06')?.state === 'no');
+run(`_ukdays['2026-04-06'] = { route: 'DUB→STN', onBlock: '23:00', tz: 'BST' };`); run('backfillUKDays()');
+check('backfill no reescribe entradas antiguas sin source', !E('2026-04-06')?.source);
+
 // G6: día solo en el Excel (historial borrado) sin entrada → backfill aplica la regla (no queda "incompleto")
 reset(); paste(email('2026/10/24', [{ cp: 'STN - DUB', off: '20:00', on: '21:10' }, { cp: 'DUB - STN', off: '22:00', on: '23:30' }]));
 run(`_cache = {}; delete _ukdays['2026-10-24'];`); run('backfillUKDays()');

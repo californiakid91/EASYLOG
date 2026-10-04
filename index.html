@@ -420,6 +420,7 @@
   .cal-day.s-stby { background: rgba(210,153,34,.25);  color: var(--amber); font-weight: 700; }
   .cal-day.s-duty { background: rgba(10,40,100,.70);   color: #a0c0f8;      font-weight: 700; }
   .cal-day.s-sim  { background: rgba(120,40,180,.55);  color: #d4a8ff;      font-weight: 700; }
+  .cal-day.s-sd   { background: rgba(20,140,130,.45);  color: #8fe3d8;      font-weight: 700; }
 
   /* ── Day modal (bottom sheet) ── */
   .day-modal {
@@ -452,6 +453,7 @@
   .day-opt.opt-stby { background: rgba(210,153,34,.15);  color: var(--amber); border-color: var(--amber); }
   .day-opt.opt-duty { background: rgba(10,40,100,.55);   color: #a0c0f8;      border-color: #2f5cb8; }
   .day-opt.opt-sim  { background: rgba(120,40,180,.35);  color: #d4a8ff;      border-color: #8b3fc8; }
+  .day-opt.opt-sd   { background: rgba(20,140,130,.30);  color: #8fe3d8;      border-color: #1f9e92; }
   .day-opt.selected { opacity: 1; filter: brightness(1.2); }
   .day-modal-cancel {
     margin-top: .9rem; background: none; border: none;
@@ -630,6 +632,7 @@
         <button class="day-opt opt-stby" onclick="setDayStatus('stby')">STBY</button>
         <button class="day-opt opt-duty" onclick="setDayStatus('duty')">DUTY</button>
         <button class="day-opt opt-sim"  onclick="setDayStatus('sim')">SIM</button>
+        <button class="day-opt opt-sd"   onclick="setDayStatus('sd')">SD</button>
       </div>
       <button class="day-modal-cancel" onclick="closeDayModal()">Cancelar</button>
     </div>
@@ -662,7 +665,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.04-231250';
+const APP_VERSION = '2026.10.04-233847';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -1100,7 +1103,7 @@ let _airports   = {};  // custom airports: { IATA: { lat, lon } }
 let _ukdays     = {};  // UK Days: { iso: { route, onBlock, tz } } — persiste aunque se borre el historial
 // Cloud state (populated only when mode === 'cloud')
 let cloud = { app: null, auth: null, db: null, user: null, unsub: null, hydrated: false, pendingWrite: false, loadError: false };
-let _dayMap       = {};    // calendario { 'YYYY-MM-DD': 'off'|'stby'|'duty'|'sim' } (lo leen el Excel y UK Days)
+let _dayMap       = {};    // calendario { 'YYYY-MM-DD': 'off'|'stby'|'duty'|'sim'|'sd' } (sd = ground duty / reunión) (lo leen el Excel y UK Days)
 let _dayMapSaving  = false; // evita que onSnapshot sobreescriba _dayMap mientras guardamos
 let _ukdaysSaving  = false; // evita que onSnapshot sobreescriba _ukdays mientras guardamos
 let _cloudWrites   = 0;     // escrituras a Firestore en vuelo (la auto-actualización no recarga mientras > 0)
@@ -1665,18 +1668,21 @@ function ukIsLegacyOutside(e) {
 
 // Estado de un día: { state:'uk'|'no'|'pending', source, reason, kind? }
 // Precedencia: manual > conflicto calendario/email > regla del email > email incompleto > calendario > pendiente
+// Etiqueta de un estado del calendario ('stby' → 'SBY', 'sd' → 'SD'…)
+function calLabel(cal) { return { off: 'OFF', stby: 'SBY', duty: 'DUTY', sim: 'SIM', sd: 'SD' }[cal] || String(cal || '').toUpperCase(); }
+
 function ukDayStatus(iso) {
   if (iso < UK_DAYS_START || iso > UK_DAYS_END) return { state: 'none' };
   const e = _ukdays[iso];
   if (e?.manual) return { state: ukEntryState(e), source: 'manual', reason: e.reason || 'añadido a mano' };
   const cal = _dayMap[iso];
   const email = ukHasEmail(iso);
-  if (email && (cal === 'off' || cal === 'stby' || cal === 'sim'))
+  if (email && (cal === 'off' || cal === 'stby' || cal === 'sim' || cal === 'sd'))
     return { state: 'pending', kind: 'conflict', reason: `calendario (${cal.toUpperCase()}) y email discrepan` };
   if (e) return { state: ukEntryState(e), source: ukEntrySource(e), reason: e.reason || '', legacyOutside: ukIsLegacyOutside(e) };
   if (email) return { state: 'pending', kind: 'incomplete', reason: 'email incompleto (sin On Block): re-pégalo' };
   if (cal === 'off')  return { state: 'no', source: 'cal:off', reason: 'OFF en calendario: en VLC' };
-  if (cal === 'stby' || cal === 'sim') return { state: 'uk', source: `cal:${cal}`, reason: `${cal === 'sim' ? 'SIM' : 'SBY'} en calendario: se asume noche en UK` };
+  if (cal === 'stby' || cal === 'sim' || cal === 'sd') return { state: 'uk', source: `cal:${cal}`, reason: `${calLabel(cal)} en calendario: se asume noche en UK` };
   if (cal === 'duty') return { state: 'pending', kind: 'duty', reason: 'DUTY en calendario sin email: pega el email' };
   return { state: 'pending', kind: 'gap', reason: 'sin datos' };
 }
@@ -1787,10 +1793,12 @@ function renderUKDays() {
       <div class="day-item">
         <span class="day-date">${dateISOToDisplay(x.iso)}</span>
         <span class="day-route" style="font-family:inherit">${x.reason}</span>
+        <button class="btn btn-ghost btn-sm" onclick="ukDecidePending('${x.iso}','uk')">UK</button>
+        <button class="btn btn-ghost btn-sm" onclick="ukDecidePending('${x.iso}','no')">No UK</button>
       </div>`).join('');
     pendingHTML = `
       <div style="margin:.75rem 0;color:var(--text);font-size:.85rem;font-weight:600;">⏳ ${P} día${P !== 1 ? 's' : ''} sin decidir — confirma los huecos</div>
-      <div style="font-size:.75rem;color:var(--text);margin-bottom:.4rem;">OFF marca el bloque entero; pulsa una fecha si fue STBY/SIM.</div>
+      <div style="font-size:.75rem;color:var(--text);margin-bottom:.4rem;">OFF marca el bloque entero; pulsa una fecha si fue STBY/SIM/SD. El resto: UK o No UK según dónde dormiste.</div>
       <div class="day-list">${blockRows}${otherRows}</div>`;
   }
 
@@ -1804,7 +1812,7 @@ function renderUKDays() {
       const entries = byMonth[mk];
       const items = entries.map(x => {
         const e = _ukdays[x.iso];
-        const route = e ? e.route : (x.source === 'cal:sim' ? 'SIM' : 'SBY');
+        const route = e ? e.route : calLabel((x.source || "").slice(4));
         const ob = e ? `OB ${e.onBlock} ${e.tz}` : 'calendario';
         const warn = x.legacyOutside ? ` <span style="color:var(--amber)" title="Acaba fuera de UK: re-pega el email">⚠ revisar</span>` : '';
         const del = `<button class="day-del" title="Marcar como NO UK Day / eliminar" onclick="removeUKDay('${x.iso}')">✕</button>`;
@@ -1868,6 +1876,18 @@ function ukMarkBlockOff(i) {
   renderCalendar();
 }
 
+// Botones UK / No UK de un pendiente que no es hueco (conflicto, email incompleto, DUTY sin email —p. ej. día solo-DH—):
+// guarda la decisión del usuario como entrada manual (nunca se recalcula).
+function ukDecidePending(iso, state) {
+  const st = ukDayStatus(iso);
+  if (st.state !== 'pending') return;
+  if (getMode() === 'cloud' && !cloud.hydrated) { alert('Aún no hay conexión con la nube: no se ha guardado. Repítelo cuando ponga "Sincronizado ✓".'); return; }
+  const prev = _ukdays[iso];
+  const reason = `decidido a mano (${state === 'uk' ? 'dormí en UK' : 'dormí fuera de UK'}): ${st.reason}`;
+  saveUKDays({ ..._ukdays, [iso]: { state, route: prev?.route || '—', onBlock: prev?.onBlock || '--:--', tz: prev?.tz || (ukOffsetMin(iso) ? 'BST' : 'GMT'), manual: true, source: 'manual', reason, at: new Date().toISOString() } });
+  renderUKDays();
+}
+
 function toggleUKDays() {
   const el   = document.getElementById('ukdays-months');
   const chev = document.getElementById('ukdays-chev');
@@ -1929,7 +1949,7 @@ function emailUKDaysBackup() {
     byMonth[mk].forEach(x => {
       const e = _ukdays[x.iso];
       lines.push(e ? `  ${dateISOToDisplay(x.iso)}  ${e.route}  OB ${e.onBlock} ${e.tz}  [${ukSourceLabel(x.source)}]`
-                   : `  ${dateISOToDisplay(x.iso)}  ${x.source === 'cal:sim' ? 'SIM' : 'SBY'}  [cal]`);
+                   : `  ${dateISOToDisplay(x.iso)}  ${calLabel((x.source || "").slice(4))}  [cal]`);
     });
     lines.push('');
   });
@@ -1959,11 +1979,11 @@ function toggleUKMonth(mk) {
 function removeUKDay(iso) {
   const e = _ukdays[iso];
   if (!e) {
-    // UK que viene del calendario (SBY/SIM): "No UK" manual; el calendario no se toca (lo usa el Excel)
+    // UK que viene del calendario (SBY/SIM/SD): "No UK" manual; el calendario no se toca (lo usa el Excel)
     const st = ukDayStatus(iso);
     if (st.state !== 'uk') return;
     if (!confirm(`¿Marcar ${dateISOToDisplay(iso)} como NO UK Day (dormiste fuera de UK)?\n\nEl calendario sigue igual; quedará guardado como decisión tuya.`)) return;
-    saveUKDays({ ..._ukdays, [iso]: { state: 'no', route: '—', onBlock: '--:--', tz: ukOffsetMin(iso) ? 'BST' : 'GMT', manual: true, source: 'manual', reason: `marcado por el usuario: dormí fuera de UK (${st.source === 'cal:sim' ? 'SIM' : 'SBY'} en calendario)`, at: new Date().toISOString() } });
+    saveUKDays({ ..._ukdays, [iso]: { state: 'no', route: '—', onBlock: '--:--', tz: ukOffsetMin(iso) ? 'BST' : 'GMT', manual: true, source: 'manual', reason: `marcado por el usuario: dormí fuera de UK (${calLabel((st.source || '').slice(4))} en calendario)`, at: new Date().toISOString() } });
     renderUKDays();
     return;
   }
@@ -2301,7 +2321,100 @@ function isoToExcelSerial(iso) {
   return Math.round((new Date(iso + 'T00:00:00Z') - new Date('1899-12-30T00:00:00Z')) / 86400000);
 }
 
+// U del Excel = estado de UK Days (fuente única): uk → 1 · pendiente con datos (hoy/futuro) → '?' · resto → vacío.
+function excelU(iso) {
+  const st = ukDayStatus(iso).state;
+  if (st === 'uk') return 1;
+  if (st === 'pending' && (ukHasEmail(iso) || _dayMap[iso])) return '?';
+  return '';
+}
+
+// UW = duty que empieza en UK: el sector con el off-block UTC más temprano sale de UK (sin JER/GCI, como UK Days).
+function excelUWFlights(flights) {
+  const offs = sectorDayOffsets(flights);
+  let first = null, firstAt = null;
+  flights.forEach((f, i) => {
+    const t = sectorUTC(f, offs[i]);
+    const at = t.off || t.airborne || t.landed || t.on;
+    if (at && (!firstAt || at < firstAt)) { firstAt = at; first = f; }
+  });
+  const dep = ((first || flights[0])?.d?.['City Pair'] || '').split(' - ')[0].trim().toUpperCase();
+  return UK_RES.has(dep) ? 1 : '';
+}
+
+// Filas del Excel de un día. Los vuelos mandan sobre el calendario (SBY activado → filas de vuelo, U desde UK Days).
+function excelRowsForDay(iso) {
+  const serial  = isoToExcelSerial(iso);
+  const status  = _dayMap[iso];
+  const flights = (_excelData[iso]?.flights) || [];
+  const U = excelU(iso);
+
+  if (flights.length > 0) {
+    const UW = excelUWFlights(flights);
+    return flights.map((f, idx) => {
+      const isFirst = idx === 0;
+      const isLast  = idx === flights.length - 1;
+      const cp   = (f.d?.['City Pair'] || '').split(' - ');
+      const from = (cp[0] || '').trim();
+      const to   = (cp[1] || '').trim();
+      const fromUK = UK_AP.has(from);
+      const toUK   = UK_AP.has(to);
+      const blk  = f.d?.['Total Block']    || '';
+      const offB = f.d?.['Off Block']      || '';
+      const onB  = f.d?.['On Block']       || '';
+      const fNoRaw = (f.d?.['FlightNumber'] || f.d?.['Flight Number'] || '').replace(/\s+/g,'');
+      const fNo  = fNoRaw && !fNoRaw.toUpperCase().startsWith('FR') ? 'FR' + fNoRaw : fNoRaw;
+
+      const r = new Array(22).fill('');
+      r[0] = serial;
+      r[1] = fNo;
+      r[2] = from;
+      r[3] = to;
+
+      if (isFirst && fromUK) r[4] = hhmmToFrac('01:00');  // UK Report
+
+      if (fromUK && toUK)        { r[5]  = hhmmToFrac(blk); }
+      else if (fromUK || toUK)   { r[5]  = hhmmToFrac('00:15'); r[12] = hhmmToFrac(subHHMM(blk,'00:15')); }
+      else                       { r[12] = hhmmToFrac(blk); }
+
+      if (!isLast) { if (toUK) r[6] = hhmmToFrac('01:30'); else r[13] = hhmmToFrac('01:30'); }
+      if (isLast)  { if (toUK) r[7] = hhmmToFrac('00:30'); else r[14] = hhmmToFrac('00:30'); }
+
+      if (isFirst) { r[17] = UW; r[18] = U; }
+
+      r[20] = hhmmToFrac(offB) ?? '';
+      r[21] = hhmmToFrac(onB)  ?? '';
+      return r;
+    });
+  }
+  if (status === 'off' && U === '') return [[serial, 'OFF']];
+  if (status === 'off') { const r = new Array(22).fill(''); r[0] = serial; r[1] = 'OFF'; r[18] = U; return [r]; } // UK Day manual en un OFF
+  if (status === 'stby' || status === 'sim' || status === 'sd') {
+    const r = new Array(22).fill('');
+    r[0] = serial; r[1] = calLabel(status); r[17] = 1; r[18] = U;
+    return [r];
+  }
+  // Sin vuelos ni SBY/SIM/SD (p. ej. DUTY solo-DH o UK Day añadido a mano): la U sigue a UK Days. UW no se puede saber sin vuelos.
+  if (U !== '' || status === 'duty') {
+    const r = new Array(22).fill('');
+    r[0] = serial; r[1] = status === 'duty' ? 'DUTY' : ''; r[18] = U;
+    return [r];
+  }
+  return [[serial]];
+}
+
 function downloadTaxExcel() {
+  // Con días pasados sin decidir no se descarga: el Excel es un dato fiscal (decisión del usuario 03.2)
+  const pend = pendingUKDays();
+  if (pend.length) {
+    const gaps = pendingUKBlocks().map(b => ukRangeLabel(b.days));
+    const rest = pend.filter(x => x.kind !== 'gap').map(x => dateISOToDisplay(x.iso));
+    const parts = [];
+    if (gaps.length) parts.push(`huecos ${gaps.slice(0, 6).join(', ')}${gaps.length > 6 ? '…' : ''}`);
+    if (rest.length) parts.push(`por decidir ${rest.slice(0, 6).join(', ')}${rest.length > 6 ? '…' : ''}`);
+    showStatus('err', `No se descarga: ${pend.length} día${pend.length !== 1 ? 's' : ''} sin decidir (${parts.join(' · ')}). Decídelos en UK Days.`);
+    return;
+  }
   const TAX_START = UK_DAYS_START;
   const TAX_END   = UK_DAYS_END;
   const MONTHS_EN = ['January','February','March','April','May','June',
@@ -2315,7 +2428,7 @@ function downloadTaxExcel() {
   const allRows = [
     HEADER,
     [],
-    ['NAME','Ricardo Vega Burgueño','','','Tax Year 2025-2026'],
+    ['NAME','Ricardo Vega Burgueño','','',`Tax Year ${UK_DAYS_START.slice(0, 4)}-${UK_DAYS_END.slice(0, 4)}`],
     ['','','','','','','UK DUTY TIME','','','','','','','NON UK DUTY TIME'],
     HEADER
   ];
@@ -2332,70 +2445,7 @@ function downloadTaxExcel() {
     const m   = cur.getUTCMonth();
     if (prevMonth !== -1 && m !== prevMonth) flushMonth(prevMonth);
     prevMonth = m;
-
-    const serial  = isoToExcelSerial(iso);
-    const status  = _dayMap[iso];
-    const flights = (_excelData[iso]?.flights) || [];
-
-    if (status === 'off') {
-      buf.push([serial, 'OFF']);
-    } else if (status === 'stby') {
-      const r = new Array(22).fill('');
-      r[0]=serial; r[1]='SBY'; r[17]=1; r[18]=1;
-      buf.push(r);
-    } else if (status === 'sim') {
-      const r = new Array(22).fill('');
-      r[0]=serial; r[1]='SIM'; r[17]=1; r[18]=1;
-      buf.push(r);
-    } else if (flights.length > 0) {
-      const bst = isBST(iso);
-      flights.forEach((f, idx) => {
-        const isFirst = idx === 0;
-        const isLast  = idx === flights.length - 1;
-        const cp   = (f.d?.['City Pair'] || '').split(' - ');
-        const from = (cp[0] || '').trim();
-        const to   = (cp[1] || '').trim();
-        const fromUK = UK_AP.has(from);
-        const toUK   = UK_AP.has(to);
-        const blk  = f.d?.['Total Block']    || '';
-        const offB = f.d?.['Off Block']      || '';
-        const onB  = f.d?.['On Block']       || '';
-        const fNoRaw = (f.d?.['FlightNumber'] || f.d?.['Flight Number'] || '').replace(/\s+/g,'');
-        const fNo  = fNoRaw && !fNoRaw.toUpperCase().startsWith('FR') ? 'FR' + fNoRaw : fNoRaw;
-
-        const r = new Array(22).fill('');
-        r[0] = serial;
-        r[1] = fNo;
-        r[2] = from;
-        r[3] = to;
-
-        if (isFirst && fromUK) r[4] = hhmmToFrac('01:00');  // UK Report
-
-        if (fromUK && toUK)        { r[5]  = hhmmToFrac(blk); }
-        else if (fromUK || toUK)   { r[5]  = hhmmToFrac('00:15'); r[12] = hhmmToFrac(subHHMM(blk,'00:15')); }
-        else                       { r[12] = hhmmToFrac(blk); }
-
-        if (!isLast) { if (toUK) r[6] = hhmmToFrac('01:30'); else r[13] = hhmmToFrac('01:30'); }
-        if (isLast)  { if (toUK) r[7] = hhmmToFrac('00:30'); else r[14] = hhmmToFrac('00:30'); }
-
-        if (isFirst) {
-          r[17] = 1; // UW
-          const lastOnB = flights[flights.length-1].d?.['On Block'] || '';
-          if (lastOnB) {
-            const [h, min] = lastOnB.split(':').map(Number);
-            const localMin = h * 60 + min + (bst ? 60 : 0);
-            if (localMin < 1440) r[18] = 1; // U
-          }
-        }
-
-        r[20] = hhmmToFrac(offB) ?? '';
-        r[21] = hhmmToFrac(onB)  ?? '';
-        buf.push(r);
-      });
-    } else {
-      buf.push([serial]);
-    }
-
+    buf.push(...excelRowsForDay(iso));
     cur.setUTCDate(cur.getUTCDate() + 1);
   }
   if (prevMonth !== -1) flushMonth(prevMonth);
@@ -2422,8 +2472,9 @@ function downloadTaxExcel() {
   }
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'TAX 26-27');
-  XLSX.writeFile(wb, 'TAX YEAR 26-27.xlsx');
+  const yy = `${UK_DAYS_START.slice(2, 4)}-${UK_DAYS_END.slice(2, 4)}`;
+  XLSX.utils.book_append_sheet(wb, ws, `TAX ${yy}`);
+  XLSX.writeFile(wb, `TAX YEAR ${yy}.xlsx`);
   showStatus('ok', 'Excel descargado.');
 }
 
@@ -2512,7 +2563,7 @@ function openDayModal(iso) {
     `${DAYS_ES[dt.getDay()]} ${+d} de ${MESES_ES[+m - 1]} de ${y}`;
 
   const cur = _dayMap[iso];
-  ['off','stby','duty','sim'].forEach(s => {
+  ['off','stby','duty','sim','sd'].forEach(s => {
     document.querySelector(`.opt-${s}`)?.classList.toggle('selected', cur === s);
   });
 

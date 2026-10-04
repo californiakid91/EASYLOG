@@ -86,6 +86,22 @@ run('clearExported()');
 check('Quitar de la lista: solo el mes exportado; Excel y UK Days intactos', !run(`'2026-10-02' in _cache`) && run(`'2026-09-23' in _cache`) && run(`!!_excelData['2026-10-02']`) && E('2026-10-02')?.state === 'uk');
 run(`downloadAllCSV()`); run('clearExported()');
 check('exportar todo + Quitar: lista vacía, Excel y UK Days intactos', run('Object.keys(_cache).length') === 0 && run(`!!_excelData['2026-09-23']`) && E('2026-09-23')?.state === 'uk');
+// G6b: Quitar de la lista no borra días pegados (o re-pegados) después de exportar
+reset(); paste(email('2026/10/02', [{ cp: 'STN - RZE', off: '17:00', on: '19:15' }, { cp: 'RZE - STN', off: '20:00', on: '22:30' }]));
+run(`downloadAllCSV()`);
+paste(email('2026/10/03', [{ cp: 'STN - RBA', off: '17:00', on: '19:15' }, { cp: 'RBA - STN', off: '20:00', on: '22:30' }]));
+run('clearExported()');
+check('exportar → pegar día nuevo → Quitar: el día nuevo sigue en la lista', !run(`'2026-10-02' in _cache`) && run(`'2026-10-03' in _cache`));
+// G6b: backfill idempotente (no escribe en cada snapshot si no hay cambios)
+reset(); paste(email('2026/04/06', [{ cp: 'STN - DUB', off: '20:00', on: '21:10' }, { cp: 'DUB - STN', off: '21:50', on: '23:00' }]));
+run('var __p2 = 0; const __pp = persist; persist = function () { __p2++; return __pp(); };'); run('backfillUKDays(); backfillUKDays();');
+check('backfillUKDays sin cambios → 0 escrituras', run('__p2') === 0, `escrituras=${run('__p2')}`);
+// G6b: calzos 00:00 en los días de cambio de hora
+for (const [d, on, exp] of [['2026/10/24', '23:00', 'uk'], ['2026/10/25', '00:00', 'uk'], ['2027/03/27', '00:00', 'uk'], ['2027/03/28', '23:00', 'uk'], ['2027/03/28', '00:00', 'no']]) {
+  reset(); paste(email(d, [{ cp: 'STN - DUB', off: '20:00', on: '21:10' }, { cp: 'DUB - STN', off: '21:50', on }]));
+  const iso = d.replace(/\//g, '-');
+  check(`cambio de hora: ${d} calzos ${on}Z → ${exp}`, E(iso)?.state === exp, e(iso));
+}
 
 // ── AC-3: compatibilidad con la nube (entradas antiguas)
 reset(); run(`_ukdays = { '2026-09-19': { route: 'AOI→STN', onBlock: '23:45', tz: 'BST' }, '2026-09-20': { route: '—', onBlock: '--:--', tz: 'BST', manual: true }, '2026-09-18': { route: 'STN→HAM', onBlock: '15:20', tz: 'BST' } };`);

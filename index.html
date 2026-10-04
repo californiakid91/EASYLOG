@@ -1414,7 +1414,7 @@ function downloadAllCSV() {
   triggerDownload(buildCSV(list), `pilotlog_${new Date().toISOString().slice(0,10)}.csv`);
   showDownloadStatus(list, `Descargados ${list.length} vuelos.`);
   // En iPhone un confirm() tras la descarga se pierde (Safari muestra el fichero): botón fijo en "Días guardados"
-  _lastExport = { mk: null, n: list.length };
+  _lastExport = exportSnapshot(null, list.length);
   renderHistory();
 }
 
@@ -1423,17 +1423,24 @@ function downloadMonthCSV(mk) {
   if (!list.length) return;
   triggerDownload(buildCSV(list), `pilotlog_${mk}.csv`);
   showDownloadStatus(list, `Descargados ${list.length} vuelos de ${monthLabel(mk)}.`);
-  _lastExport = { mk, n: list.length };
+  _lastExport = exportSnapshot(mk, list.length);
   renderHistory();
 }
 
 // Tras exportar: quita de la lista lo exportado (todo o el mes). El Excel Tax Year y los UK Days se conservan.
-let _lastExport = null; // { mk: 'YYYY-MM' | null (todo), n }
+let _lastExport = null; // { mk: 'YYYY-MM' | null (todo), n, days: { iso: addedAt } } — solo lo que entró en el CSV
+function exportSnapshot(mk, n) {
+  const hist = loadHistory();
+  const days = {};
+  Object.keys(hist).forEach(iso => { if (!mk || monthKey(iso) === mk) days[iso] = hist[iso].addedAt; });
+  return { mk, n, days };
+}
 function clearExported() {
   if (!_lastExport) return;
-  const { mk } = _lastExport;
+  const { mk, days } = _lastExport;
   const hist = loadHistory();
-  Object.keys(hist).forEach(iso => { if (!mk || monthKey(iso) === mk) delete hist[iso]; });
+  // Solo los días exportados y sin cambios desde entonces (un día pegado o re-pegado después no se toca)
+  Object.entries(days).forEach(([iso, at]) => { if (hist[iso] && hist[iso].addedAt === at) delete hist[iso]; });
   _lastExport = null;
   saveHistory(hist);
   renderHistory();
@@ -2200,6 +2207,7 @@ async function applyCloudMode() {
     // logout
     document.getElementById('btn-logout').onclick = async () => {
       if (!confirm('¿Cerrar sesión? Tus datos siguen en la nube.')) return;
+      _lastExport = null;
       await authMod.signOut(cloud.auth);
     };
   } catch (e) {
@@ -2215,6 +2223,7 @@ function switchMode() {
     ? 'Cambiar a modo Nube. Tus datos actuales se quedan en este navegador; si quieres subirlos, expórtalos antes y vuelve a importarlos manualmente.\n\n¿Continuar?'
     : 'Cambiar a modo Local. Verás solo los datos guardados en este navegador (no los de la nube).\n\n¿Continuar?';
   if (!confirm(msg)) return;
+  _lastExport = null;
   // tear down cloud listener if any
   if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
   cloud.hydrated = false; cloud.pendingWrite = false; cloud.loadError = false;

@@ -113,6 +113,10 @@ check('AC-4 ya arrancamos pidiendo esa versión → no recarga otra vez, solo av
 reset(); run(`_bootV = '2030.01.01-120000'`); remoteHTML = page('2030.02.02-120000'); await check1();
 check('AC-4 versión aún más nueva → sí recarga', replaced[0] === '/EASYLOG/?v=2030.02.02-120000');
 
+// ── G8: ruta con '//' inicial no puede llevar a otro host
+reset(); loc.pathname = '//evil.com/'; remoteHTML = page('2030.01.01-120000'); await check1(); loc.pathname = '/EASYLOG/';
+check('G8 pathname //evil.com/ → fetch y replace quedan en el mismo origen', fetches[0]?.url.startsWith('/evil.com/') && replaced[0] === '/evil.com/?v=2030.01.01-120000', JSON.stringify([fetches[0]?.url, replaced[0]]));
+
 // ── contador de escrituras
 reset(); run(`cloud.user = { uid: 'u' }; cloud.db = {}; cloud.hydrated = true; __p = persistCloud();`);
 const during = run('_cloudWrites'); await run('__p');

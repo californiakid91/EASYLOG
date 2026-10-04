@@ -8,7 +8,7 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 
 **v0.1 Datos fiables** (v0.1.0)
 Status: In progress
-Phases: 3 of 4 complete
+Phases: 3 of 4 complete (+3.1 insertada ✅)
 
 ## Phases
 
@@ -19,7 +19,7 @@ Phases: 3 of 4 complete
 | 1.2 | [INSERTED] Botón "+ Añadir fecha" UK Days (petición usuario) | 1/1 | ✅ Complete | 2026-10-03 |
 | 2 | CSV: esquema validado + TIME_NIGHT + delays | 1/1 | ✅ Complete | 2026-10-03 |
 | 3 | UK Days: fixes (03-01) + reglas reales (03-02, dialéctica) | 2/2 | ✅ Complete | 2026-10-04 |
-| 3.1 | [INSERTED] Auto-actualización PWA (Safari sirve versiones viejas) | 0/1 | Planning | - |
+| 3.1 | [INSERTED] Auto-actualización PWA (Safari sirve versiones viejas) | 1/1 | ✅ Complete | 2026-10-05 |
 | 4 | Pista en uso (dialéctica de fuente + implementación) | TBD | Not started | - |
 
 ## Phase Details
@@ -51,7 +51,7 @@ Phases: 3 of 4 complete
 ### Phase 3.1: Auto-actualización PWA [INSERTED]
 **Goal:** El iPhone ejecuta siempre la última versión desplegada sin ?v=N y sin perder datos.
 **Reason:** Versiones viejas en caché causaron pérdida de datos y un recuento falso (03-02).
-**Plans:** - [ ] 03.1-01: APP_VERSION + comprobación al volver + recarga segura + hook pre-commit
+**Plans:** - [x] 03.1-01: APP_VERSION + comprobación (arranque/volver/foco/5 min) + recarga segura + texto conservado + hook pre-commit (verificado en iPhone)
 
 ### Phase 4: Pista en uso
 **Goal:** DEP_RWY/ARR_RWY rellenos sin servidor ni claves públicas.

@@ -662,7 +662,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.04-230420';
+const APP_VERSION = '2026.10.04-230733';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -2586,8 +2586,10 @@ function restoreDraft() {
   const el = document.getElementById('input');
   if (el && !el.value.trim()) { el.value = d.text; showStatus('ok', 'App actualizada. Tu texto pegado sigue en el cuadro.'); }
 }
+// Ruta propia sin '//' inicial (evita una URL protocolo-relativa → otro host; G8)
+const selfPath = () => '/' + location.pathname.replace(/^\/+/, '');
 function goToPendingVersion() {
-  location.replace(location.pathname + '?v=' + encodeURIComponent(_pendingVersion));
+  location.replace(selfPath() + '?v=' + encodeURIComponent(_pendingVersion));
 }
 // Botón «Actualizar»: decide el usuario, recarga aunque el borrador no se pueda guardar
 function applyUpdate() {
@@ -2605,7 +2607,7 @@ async function checkForUpdate() {
   _lastUpdateCheck = Date.now();
   let remote = null;
   try {
-    const res = await fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' });
+    const res = await fetch(selfPath() + '?_=' + Date.now(), { cache: 'no-store' });
     if (res.ok) remote = parseRemoteVersion(await res.text());
   } catch { return; } // sin red: nada que hacer
   if (!remote || remote === APP_VERSION) return;

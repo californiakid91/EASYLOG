@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Sube APP_VERSION de index.html en cada commit que lo incluye (auto-actualización de la PWA, fase 3.1).
+# Activar en cada clon:  git config core.hooksPath .githooks
+set -euo pipefail
+
+FILE=index.html
+git diff --cached --quiet -- "$FILE" && exit 0
+
+# git add metería también lo que no está en el stage → no mezclar cambios
+if ! git diff --quiet -- "$FILE"; then
+  echo "pre-commit: $FILE tiene cambios sin añadir al commit. Añádelos (git add $FILE) o guárdalos aparte antes de commitear." >&2
+  exit 1
+fi
+
+VERSION=$(date -u +%Y.%m.%d-%H%M%S)
+sed -i -E "s/^const APP_VERSION = '[^']*';$/const APP_VERSION = '$VERSION';/" "$FILE"
+
+if ! grep -qx "const APP_VERSION = '$VERSION';" "$FILE"; then
+  echo "pre-commit: no se encontró la línea APP_VERSION en $FILE; commit abortado para no desplegar sin versión." >&2
+  exit 1
+fi
+
+git add "$FILE"

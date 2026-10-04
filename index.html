@@ -651,11 +651,18 @@
     🔒 EasyLog no recoge ni vende datos de usuarios.
     <a href="https://github.com/californiakid91/EASYLOG" target="_blank">Código abierto</a>.
     <span id="mode-chip" class="mode-chip" title="Cambiar modo">📱 Local</span>
+    <span id="app-version" style="opacity:.6"></span>
+  </div>
+  <div id="update-bar" class="hidden" style="position:fixed;left:.75rem;right:.75rem;bottom:.75rem;z-index:60;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.6rem .8rem;">
+    <span id="update-msg" style="flex:1;font-size:.85rem"></span>
+    <button class="btn btn-blue btn-sm" onclick="applyUpdate()">Actualizar</button>
   </div>
 
 </div>
 
 <script>
+// Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
+const APP_VERSION = '2026.10.04-224108';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -1096,6 +1103,7 @@ let cloud = { app: null, auth: null, db: null, user: null, unsub: null, hydrated
 let _dayMap       = {};    // calendario { 'YYYY-MM-DD': 'off'|'stby'|'duty'|'sim' } (lo leen el Excel y UK Days)
 let _dayMapSaving  = false; // evita que onSnapshot sobreescriba _dayMap mientras guardamos
 let _ukdaysSaving  = false; // evita que onSnapshot sobreescriba _ukdays mientras guardamos
+let _cloudWrites   = 0;     // escrituras a Firestore en vuelo (la auto-actualización no recarga mientras > 0)
 
 function getMode() { return localStorage.getItem(MODE_KEY); } // 'local' | 'cloud' | null
 function setMode(m) { localStorage.setItem(MODE_KEY, m); }
@@ -1149,6 +1157,7 @@ async function persistCloud() {
   // No escribir antes del primer snapshot: mergeFields reemplaza campos enteros y un estado local parcial pisaría la nube
   if (!cloud.hydrated) { blockedCloudWrite(); return; }
   setSync('syncing', 'Guardando…');
+  _cloudWrites++;
   try {
     const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
     // mergeFields reemplaza cada campo entero (así los borrados llegan a la nube; merge:true conservaba las claves borradas).
@@ -1160,7 +1169,7 @@ async function persistCloud() {
   } catch (e) {
     console.error('Cloud save failed:', e);
     setSync('err', 'Error al sincronizar');
-  }
+  } finally { _cloudWrites--; }
 }
 
 // Escritura a la nube bloqueada porque aún no se han cargado los datos reales de la nube
@@ -2439,12 +2448,13 @@ function saveDayMap() {
   if (getMode() === 'cloud') {
     if (!cloud.hydrated) { blockedCloudWrite(); return; }
     _dayMapSaving = true;
+    _cloudWrites++;
     (async () => {
       try {
         const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
         await setDoc(doc(cloud.db, 'users', cloud.user.uid), { dayMap: _dayMap }, { mergeFields: ['dayMap'] });
       } catch (e) { console.warn('saveDayMap cloud failed:', e); }
-      finally { setTimeout(() => { _dayMapSaving = false; }, 2000); }
+      finally { _cloudWrites--; setTimeout(() => { _dayMapSaving = false; }, 2000); }
     })();
   }
 }
@@ -2532,6 +2542,65 @@ document.getElementById('cal-grid').addEventListener('click', e => {
   const day = e.target.closest('[data-iso]');
   if (day) openDayModal(day.dataset.iso);
 });
+
+// ─── Auto-actualización ──────────────────────────────────────────────────────
+// Sin service worker: el problema es la caché HTTP (max-age=600) y que iOS reanuda la PWA sin navegar.
+// Al arrancar y al volver a primer plano se baja index.html sin caché; si su APP_VERSION es otra, se recarga
+// a ?v=<nueva> (URL nueva → el iPhone no puede servir la vieja), salvo que recargar pierda algo.
+let _bootV = null; // anti-bucle: versión que ya pedimos al arrancar (?v=); se lee en initAutoUpdate
+let _pendingVersion = null, _lastUpdateCheck = 0;
+
+function parseRemoteVersion(html) {
+  const m = /^const APP_VERSION = '([^']*)';$/m.exec(html || '');
+  return m ? m[1] : null;
+}
+// Motivos por los que recargar ahora perdería algo (vacío = es seguro)
+function updateBlockers() {
+  const val = id => (document.getElementById(id)?.value || '').trim();
+  const open = id => { const el = document.getElementById(id); return !!el && !el.classList.contains('hidden'); };
+  const r = [];
+  if (val('input')) r.push('se perderá el texto pegado');
+  if (val('ap-iata') || val('ap-lat') || val('ap-lon')) r.push('hay un aeropuerto a medio añadir');
+  if (open('day-modal') || open('ukdate-modal')) r.push('cierra la ventana abierta');
+  if (open('auth-overlay') || open('welcome-overlay')) r.push('termina de iniciar sesión');
+  if (_lastExport) r.push('cierra la barra de exportación');
+  if (_cloudWrites > 0) r.push('guardando en la nube');
+  if (cloud.pendingWrite) r.push('hay un cambio sin guardar en la nube');
+  return r;
+}
+function applyUpdate() {
+  if (_pendingVersion) location.replace(location.pathname + '?v=' + encodeURIComponent(_pendingVersion));
+}
+function showUpdateBar(reasons) {
+  const bar = document.getElementById('update-bar');
+  document.getElementById('update-msg').textContent = 'Hay una versión nueva' + (reasons.length ? ' · ' + reasons.join(' · ') : '');
+  bar.classList.remove('hidden');
+}
+async function checkForUpdate() {
+  if (Date.now() - _lastUpdateCheck < 60000) return;
+  _lastUpdateCheck = Date.now();
+  let remote = null;
+  try {
+    const res = await fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' });
+    if (res.ok) remote = parseRemoteVersion(await res.text());
+  } catch { return; } // sin red: nada que hacer
+  if (!remote || remote === APP_VERSION) return;
+  _pendingVersion = remote;
+  const blockers = updateBlockers();
+  if (!blockers.length && remote !== _bootV) applyUpdate();
+  else showUpdateBar(blockers);
+}
+function initAutoUpdate() {
+  const vEl = document.getElementById('app-version');
+  if (vEl) vEl.textContent = 'v' + APP_VERSION;
+  if (typeof fetch !== 'function') return;
+  _bootV = new URLSearchParams(location.search || '').get('v');
+  // Retardo al volver: no cortar el popup de login de Google, que también dispara visibilitychange
+  document.addEventListener?.('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(checkForUpdate, 1500); });
+  window.addEventListener?.('pageshow', e => { if (e.persisted) setTimeout(checkForUpdate, 1500); });
+  setTimeout(checkForUpdate, 3000);
+}
+try { initAutoUpdate(); } catch (e) { console.warn('auto-update init failed:', e); }
 
 (function() {
   const slides = Array.from(document.querySelectorAll('.bg-slide'));

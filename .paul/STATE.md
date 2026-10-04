@@ -10,21 +10,21 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 ## Current Position
 
 Milestone: v0.1 Datos fiables
-Phase: 4 of 4 (Pista en uso) — Not started (Fase 3 ✅ completa)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-04 — Fase 3 completa (UNIFY 03-02 + transición)
+Phase: 3.1 [INSERTED] (Auto-actualización PWA) — Planning (Fase 4 Pista en uso después)
+Plan: 03.1-01 — APPLY en curso (tareas 1-2 hechas, G6 limpio; falta checkpoint iPhone)
+Status: APPLY — checkpoint human-verify
+Last activity: 2026-10-05 — Created .paul/phases/03.1-pwa-autoupdate/03.1-01-PLAN.md (revisado por Fable: 2 bloqueantes + 5 importantes incorporados)
 
 Progress:
 - Milestone: [████████░░] 75%
-- Phase 3: [██████████] 100%
+- Phase 3.1: [░░░░░░░░░░] 0%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete - ready for next PLAN]
+  ✓        ◐        ○     [APPLY: esperando checkpoint iPhone]
 ```
 
 ## Accumulated Context
@@ -79,9 +79,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-04
-Stopped at: Fase 3 completa (UNIFY 03-02 + transición)
-Next action: /paul:plan — plan de auto-actualización PWA (prioridad; insertar como fase 3.1 o primer plan de la fase 4)
-Resume file: .paul/HANDOFF-2026-10-04-fase3-completa.md
+Stopped at: Plan 03.1-01 created
+Next action: Review and approve plan, then run /paul:apply .paul/phases/03.1-pwa-autoupdate/03.1-01-PLAN.md
+Resume file: .paul/phases/03.1-pwa-autoupdate/03.1-01-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

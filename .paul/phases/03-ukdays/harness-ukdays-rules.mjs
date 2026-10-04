@@ -123,6 +123,13 @@ check('solo-Excel sin entrada → backfill crea R3 (no "email incompleto")', E('
 run(`_ukdays['2026-10-24'] = { state: 'uk', route: '—', onBlock: '--:--', tz: 'BST', manual: true, source: 'manual' };`); run(`removeUKDay('2026-10-24')`);
 check('quitar UK manual de un día solo-Excel → vuelve a la regla del email', E('2026-10-24')?.source === 'rule:R3', e('2026-10-24'));
 
+// Checkpoint: ✕ en un UK que viene del calendario (SBY) → "No UK" manual; el calendario no cambia
+reset(); run(`_dayMap = { '2026-05-06': 'stby' };`);
+run(`removeUKDay('2026-05-06')`);
+check('✕ en SBY de calendario → No UK manual y _dayMap intacto', S('2026-05-06').state === 'no' && S('2026-05-06').source === 'manual' && run(`_dayMap['2026-05-06']`) === 'stby', JSON.stringify(S('2026-05-06')));
+run(`addUKDayManual('2026-05-06')`);
+check('…y "UK" lo deshace (UK manual)', S('2026-05-06').state === 'uk');
+
 // ── AC-4/5/6: UI (render, botón OFF, backup)
 const body = () => ctx.document.getElementById('ukdays-body').innerHTML;
 const count = () => ctx.document.getElementById('ukdays-count').textContent;

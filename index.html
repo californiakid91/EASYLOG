@@ -1778,7 +1778,7 @@ function renderUKDays() {
         const route = e ? e.route : (x.source === 'cal:sim' ? 'SIM' : 'SBY');
         const ob = e ? `OB ${e.onBlock} ${e.tz}` : 'calendario';
         const warn = x.legacyOutside ? ` <span style="color:var(--amber)" title="Acaba fuera de UK: re-pega el email">⚠ revisar</span>` : '';
-        const del = e ? `<button class="day-del" title="Marcar como NO UK Day / eliminar" onclick="removeUKDay('${x.iso}')">✕</button>` : '';
+        const del = `<button class="day-del" title="Marcar como NO UK Day / eliminar" onclick="removeUKDay('${x.iso}')">✕</button>`;
         return `
           <div class="day-item">
             <span class="day-date">${dateISOToDisplay(x.iso)}</span>
@@ -1929,7 +1929,15 @@ function toggleUKMonth(mk) {
 // ✕ en un UK Day automático → "No UK" manual (persistente: nada lo revive). ✕ en un manual o en un "No UK" → se borra la entrada.
 function removeUKDay(iso) {
   const e = _ukdays[iso];
-  if (!e) return;
+  if (!e) {
+    // UK que viene del calendario (SBY/SIM): "No UK" manual; el calendario no se toca (lo usa el Excel)
+    const st = ukDayStatus(iso);
+    if (st.state !== 'uk') return;
+    if (!confirm(`¿Marcar ${dateISOToDisplay(iso)} como NO UK Day (dormiste fuera de UK)?\n\nEl calendario sigue igual; quedará guardado como decisión tuya.`)) return;
+    saveUKDays({ ..._ukdays, [iso]: { state: 'no', route: '—', onBlock: '--:--', tz: ukOffsetMin(iso) ? 'BST' : 'GMT', manual: true, source: 'manual', reason: `marcado por el usuario: dormí fuera de UK (${st.source === 'cal:sim' ? 'SIM' : 'SBY'} en calendario)`, at: new Date().toISOString() } });
+    renderUKDays();
+    return;
+  }
   const updated = { ..._ukdays };
   if (!e.manual && ukEntryState(e) === 'uk') {
     if (!confirm(`¿Marcar ${dateISOToDisplay(iso)} como NO UK Day (dormiste fuera de UK)?\n\nQuedará guardado como decisión tuya y no se recalculará.`)) return;

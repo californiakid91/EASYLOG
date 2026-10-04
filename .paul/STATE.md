@@ -54,6 +54,17 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | semgrep: <script> CDN sin atributo integrity (SRI) en index.html:462 (preexistente) | Phase 2 | S | Aegis pre-deploy |
 | UK Days: reglas reales del usuario (medianoche en UK; HSBY activado; INTSP; ida/vuelta VLC en OFF/A/L) — ver memoria project_excel_tax_rules; reconstrucción por tax year desde el plan ROCS | Phase 2 | M | Fase 3 |
 
+### Preguntas pendientes al usuario (checkpoint 03-02) — de UNA en UNA
+- [x] 01/10/2026 → OFF (marcado por el usuario)
+- [~] 1. ¿Cuadra el total de 54 UK Days? → repaso uno por uno con el backup (54 = 48 previos + 6 SBY del calendario)
+  - [x] 06/05 SBY(cal) → NO UK: meeting por la mañana y a VLC por la tarde (falta: usuario pulsa ✕ tras deploy). Nota: el Excel lo pondrá como SBY U=1 → divergencia
+  - [ ] 25/07 SBY · [ ] 03/08 SBY · [ ] 06/09 SBY · [ ] 24/09 SBY · [ ] 25/09 SBY
+  - [ ] luego: 48 previos mes a mes (abril 14 man, mayo 9 man + 3 R1, …)
+- [ ] 2. Lista "No UK": ¿algún día no encaja?
+- [ ] 3. 6 DUTY sin email (09/04, 12/05, 20/05, 23/09, 26/09, 27/09/2026): ¿vuelo sin pegar, tierra o marca errónea? (uno a uno)
+- [ ] 4. ¿Los DH vienen en el email de vuelo como un sector más?
+- [ ] 5. ¿Añadir el año a las fechas de "Sin decidir"? (propuesta)
+
 ### Blockers/Concerns
 - Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
 

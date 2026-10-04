@@ -662,7 +662,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.04-225813';
+const APP_VERSION = '2026.10.04-230115';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -2625,6 +2625,9 @@ function initAutoUpdate() {
   // Retardo al volver: no cortar el popup de login de Google, que también dispara visibilitychange
   document.addEventListener?.('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(checkForUpdate, 1500); });
   window.addEventListener?.('pageshow', e => { if (e.persisted) setTimeout(checkForUpdate, 1500); });
+  // iOS standalone no siempre emite visibilitychange al volver desde el selector de apps: también foco + cada 5 min
+  window.addEventListener?.('focus', () => setTimeout(checkForUpdate, 1500));
+  setInterval(() => { if (document.visibilityState === 'visible') checkForUpdate(); }, 5 * 60000);
   setTimeout(checkForUpdate, 3000);
 }
 try { initAutoUpdate(); } catch (e) { console.warn('auto-update init failed:', e); }

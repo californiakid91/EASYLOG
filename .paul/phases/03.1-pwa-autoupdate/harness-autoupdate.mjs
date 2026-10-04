@@ -13,15 +13,15 @@ const el = id => (els.has(id) || els.set(id, mk()), els.get(id));
 const ls = new Map([['easylog_mode', 'local']]);
 let NOW = 1_000_000; class FakeDate extends Date { static now() { return NOW; } }
 let remoteHTML = null, fetchThrows = false, fetches = [];
-const replaced = [], listeners = {};
+const replaced = [], listeners = {}, intervals = [];
 const loc = { pathname: '/EASYLOG/', search: '', replace: u => replaced.push(u) };
 const ctx = vm.createContext({
   document: { getElementById: el, querySelector: () => mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener: (ev, fn) => (listeners[ev] = fn), visibilityState: 'visible' },
   localStorage: { getItem: k => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) },
-  window: { location: loc, addEventListener() {} }, navigator: {}, location: loc, console, Date: FakeDate, Math, JSON, Promise, Intl, URLSearchParams,
+  window: { location: loc, addEventListener: (ev, fn) => (listeners['win:' + ev] = fn) }, navigator: {}, location: loc, console, Date: FakeDate, Math, JSON, Promise, Intl, URLSearchParams,
   fetch: async (url, opts) => { fetches.push({ url, opts }); if (fetchThrows) throw new TypeError('offline'); return { ok: true, text: async () => remoteHTML }; },
   Blob: class {}, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }, confirm: () => true, prompt: () => null, alert() {},
-  setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0 });
+  setTimeout: () => 0, clearTimeout() {}, setInterval: (fn, ms) => (intervals.push(ms), 0) });
 let bootError = null;
 try { vm.runInContext(SCRIPT, ctx); } catch (e) { bootError = e; }
 const run = c => vm.runInContext(c, ctx); let fails = 0;
@@ -41,6 +41,7 @@ const barShown = () => !el('update-bar').classList.contains('hidden');
 check('AC-1 pie muestra v+APP_VERSION', el('app-version').textContent === 'v' + LOCAL_V, el('app-version').textContent);
 check('AC-1 formato YYYY.MM.DD-HHMMSS', /^\d{4}\.\d{2}\.\d{2}-\d{6}$/.test(LOCAL_V), LOCAL_V);
 check('AC-2 initAutoUpdate registra visibilitychange', typeof listeners.visibilitychange === 'function');
+check('AC-2 también foco de ventana y comprobación periódica de 5 min (iOS selector de apps)', typeof listeners['win:focus'] === 'function' && typeof listeners['win:pageshow'] === 'function' && intervals.includes(300000), JSON.stringify(intervals));
 
 // ── parseRemoteVersion
 check('parseRemoteVersion lee la versión', run(`parseRemoteVersion(${JSON.stringify(page('2030.01.01-120000'))})`) === '2030.01.01-120000');

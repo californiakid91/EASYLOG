@@ -80,7 +80,7 @@ Branch: main
 Last session: 2026-10-05
 Stopped at: Fase 3.1 completa (UNIFY 03.1-01 + transición)
 Next action: preguntas pendientes 1-2 (de una en una) o /paul:plan — duplicados al pegar / SD + columna U, o Fase 4 (pista en uso)
-Resume file: .paul/phases/03.1-pwa-autoupdate/03.1-01-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-05-fase3.1-completa.md
 
 ---
 *STATE.md — Updated after every significant action*

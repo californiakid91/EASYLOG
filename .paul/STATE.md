@@ -11,8 +11,8 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 
 Milestone: v0.1 Datos fiables
 Phase: 3.1 [INSERTED] (Auto-actualización PWA) — Planning (Fase 4 Pista en uso después)
-Plan: 03.1-01 — APPLY en curso (tareas 1-2 hechas, G6 limpio; falta checkpoint iPhone)
-Status: APPLY — checkpoint human-verify
+Plan: 03.1-01 — APPLY completo (checkpoint iPhone aprobado)
+Status: APPLY complete, ready for UNIFY
 Last activity: 2026-10-05 — Created .paul/phases/03.1-pwa-autoupdate/03.1-01-PLAN.md (revisado por Fable: 2 bloqueantes + 5 importantes incorporados)
 
 Progress:
@@ -24,7 +24,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ◐        ○     [APPLY: esperando checkpoint iPhone]
+  ✓        ✓        ○     [APPLY complete, ready for UNIFY]
 ```
 
 ## Accumulated Context
@@ -52,7 +52,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Literal 'Tax Year 2025-2026' en downloadTaxExcel | 03-01 | XS | — |
 | iPhone sirve la versión antigua en caché sin ?v=N (pasó en el checkpoint 03-02: contó 80 en vez de 53) → mostrar versión en la app / cache-busting | 03-02 checkpoint | S | 03-03 |
 | IDEA usuario: al pegar, detectar vuelo duplicado (ya en historial/Excel): si es idéntico → avisar "duplicado" y no guardar; si difiere → mostrar discrepancias campo a campo. Hoy addDay solo mira el historial (no _excelData) | 03-02 checkpoint | S-M | 03-03 (aclarar alcance) |
-| Auto-actualización de la PWA (como Toca Cabeza): versión embebida + comprobación al abrir/volver → recarga sola | 03-02 checkpoint | S | siguiente plan (prioridad) |
+| Barra «Hay una versión nueva» (fija abajo) tapa el final del botón de exportar mientras está visible → padding-bottom al body cuando se muestra | 03.1 checkpoint | XS | — |
 | Calendario sin estado SD/ground duty (meeting): 06/05/2026 marcado SBY → Excel pone SBY U=1 aunque durmió en VLC | 03-02 checkpoint | S | 03-03 |
 | semgrep: <script> CDN sin atributo integrity (SRI) en index.html:462 (preexistente) | Phase 2 | S | Aegis pre-deploy |
 | UK Days: reconstrucción de tax years anteriores desde el plan ROCS (2024/25 falta plan abr–dic 2024) | Phase 2 | M | — |
@@ -79,8 +79,8 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-04
-Stopped at: Plan 03.1-01 created
-Next action: Review and approve plan, then run /paul:apply .paul/phases/03.1-pwa-autoupdate/03.1-01-PLAN.md
+Stopped at: APPLY 03.1-01 completo — iPhone: A(224108)→B(224353) recarga sola; C(224558) bloqueado por texto pegado con aviso; Actualizar → C
+Next action: /paul:unify .paul/phases/03.1-pwa-autoupdate/03.1-01-PLAN.md
 Resume file: .paul/phases/03.1-pwa-autoupdate/03.1-01-PLAN.md
 
 ---

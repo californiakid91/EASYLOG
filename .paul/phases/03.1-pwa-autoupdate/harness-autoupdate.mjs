@@ -58,7 +58,6 @@ check('AC-3 versión nueva sin bloqueos → location.replace(?v=nueva)', replace
 
 // ── cada bloqueo por separado
 const blockers = [
-  ['texto pegado', () => { el('input').value = 'FlightNumber : FR1'; }, 'texto pegado'],
   ['aeropuerto a medio añadir', () => { el('ap-lat').value = '40.4'; }, 'aeropuerto'],
   ['modal de día abierto', () => el('day-modal').classList.remove('hidden'), 'ventana'],
   ['modal UK Day abierto', () => el('ukdate-modal').classList.remove('hidden'), 'ventana'],
@@ -72,11 +71,27 @@ for (const [name, set, word] of blockers) {
   reset(); remoteHTML = page('2030.01.01-120000'); set(); await check1();
   check(`AC-3 bloqueo «${name}» → no recarga + aviso con motivo`, replaced.length === 0 && barShown() && el('update-msg').textContent.includes(word), el('update-msg').textContent);
 }
-reset(); el('input').value = '   '; remoteHTML = page('2030.01.01-120000'); await check1();
-check('texto solo de espacios no bloquea', replaced.length === 1);
+// ── texto pegado: no bloquea; se guarda y se repone tras la recarga
+reset(); ls.delete('easylog_draft'); el('input').value = 'FlightNumber : FR1'; remoteHTML = page('2030.01.01-120000'); await check1();
+const draft = JSON.parse(ls.get('easylog_draft') || 'null');
+check('texto pegado → recarga igualmente y guarda el borrador', replaced.length === 1 && draft?.text === 'FlightNumber : FR1', ls.get('easylog_draft'));
+el('input').value = ''; run('restoreDraft()');
+check('al arrancar se repone el texto y se borra el borrador', el('input').value === 'FlightNumber : FR1' && !ls.has('easylog_draft'), el('input').value);
+el('input').value = ''; ls.set('easylog_draft', JSON.stringify({ text: 'viejo', at: NOW - 11 * 60000 })); run('restoreDraft()');
+check('borrador de hace > 10 min no se repone (y se borra)', el('input').value === '' && !ls.has('easylog_draft'));
+el('input').value = 'ya escrito'; ls.set('easylog_draft', JSON.stringify({ text: 'borrador', at: NOW })); run('restoreDraft()');
+check('no pisa texto que ya esté en el cuadro', el('input').value === 'ya escrito');
+reset(); const realSet = ctx.localStorage.setItem; ctx.localStorage.setItem = () => { throw new Error('QuotaExceeded'); };
+el('input').value = 'texto'; remoteHTML = page('2030.01.01-120000'); await check1(); ctx.localStorage.setItem = realSet;
+check('si no se puede guardar el borrador → no recarga + aviso «se perderá el texto pegado»', replaced.length === 0 && barShown() && el('update-msg').textContent.includes('texto pegado'), el('update-msg').textContent);
+reset(); ctx.localStorage.setItem = (k, v) => { if (k === 'easylog_draft') throw new Error('QuotaExceeded'); ls.set(k, String(v)); };
+el('input').value = 'email largo'; remoteHTML = page('2030.01.01-120000'); await check1(); ctx.localStorage.setItem = realSet;
+check('cuota llena solo para el borrador (otras escrituras OK) → no recarga + aviso', replaced.length === 0 && barShown() && el('update-msg').textContent.includes('texto pegado'), el('update-msg').textContent);
+reset(); ls.delete('easylog_draft'); el('input').value = '   '; remoteHTML = page('2030.01.01-120000'); await check1();
+check('texto solo de espacios: recarga y no guarda borrador', replaced.length === 1 && !ls.has('easylog_draft'));
 
 // ── botón Actualizar ignora bloqueos
-reset(); remoteHTML = page('2030.01.01-120000'); el('input').value = 'x'; await check1(); run('applyUpdate()');
+reset(); remoteHTML = page('2030.01.01-120000'); run(`_lastExport = { mk: null, n: 1, days: {} }`); await check1(); run('applyUpdate()');
 check('botón Actualizar recarga aunque haya bloqueo', replaced[0] === '/EASYLOG/?v=2030.01.01-120000');
 
 // ── sin red / respuesta rara

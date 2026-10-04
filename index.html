@@ -662,7 +662,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.04-224558';
+const APP_VERSION = '2026.10.04-224937';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -2560,7 +2560,7 @@ function updateBlockers() {
   const val = id => (document.getElementById(id)?.value || '').trim();
   const open = id => { const el = document.getElementById(id); return !!el && !el.classList.contains('hidden'); };
   const r = [];
-  if (val('input')) r.push('se perderá el texto pegado');
+  // El texto pegado no bloquea: se guarda antes de recargar y se repone al arrancar (si no se puede guardar, checkForUpdate no recarga)
   if (val('ap-iata') || val('ap-lat') || val('ap-lon')) r.push('hay un aeropuerto a medio añadir');
   if (open('day-modal') || open('ukdate-modal')) r.push('cierra la ventana abierta');
   if (open('auth-overlay') || open('welcome-overlay')) r.push('termina de iniciar sesión');
@@ -2569,8 +2569,31 @@ function updateBlockers() {
   if (cloud.pendingWrite) r.push('hay un cambio sin guardar en la nube');
   return r;
 }
+const DRAFT_KEY = 'easylog_draft';
+// Guarda el texto del cuadro de pegar para reponerlo tras la recarga. false = no se pudo (p. ej. cuota llena)
+function stashDraft() {
+  const text = document.getElementById('input')?.value || '';
+  try {
+    if (text.trim()) localStorage.setItem(DRAFT_KEY, JSON.stringify({ text, at: Date.now() }));
+    else localStorage.removeItem(DRAFT_KEY);
+    return true;
+  } catch { return false; }
+}
+function restoreDraft() {
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); localStorage.removeItem(DRAFT_KEY); } catch {}
+  if (!d?.text || Date.now() - d.at > 10 * 60000) return; // solo el de esta actualización, no uno viejo
+  const el = document.getElementById('input');
+  if (el && !el.value.trim()) { el.value = d.text; showStatus('ok', 'App actualizada. Tu texto pegado sigue en el cuadro.'); }
+}
+function goToPendingVersion() {
+  location.replace(location.pathname + '?v=' + encodeURIComponent(_pendingVersion));
+}
+// Botón «Actualizar»: decide el usuario, recarga aunque el borrador no se pueda guardar
 function applyUpdate() {
-  if (_pendingVersion) location.replace(location.pathname + '?v=' + encodeURIComponent(_pendingVersion));
+  if (!_pendingVersion) return;
+  stashDraft();
+  goToPendingVersion();
 }
 function showUpdateBar(reasons) {
   const bar = document.getElementById('update-bar');
@@ -2588,12 +2611,15 @@ async function checkForUpdate() {
   if (!remote || remote === APP_VERSION) return;
   _pendingVersion = remote;
   const blockers = updateBlockers();
-  if (!blockers.length && remote !== _bootV) applyUpdate();
-  else showUpdateBar(blockers);
+  if (!blockers.length && remote !== _bootV) {
+    if (stashDraft()) goToPendingVersion();
+    else showUpdateBar(['se perderá el texto pegado']);
+  } else showUpdateBar(blockers);
 }
 function initAutoUpdate() {
   const vEl = document.getElementById('app-version');
   if (vEl) vEl.textContent = 'v' + APP_VERSION;
+  restoreDraft();
   if (typeof fetch !== 'function') return;
   _bootV = new URLSearchParams(location.search || '').get('v');
   // Retardo al volver: no cortar el popup de login de Google, que también dispara visibilitychange

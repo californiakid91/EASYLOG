@@ -45,7 +45,7 @@ Phases: 2 of 4 complete
 **Scope:** orden cronológico con cruce de medianoche; recalcular al reemplazar un día (no `manual`); tests con fixtures 01/90/91.
 **Plans:**
 - [x] 03-01: fixes H5/H6, removeDay, solo-Excel, periodo 05-04, Cargando…
-- [ ] 03-02: reglas reales (medianoche en UK, VLC, HSBY, INTSP) — dialéctica primero
+- [ ] 03-02: reglas reales R1/R2/R3 + estados uk/no + pendientes/huecos (plan creado; dialéctica hecha)
 
 ### Phase 4: Pista en uso
 **Goal:** DEP_RWY/ARR_RWY rellenos sin servidor ni claves públicas.

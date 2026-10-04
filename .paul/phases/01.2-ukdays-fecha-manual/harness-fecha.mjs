@@ -17,7 +17,7 @@ const check = (n, ok, d = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d
 const pick = v => { run('openUKDateModal()'); ctx.document.getElementById('ukday-date').value = v; if (answer) run('confirmUKDateModal()'); else run('closeUKDateModal()'); return ''; };
 run('openUKDateModal()'); ctx.document.getElementById('ukday-date').value = '2026-10-03';
 check('autocompletar fecha (iOS) sin pulsar Añadir → nada añadido', Object.keys(run('_ukdays')).length === 0); run('closeUKDateModal()');
-pick('2026-09-25'); check('elegir 25/09 y pulsar Añadir → añadido manual', run(`JSON.stringify(_ukdays['2026-09-25'])`) === JSON.stringify({ route: '—', onBlock: '--:--', tz: 'BST', manual: true }));
+pick('2026-09-25'); check('elegir 25/09 y pulsar Añadir → añadido manual', run(`(e => JSON.stringify({ route: e.route, onBlock: e.onBlock, tz: e.tz, manual: e.manual }))(_ukdays['2026-09-25'])`) === JSON.stringify({ route: '—', onBlock: '--:--', tz: 'BST', manual: true }) /* 03-02: + state/source/reason */);
 check('persistido en localStorage', JSON.parse(ls.get('easylog_ukdays_v1'))['2026-09-25']?.manual === true);
 pick('2026-09-25'); check('repetido → aviso, sin duplicar', st.at(-1).includes('ya está registrado') && Object.keys(run('_ukdays')).length === 1, st.at(-1));
 pick('2026-04-01'); check('fuera de rango → aviso', st.at(-1).includes('fuera del') && !run(`'2026-04-01' in _ukdays`), st.at(-1));

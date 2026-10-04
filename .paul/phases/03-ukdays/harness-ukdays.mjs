@@ -15,7 +15,8 @@ vm.runInContext('showStatus = (t, m) => __st.push(t + ": " + m); var __persists 
 const run = c => vm.runInContext(c, ctx); let fails = 0, skips = 0;
 const check = (n, ok, d = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? '  — ' + d : ''}`); if (!ok) fails++; };
 const reset = () => run('_cache = {}; _excelData = {}; _ukdays = {}; __persists = 0;');
-const uk = iso => run(`JSON.stringify(_ukdays['${iso}'] ?? null)`);
+// 03-02: las entradas llevan state/source/reason; un "No UK" (state 'no') no cuenta → se lee como null
+const uk = iso => run(`(e => !e || (e.state || 'uk') === 'no' ? 'null' : JSON.stringify({ route: e.route, onBlock: e.onBlock, tz: e.tz, ...(e.manual ? { manual: true } : {}) }))(_ukdays['${iso}'])`);
 const paste = text => { ctx.document.getElementById('input').value = text; run('addDay()'); };
 // Email sintético: date "YYYY/MM/DD", sectores [{cp, std, off, on}]
 const email = (date, secs) => date + '\n\n' + secs.map((s, i) => [
@@ -113,9 +114,9 @@ check('nube sin hidratar: "Cargando…" y contador "… / 91"', /Cargando…/.te
 run('cloud.loadError = true; renderUKDays()');
 check('nube con error de carga: "Sin conexión — UK Days no cargados"', /Sin conexión — UK Days no cargados/.test(ukHTML()));
 run('cloud.hydrated = true; renderUKDays()');
-check('nube hidratada: contenido real (1 / 91)', !/Cargando|Sin conexión/.test(ukHTML()) && ukCount() === '1 / 91', ukCount());
+check('nube hidratada: contenido real (1 / 91)', !/Cargando|Sin conexión/.test(ukHTML()) && ukCount().startsWith('1 / 91'), ukCount()); // 03-02: + "· P pend."
 ls.set('easylog_mode', 'local'); run('cloud.hydrated = false; renderUKDays()');
-check('modo local: sin "Cargando…" aunque hydrated=false', !/Cargando/.test(ukHTML()) && ukCount() === '1 / 91');
+check('modo local: sin "Cargando…" aunque hydrated=false', !/Cargando/.test(ukHTML()) && ukCount().startsWith('1 / 91'));
 check('renderCalendar sin cambios (no menciona hydrated)', !/function renderCalendar\(\) \{[\s\S]{0,600}hydrated/.test(html));
 
 console.log(fails ? `\n${fails} FALLO(S)` : `\nTODO OK${skips ? ` (${skips} SKIP)` : ''}`); process.exit(fails ? 1 : 0);

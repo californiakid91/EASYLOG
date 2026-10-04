@@ -10,10 +10,10 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 ## Current Position
 
 Milestone: v0.1 Datos fiables
-Phase: 3 of 4 (UK Days) — In progress (1/2 plans)
-Plan: 03-01 complete (fixes, desplegado b2d8244); 03-02 = reglas reales (dialéctica primero)
-Status: Ready for next PLAN
-Last activity: 2026-10-04 — UNIFY 03-01 (SUMMARY creado; usuario aprobó en iPhone)
+Phase: 3 of 4 (UK Days) — Planning
+Plan: 03-02 created, awaiting approval
+Status: PLAN created, ready for APPLY
+Last activity: 2026-10-04 — Dialéctica (wf_78cb92df-f8c) + plan 03-02 revisado por Fable (aprobar con cambios → aplicados)
 
 Progress:
 - Milestone: [██████░░░░] 60%
@@ -24,7 +24,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete - ready for next PLAN]
+  ✓        ○        ○     [Plan created, awaiting approval]
 ```
 
 ## Accumulated Context
@@ -39,6 +39,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - PILOTLOG_DATE = fecha UTC de off-block (sectores post-medianoche → día siguiente)
 - Escrituras a nube con mergeFields + guard hidratación (ignora fromCache); last-write-wins por campo aceptado
 - UK Day: computeUKDay tri-estado (último sector cronológico vía sectorUTC; sin On Block → no tocar); manual:true nunca se recalcula
+- UK Days 03-02 (dialéctica + Fable): regla cerrada R1/R2/R3 exigiendo aterrizar en UK (sustituye "sin exigir aeropuerto UK"); estados uk/no con source/reason; calendario _dayMap como declaración de días sin email; P = pendientes pasados, alarma solo con N
 - Días solo-Excel se borran sin tocar UK Days; "Cargando…" solo en UK Days (calendario desde caché local)
 
 ### Deferred Issues
@@ -63,9 +64,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-04
-Stopped at: Loop 03-01 cerrado (UNIFY)
-Next action: /dialectic sobre el diseño de reglas reales UK Days → luego /paul:plan 03-02
-Resume file: .paul/HANDOFF-2026-10-04-fase3-01.md
+Stopped at: Plan 03-02 created
+Next action: Review and approve plan, then run /paul:apply .paul/phases/03-ukdays/03-02-PLAN.md
+Resume file: .paul/phases/03-ukdays/03-02-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

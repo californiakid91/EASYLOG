@@ -104,7 +104,8 @@ check('aviso visible al usuario tras escritura bloqueada', statuses.some(s => s.
 check('nube intacta tras hidratar (nada pisado)', Object.keys(cloudDoc.ukdays).length === 2 && writes.length === 0, `writes=${writes.length}`);
 
 // (d) borrar UK Day tras hidratar
-run(`removeUKDay('2026-09-18')`); await tick();
+// 03-02: el 1.er ✕ sobre un UK automático lo marca "No UK" (manual); el 2.º ✕ borra la entrada → se prueba el borrado
+run(`removeUKDay('2026-09-18')`); run(`removeUKDay('2026-09-18')`); await tick();
 const w = writes.at(-1);
 check('removeUKDay escribe con mergeFields (sin merge)', !!w && Array.isArray(w.opts.mergeFields) && !('merge' in w.opts), JSON.stringify(w && w.opts));
 check('mergeFields incluye ukdays/history/excelData/airports y NO dayMap', !!w && ['ukdays', 'history', 'excelData', 'airports'].every(f => (w.opts.mergeFields || []).includes(f)) && !(w.opts.mergeFields || []).includes('dayMap'));

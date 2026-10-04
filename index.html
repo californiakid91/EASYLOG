@@ -262,7 +262,7 @@
     border-bottom: 1px solid rgba(48,54,61,.5);
   }
   .day-item:last-child { border-bottom: none; }
-  .day-date { font-family: 'Courier New', monospace; color: var(--muted); font-size: .8rem; min-width: 3.5rem; }
+  .day-date { font-family: 'Courier New', monospace; color: var(--muted); font-size: .8rem; min-width: 5.5rem; }
   .day-route { flex: 1; font-family: 'Courier New', monospace; font-size: .82rem; }
   .day-count {
     font-size: .7rem;
@@ -662,7 +662,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.04-230733';
+const APP_VERSION = '2026.10.04-231226';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -1193,8 +1193,8 @@ function dateRawToISO(raw) {
 }
 
 function dateISOToDisplay(iso) {
-  const [, mm, dd] = iso.split('-');
-  return `${dd}/${mm}`;
+  const [yyyy, mm, dd] = iso.split('-');
+  return `${dd}/${mm}/${yyyy}`;
 }
 
 function monthKey(iso)   { return iso.slice(0, 7); }       // "2026-05"

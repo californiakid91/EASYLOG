@@ -41,6 +41,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - UK Day: computeUKDay tri-estado (último sector cronológico vía sectorUTC; sin On Block → no tocar); manual:true nunca se recalcula
 - Calzos a las 00:00 justas = UK Day (FA 2013 Sch 45 para 22, midnight test); solo después de 00:00 es No UK
 - UK Days 03-02 (dialéctica + Fable): regla cerrada R1/R2/R3 exigiendo aterrizar en UK (sustituye "sin exigir aeropuerto UK"); estados uk/no con source/reason; calendario _dayMap como declaración de días sin email; P = pendientes pasados, alarma solo con N
+- DH (posicionamiento) NUNCA llega en email verified flights; solo en ROCS → UK Day/Excel de días con DH = manual o desde plan ROCS, nunca desde el email
 - Días solo-Excel se borran sin tocar UK Days; "Cargando…" solo en UK Days (calendario desde caché local)
 
 ### Deferred Issues
@@ -49,7 +50,6 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | PilotLog: fichero de cambios 2025 APLICADO por el usuario (2026-10-04); falta re-exportar CSV de PilotLog para re-verificar. Resto de años (2023, 2024, 2026) cuando el usuario reciba el roster plan completo desde que empezó a volar (ya pedido) | 2026-10-04 | S | — |
 | Histórico ya importado en PilotLog: sin NIGHT y posibles fechas post-medianoche → informe sobre export de PilotLog (no reimportar meses) | Phase 2 | S | antes de Fase 3 |
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
-| Avisos muestran fecha sin año ("04/10" para 04/10/2027) — dateISOToDisplay | 03-01 | XS | — |
 | Literal 'Tax Year 2025-2026' en downloadTaxExcel | 03-01 | XS | — |
 | IDEA usuario: al pegar, detectar vuelo duplicado (ya en historial/Excel): si es idéntico → avisar "duplicado" y no guardar; si difiere → mostrar discrepancias campo a campo. Hoy addDay solo mira el historial (no _excelData) | 03-02 checkpoint | S-M | 03-03 (aclarar alcance) |
 | Barra «Hay una versión nueva» (fija abajo) tapa el final del botón de exportar mientras está visible → padding-bottom al body cuando se muestra | 03.1 checkpoint | XS | — |
@@ -57,15 +57,14 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | semgrep: <script> CDN sin atributo integrity (SRI) en index.html:462 (preexistente) | Phase 2 | S | Aegis pre-deploy |
 | UK Days: reconstrucción de tax years anteriores desde el plan ROCS (2024/25 falta plan abr–dic 2024) | Phase 2 | M | — |
 | Columna U del Excel Tax Year no exige aeropuerto UK y pone SBY U=1 → puede divergir de UK Days | 03-02 | S | 03-03 |
-| Revisar uno a uno los 47 días previos de 2026/27 (25 man + 22 R1); ¿el email trae los DH?; año en fechas "Sin decidir" | 03-02 checkpoint | S | otra sesión |
-| ¿02/10/2026 (FR2134/FR2135) duplicado en PilotLog? (ya estaba antes del CSV de 9 vuelos) | 03-02 checkpoint | XS | preguntar al usuario |
+| Revisar uno a uno los 47 días previos de 2026/27 (25 man + 22 R1) | 03-02 checkpoint | S | otra sesión |
 
 ### Preguntas pendientes al usuario — de UNA en UNA
 - Checkpoint 03-02 cerrado (detalle día a día en .paul/phases/03-ukdays/03-02-SUMMARY.md)
-- [ ] ¿El 02/10/2026 (FR2134/FR2135) está duplicado en PilotLog?
-- [ ] ¿Los DH vienen en el email de vuelo como un sector más?
+- [x] ¿El 02/10/2026 (FR2134/FR2135) está duplicado en PilotLog? → NO (captura PilotLog 05/10: una sola vez cada sector)
+- [x] ¿Los DH vienen en el email de vuelo como un sector más? → NO: los DH nunca generan email «verified flights», solo aparecen en el ROCS
 - [ ] Revisar uno a uno los 47 días previos (25 man + 22 R1) de 2026/27
-- [ ] ¿Añadir el año a las fechas de "Sin decidir"?
+- [x] ¿Añadir el año a las fechas de "Sin decidir"? → SÍ, en toda la app (dateISOToDisplay → dd/mm/aaaa), 2026-10-05
 - (pendiente personal del usuario — detalle en memoria local)
 
 ### Blockers/Concerns

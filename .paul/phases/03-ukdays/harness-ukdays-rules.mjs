@@ -174,6 +174,12 @@ check('✕ en SBY de calendario → No UK manual y _dayMap intacto', S('2026-05-
 run(`addUKDayManual('2026-05-06')`);
 check('…y "UK" lo deshace (UK manual)', S('2026-05-06').state === 'uk');
 
+// G8: City Pair manipulado → no se guarda ni se pinta HTML
+reset(); paste(email('2026/10/08', [{ cp: 'STN - <IMG SRC=X ONERROR=ALERT(1)>', off: '18:00', on: '21:00' }]));
+check('City Pair no IATA → computeUKDay no guarda nada', e('2026-10-08') === 'null', e('2026-10-08'));
+run(`_ukdays['2026-10-09'] = { state: 'no', route: 'STN→<B>X</B>', onBlock: '22:00', tz: 'BST', source: 'rule:R2', reason: 'último sector → <IMG SRC=X ONERROR=ALERT(1)>' }; renderUKDays();`);
+check('reason/route con HTML se pintan escapados', !/<IMG/i.test(ctx.document.getElementById('ukdays-body').innerHTML) && /&lt;IMG/.test(ctx.document.getElementById('ukdays-body').innerHTML));
+
 // ── AC-4/5/6: UI (render, botón OFF, backup)
 const body = () => ctx.document.getElementById('ukdays-body').innerHTML;
 const count = () => ctx.document.getElementById('ukdays-count').textContent;

@@ -14,8 +14,8 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 (en producción, sin versionado formal) |
-| Status | Production — CSV corregido (Fase 2); UK Days y pistas pendientes |
-| Last Updated | 2026-10-03 |
+| Status | Production — CSV (Fase 2) y UK Days (Fase 3) corregidos; pistas pendientes |
+| Last Updated | 2026-10-04 |
 
 **Production URLs:**
 - https://californiakid91.github.io/EASYLOG/ — app (deploy automático al push a `main`)
@@ -41,15 +41,19 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - [x] Excel Tax Year con fechas dd/mm/yyyy y prefijo FR
 - [x] Calendario persistente con guard flags anti-race (`_dayMapSaving`, `_ukdaysSaving`)
 
+- [x] UK Days fiables: último sector cronológico, recálculo al re-pegar, periodo 06/04–05/04 (03-01); regla R1/R2/R3 con aeropuerto UK y calzos 00:00 = UK, "No UK" persistente, pendientes/huecos, contador N·P, backup con procedencia (03-02) — Phase 3
+- [x] Exportar CSV sin perder Excel/UK Days (barra "Quitar de la lista", ✕ seguro) — Phase 3
+
 ### Active (In Progress)
 
-- [ ] Phase 3: UK Days (orden cronológico + recálculo)
+- [ ] Auto-actualización de la PWA (Safari sirve versiones viejas) — prioridad
+- [ ] Detectar vuelos duplicados al pegar (idéntico → no guardar; distinto → mostrar discrepancias)
+- [ ] Calendario con estado SD/ground duty y columna U del Excel coherente con UK Days
 - [ ] Comprobar histórico ya importado en PilotLog (sin NIGHT; posibles fechas post-medianoche) con informe sobre export de PilotLog
 
 ### Planned (Next)
 
 - [ ] CSV: pista en uso (DEP_RWY / ARR_RWY) vacía — usuario propone derivarla de Flightradar (rumbo al despegue y justo antes de aterrizar)
-- [ ] UK Days: a veces no coge bien la hora de on-block del último vuelo
 
 ### Out of Scope
 
@@ -88,6 +92,9 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Pistas: sin claves secretas en cliente; fuente a decidir por dialéctica | Seguridad #1; app sin servidor | 2026-10-03 | Active |
 | Noche = EASA (licencia IAA): sol < −6° (crepúsculo civil), no sunset+30 | Usuario con licencia irlandesa; validado vs PyEphem ≤10 s | 2026-10-03 | Active |
 | DELAY = 1 código (el de más minutos); resto a FLIGHTLOG; PILOTLOG_DATE = fecha UTC off-block | Importer acepta 1 código; convención PilotLog UTC | 2026-10-03 | Active |
+| UK Day = presente en UK a 00:00 Londres: último sector aterriza en UK (sin JER/GCI) con calzos ≤ 00:00 (FA 2013 Sch 45 para 22) | Criterio legal HMRC + reglas del usuario; dialéctica Fable | 2026-10-04 | Active |
+| Días sin email: calendario (_dayMap) como declaración; nada se infiere sin respaldo; P fuera de la alarma | Dialéctica (Polo A enmendado) + revisión Fable | 2026-10-04 | Active |
+| ✕ de "Días guardados" solo quita de la lista; borrar del Excel solo en "Días en Excel sin historial" | Usuario perdió datos 2 veces limpiando la lista tras exportar | 2026-10-04 | Active |
 | Firestore: mergeFields por campo + no escribir antes del primer snapshot del servidor | merge:true no borraba claves; evitar pisar la nube desde caché offline | 2026-10-03 | Active |
 
 ## Success Metrics
@@ -95,7 +102,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
 | CSV importa en PilotLog con night, pistas, T/O-LDG y delays correctos | 100% de vuelos de prueba | Night/T-O-LDG/delays OK (0 errores); pistas pendientes (Fase 4) | In progress |
-| UK Days usa on-block correcto del último vuelo | 100% de días de prueba | Falla a veces | Not started |
+| UK Days usa on-block correcto del último vuelo | 100% de días de prueba | 54/91 verificado día a día con el usuario (2026/27) | Done |
 
 ## Tech Stack / Tools
 
@@ -116,4 +123,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-03 after Phase 2*
+*Last updated: 2026-10-04 after Phase 3*

@@ -8,7 +8,7 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 
 **v0.1 Datos fiables** (v0.1.0)
 Status: In progress
-Phases: 2 of 4 complete
+Phases: 3 of 4 complete
 
 ## Phases
 
@@ -18,7 +18,7 @@ Phases: 2 of 4 complete
 | 1.1 | [INSERTED] Borrados persisten en la nube (merge:true) | 1/1 | ✅ Complete | 2026-10-03 |
 | 1.2 | [INSERTED] Botón "+ Añadir fecha" UK Days (petición usuario) | 1/1 | ✅ Complete | 2026-10-03 |
 | 2 | CSV: esquema validado + TIME_NIGHT + delays | 1/1 | ✅ Complete | 2026-10-03 |
-| 3 | UK Days: fixes (03-01) + reglas reales (03-02, dialéctica) | 1/2 | In progress | - |
+| 3 | UK Days: fixes (03-01) + reglas reales (03-02, dialéctica) | 2/2 | ✅ Complete | 2026-10-04 |
 | 4 | Pista en uso (dialéctica de fuente + implementación) | TBD | Not started | - |
 
 ## Phase Details
@@ -45,7 +45,7 @@ Phases: 2 of 4 complete
 **Scope:** orden cronológico con cruce de medianoche; recalcular al reemplazar un día (no `manual`); tests con fixtures 01/90/91.
 **Plans:**
 - [x] 03-01: fixes H5/H6, removeDay, solo-Excel, periodo 05-04, Cargando…
-- [ ] 03-02: reglas reales R1/R2/R3 + estados uk/no + pendientes/huecos (plan creado; dialéctica hecha)
+- [x] 03-02: reglas reales R1/R2/R3 (calzos 00:00 = UK), No UK persistente, pendientes/huecos, exportar sin perder datos (verificado 54/91)
 
 ### Phase 4: Pista en uso
 **Goal:** DEP_RWY/ARR_RWY rellenos sin servidor ni claves públicas.

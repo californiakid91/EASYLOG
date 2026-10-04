@@ -5,33 +5,32 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.1 Datos fiables — Phase 3 (UK Days)
+**Current focus:** v0.1 Datos fiables — Phase 4 (Pista en uso) · antes: plan de auto-actualización PWA (prioridad)
 
 ## Current Position
 
 Milestone: v0.1 Datos fiables
-Phase: 3 of 4 (UK Days) — APPLY complete
-Plan: 03-02 ejecutado y verificado por el usuario en iPhone (54/91)
-Status: APPLY complete, ready for UNIFY
-Last activity: 2026-10-04 — Checkpoint 03-02 aprobado (commits 81f0fb4, d385896, f421617, 8b5394b)
+Phase: 4 of 4 (Pista en uso) — Not started (Fase 3 ✅ completa)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-04 — Fase 3 completa (UNIFY 03-02 + transición)
 
 Progress:
-- Milestone: [██████░░░░] 60%
-- Phase 3: [█████░░░░░] 50%
+- Milestone: [████████░░] 75%
+- Phase 3: [██████████] 100%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ○     [APPLY complete, ready for UNIFY]
+  ✓        ✓        ✓     [Loop complete - ready for next PLAN]
 ```
 
 ## Accumulated Context
 
 ### Decisions
 - Arnés node:vm sobre index.html real = base de tests de regresión (fases 2-3)
-- UK Day = on-block último vuelo < 00:00 hora Londres (sin exigir aeropuerto UK)
 - Pistas: sin secretos en cliente; fuente por dialéctica en fase 4
 - Fixtures con nombres de tripulación → gitignored
 - Deploy: GitHub Pages cachea 10 min → para probar al momento abrir en Safari con ?v=N
@@ -46,7 +45,6 @@ PLAN ──▶ APPLY ──▶ UNIFY
 ### Deferred Issues
 | Issue | Origin | Effort | Revisit |
 |-------|--------|--------|---------|
-| UK Days → plan 03-02 (dialéctica primero; incluir sector post-medianoche pegado como día aparte): el tracker usa reglas incompletas. Reglas reales (medianoche en UK, HSBY, INTSP/OOB, ida/vuelta VLC, lates desde 05/08/2025, UW = duty que EMPIEZA en UK) en memoria project_excel_tax_rules → base del diseño de Fase 3 | 2026-10-04 | M | Fase 3 |
 | PilotLog: fichero de cambios 2025 APLICADO por el usuario (2026-10-04); falta re-exportar CSV de PilotLog para re-verificar. Resto de años (2023, 2024, 2026) cuando el usuario reciba el roster plan completo desde que empezó a volar (ya pedido) | 2026-10-04 | S | — |
 | Histórico ya importado en PilotLog: sin NIGHT y posibles fechas post-medianoche → informe sobre export de PilotLog (no reimportar meses) | Phase 2 | S | antes de Fase 3 |
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
@@ -57,53 +55,33 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Auto-actualización de la PWA (como Toca Cabeza): versión embebida + comprobación al abrir/volver → recarga sola | 03-02 checkpoint | S | siguiente plan (prioridad) |
 | Calendario sin estado SD/ground duty (meeting): 06/05/2026 marcado SBY → Excel pone SBY U=1 aunque durmió en VLC | 03-02 checkpoint | S | 03-03 |
 | semgrep: <script> CDN sin atributo integrity (SRI) en index.html:462 (preexistente) | Phase 2 | S | Aegis pre-deploy |
-| UK Days: reglas reales del usuario (medianoche en UK; HSBY activado; INTSP; ida/vuelta VLC en OFF/A/L) — ver memoria project_excel_tax_rules; reconstrucción por tax year desde el plan ROCS | Phase 2 | M | Fase 3 |
+| UK Days: reconstrucción de tax years anteriores desde el plan ROCS (2024/25 falta plan abr–dic 2024) | Phase 2 | M | — |
+| Columna U del Excel Tax Year no exige aeropuerto UK y pone SBY U=1 → puede divergir de UK Days | 03-02 | S | 03-03 |
+| Revisar uno a uno los 47 días previos de 2026/27 (25 man + 22 R1); ¿el email trae los DH?; año en fechas "Sin decidir" | 03-02 checkpoint | S | otra sesión |
+| ¿02/10/2026 (FR2134/FR2135) duplicado en PilotLog? (ya estaba antes del CSV de 9 vuelos) | 03-02 checkpoint | XS | preguntar al usuario |
 
-### Preguntas pendientes al usuario (checkpoint 03-02) — de UNA en UNA
-- [x] 01/10/2026 → OFF (marcado por el usuario)
-- [~] 1. ¿Cuadra el total de 54 UK Days? → repaso uno por uno con el backup (54 = 48 previos + 6 SBY del calendario)
-  - [x] 06/05 → NO UK: era SD (special duty, meeting por la mañana), no SBY; a VLC por la tarde. Confirmado: 53/91. Nota: el calendario no tiene estado SD → el Excel lo pondrá como SBY U=1 (diferido)
-  - [x] 25/07 SBY → UK ✓ (no activado, durmió en UK)
-  - [x] contador 53/91 tras ✕ del 06/05 ✓ (verificado por el usuario en iPhone)
-  - [x] 03/08 SBY → UK ✓ (no activado, durmió en UK)
-  - [x] 06/09 SBY → UK ✓ (no activado, durmió en UK)
-  - [x] 24/09 SBY → NO UK: activado, durmió en BLQ — ✕ pulsado, 52/91 ✓
-  - [x] 25/09 → UK ✓ (resultado correcto, motivo no: no era SBY sino INTSP en BLQ + DH FR1195 BLQ→STN 15:20Z, durmió en STN). Calendario dice SBY: se deja (cuenta bien)
-  - Roster 26/09 (captura): STN-OTP-STN, on-block 23:10Z = 00:10 BST → con email sería R3 (NO UK)
-  - [x] Emails pegados por el usuario: 23/09 STN-REU-STN (calzos 20:59Z → R1 UK), 24/09 LTN-BLQ (sigue No UK manual), 26/09 STN-OTP-STN (R3) → 53/91 ✓
-  - [x] 27/09 → VTO (= OFF, en VLC) → NO UK: usuario cambia en el calendario DUTY→OFF
-  - [x] 09/04 → vuelo pegado, calzos 23:53Z = 00:53 BST del 10/04 → esperado R3 (No UK); comprobar al final en "No UK"
-  - [x] 12/05 → pegado (BGY→STN), calzos 23:10Z = 00:10 BST del 13/05 → esperado R3 (No UK); comprobar al final
-  - [x] 20/05 → pegado, calzos 23:59Z = 00:59 BST del 21/05 → esperado R3 (No UK); comprobar al final
-  - [!] HALLAZGO checkpoint: el usuario pulsa ✕ en "Días guardados" tras descargar el CSV para limpiar la lista → removeDay borra historial + Excel + UK Day automático (este último desde 03-01). Perdió 23/09, 24/09, 26/09, 02/10, 03/10 (51/91). Recuperación: re-pegar esos 5 emails. Propuesta: ✕ = solo quitar de la lista (como "Borrar historial"); borrar del Excel solo desde "Días en Excel sin historial"
-  - [x] Usuario re-pegó los 5 emails (23/09, 24/09, 26/09, 02/10, 03/10)
-  - [!] Tras re-pegar: 80/91 sin "pend." → cuadra EXACTO con la versión ANTIGUA en caché (cuenta todas las claves de _ukdays: 25 man + 24 R1 + 29 R3 + 2 No UK manual = 80; el código viejo no crea R3 al pegar). Datos sanos: la versión nueva recrea los R3 de 26/09 y 03/10 al cargar → esperado 53/91. Pedir abrir con ?v=27
-  - [x] Causa: el confirm() de "¿Borrar historial?" tras descargar el CSV se pierde en iPhone → usuario usó ✕. Decidido: botón fijo "🗑 Quitar de la lista" tras exportar + ✕ solo quita de la lista (Excel y UK Days se conservan)
-  - [x] Con ?v=27 (versión nueva): 53/91 sin pendientes ✓ (verificado en iPhone 22:46)
-  - [x] Backup final verificado: 53 confirmados · 0 pendientes; 09/04 (00:53), 12/05 (00:10), 20/05 (00:59), 26/09 (00:10) en No UK R3; 23/09 R1 21:59; 06/05 y 24/09 No UK manual ✓
+### Preguntas pendientes al usuario — de UNA en UNA
+- Checkpoint 03-02 cerrado (detalle día a día en .paul/phases/03-ukdays/03-02-SUMMARY.md)
+- [ ] ¿El 02/10/2026 (FR2134/FR2135) está duplicado en PilotLog?
+- [ ] ¿Los DH vienen en el email de vuelo como un sector más?
+- [ ] Revisar uno a uno los 47 días previos (25 man + 22 R1) de 2026/27
+- [ ] ¿Añadir el año a las fechas de "Sin decidir"?
 - (pendiente personal del usuario — detalle en memoria local)
-  - [x] 54/91 sin pendientes verificado en iPhone (23:16) tras re-pegar 23/09, 24/09, 26/09, 02/10, 03/10 por 2.ª vez (los había borrado con ✕ en una pestaña ?v=27 con código viejo)
-  - [x] "Borrar historial completo" → lista vacía y sigue 54/91 ✓ (Excel y UK Days intactos)
-  - [x] Plan APROBADO por el usuario (2026-10-04 ~23:20). Pendiente para otra sesión: revisar uno a uno los 47 días previos (25 man + 22 R1)
-  - [ ] luego: 48 previos mes a mes (abril 14 man, mayo 9 man + 3 R1, …)
-- [ ] 2. Lista "No UK": ¿algún día no encaja?
-- [ ] 3. 6 DUTY sin email (09/04, 12/05, 20/05, 23/09, 26/09, 27/09/2026): ¿vuelo sin pegar, tierra o marca errónea? (uno a uno)
-- [ ] 4. ¿Los DH vienen en el email de vuelo como un sector más?
-- [ ] 5. ¿Añadir el año a las fechas de "Sin decidir"? (propuesta)
 
 ### Blockers/Concerns
 - Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
+- Phase 3: Safari/iPhone sirve versiones viejas en caché → ya causó pérdida de datos; auto-actualización PWA es la prioridad
 
 ### Git State
-Last commit: b2d8244 — pusheado y desplegado en GitHub Pages (verificado 2026-10-04, aprobado por el usuario)
+Last commit: d052120 (código fase 3) — pusheado y desplegado en GitHub Pages, verificado en la web
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-04
-Stopped at: APPLY 03-02 completo (checkpoint aprobado)
-Next action: /paul:unify .paul/phases/03-ukdays/03-02-PLAN.md
-Resume file: .paul/phases/03-ukdays/03-02-PLAN.md
+Stopped at: Fase 3 completa (UNIFY 03-02 + transición)
+Next action: /paul:plan — plan de auto-actualización PWA (prioridad; insertar como fase 3.1 o primer plan de la fase 4)
+Resume file: .paul/phases/03-ukdays/03-02-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

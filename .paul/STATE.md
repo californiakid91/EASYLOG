@@ -65,7 +65,7 @@ Branch: main
 Last session: 2026-10-04
 Stopped at: Loop 03-01 cerrado (UNIFY)
 Next action: /dialectic sobre el diseño de reglas reales UK Days → luego /paul:plan 03-02
-Resume file: .paul/phases/03-ukdays/03-01-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-04-fase3-01.md
 
 ---
 *STATE.md — Updated after every significant action*

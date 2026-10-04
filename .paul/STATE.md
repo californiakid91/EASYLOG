@@ -13,7 +13,7 @@ Milestone: v0.1 Datos fiables
 Phase: 4 of 4 (Pista en uso) — Not started (Fase 3.1 ✅ completa)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-05 — Fase 3.1 completa (UNIFY 03.1-01 + transición)
+Last activity: 2026-10-05 — preguntas 1,2,4 resueltas; fechas dd/mm/aa desplegadas (1b1d40f, v2026.10.04-231250)
 
 Progress:
 - Milestone: [████████░░] 75%
@@ -77,9 +77,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: Fase 3.1 completa (UNIFY 03.1-01 + transición)
-Next action: preguntas pendientes 1-2 (de una en una) o /paul:plan — duplicados al pegar / SD + columna U, o Fase 4 (pista en uso)
-Resume file: .paul/HANDOFF-2026-10-05-fase3.1-completa.md
+Stopped at: preguntas pendientes 1,2,4 cerradas; fechas dd/mm/aa en producción
+Next action: /paul:plan — duplicados al pegar + estado SD/columna U (luego Fase 4 pista en uso)
+Resume file: — (handoff 3.1 consumido → .paul/handoffs/archive/)
 
 ---
 *STATE.md — Updated after every significant action*

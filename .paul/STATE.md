@@ -10,21 +10,21 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 ## Current Position
 
 Milestone: v0.1 Datos fiables
-Phase: 3 of 4 (UK Days) — Planning
-Plan: 03-01 created, awaiting approval (fixes; 03-02 = reglas reales tras dialéctica)
-Status: PLAN created, ready for APPLY
-Last activity: 2026-10-04 — Created .paul/phases/03-ukdays/03-01-PLAN.md (revisado por Fable en modo adversario)
+Phase: 3 of 4 (UK Days) — In progress (1/2 plans)
+Plan: 03-01 complete (fixes, desplegado b2d8244); 03-02 = reglas reales (dialéctica primero)
+Status: Ready for next PLAN
+Last activity: 2026-10-04 — UNIFY 03-01 (SUMMARY creado; usuario aprobó en iPhone)
 
 Progress:
-- Milestone: [█████░░░░░] 50%
-- Phase 3: [░░░░░░░░░░] 0%
+- Milestone: [██████░░░░] 60%
+- Phase 3: [█████░░░░░] 50%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan created, awaiting approval]
+  ✓        ✓        ✓     [Loop complete - ready for next PLAN]
 ```
 
 ## Accumulated Context
@@ -38,33 +38,34 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Noche = regla EASA (licencia IAA del usuario): sol < −6° (crepúsculo civil), NO sunset+30 (UK CAA). sunAltitude NOAA validado vs PyEphem ≤10 s
 - PILOTLOG_DATE = fecha UTC de off-block (sectores post-medianoche → día siguiente)
 - Escrituras a nube con mergeFields + guard hidratación (ignora fromCache); last-write-wins por campo aceptado
+- UK Day: computeUKDay tri-estado (último sector cronológico vía sectorUTC; sin On Block → no tocar); manual:true nunca se recalcula
+- Días solo-Excel se borran sin tocar UK Days; "Cargando…" solo en UK Days (calendario desde caché local)
 
 ### Deferred Issues
 | Issue | Origin | Effort | Revisit |
 |-------|--------|--------|---------|
-| UK Days: el tracker usa reglas incompletas. Reglas reales (medianoche en UK, HSBY, INTSP/OOB, ida/vuelta VLC, lates desde 05/08/2025, UW = duty que EMPIEZA en UK) en memoria project_excel_tax_rules → base del diseño de Fase 3 | 2026-10-04 | M | Fase 3 |
+| UK Days → plan 03-02 (dialéctica primero; incluir sector post-medianoche pegado como día aparte): el tracker usa reglas incompletas. Reglas reales (medianoche en UK, HSBY, INTSP/OOB, ida/vuelta VLC, lates desde 05/08/2025, UW = duty que EMPIEZA en UK) en memoria project_excel_tax_rules → base del diseño de Fase 3 | 2026-10-04 | M | Fase 3 |
 | PilotLog: fichero de cambios 2025 entregado al usuario (fuera del repo); pendiente que lo aplique y re-exporte para re-verificar. Resto de años (2023, 2024, 2026) cuando el usuario reciba el roster plan completo desde que empezó a volar (ya pedido) | 2026-10-04 | S | — |
-| removeDay no borra UK Day; día en _excelData imborrable si historial limpiado (18/09 espurio, día de SIM) | Phase 1 | S | Fase 3 |
 | Histórico ya importado en PilotLog: sin NIGHT y posibles fechas post-medianoche → informe sobre export de PilotLog (no reimportar meses) | Phase 2 | S | antes de Fase 3 |
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
+| Avisos muestran fecha sin año ("04/10" para 04/10/2027) — dateISOToDisplay | 03-01 | XS | — |
+| Literal 'Tax Year 2025-2026' en downloadTaxExcel | 03-01 | XS | — |
 | semgrep: <script> CDN sin atributo integrity (SRI) en index.html:462 (preexistente) | Phase 2 | S | Aegis pre-deploy |
-| UK Days: fin de periodo 2027-04-07 (index.html:643,1539,1641,1707,1717) → debe ser 2027-04-05 (tax year 6 abr–5 abr); el Excel ya usa 05-04 | Phase 2 | XS | Fase 3 |
 | UK Days: reglas reales del usuario (medianoche en UK; HSBY activado; INTSP; ida/vuelta VLC en OFF/A/L) — ver memoria project_excel_tax_rules; reconstrucción por tax year desde el plan ROCS | Phase 2 | M | Fase 3 |
-| UX: UK Days y calendario se ven vacíos durante la carga de la nube (usuario se alarmó: "han desaparecido") → mostrar "Cargando…" mientras !cloud.hydrated | Phase 1.2 | S | Fase 3 |
 
 ### Blockers/Concerns
 - Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
 
 ### Git State
-Last commit: add2d91 — pusheado y desplegado en GitHub Pages (verificado 2026-10-03)
+Last commit: b2d8244 — pusheado y desplegado en GitHub Pages (verificado 2026-10-04, aprobado por el usuario)
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-04
-Stopped at: Plan 03-01 created
-Next action: Review and approve plan, then run /paul:apply .paul/phases/03-ukdays/03-01-PLAN.md
-Resume file: .paul/phases/03-ukdays/03-01-PLAN.md
+Stopped at: Loop 03-01 cerrado (UNIFY)
+Next action: /dialectic sobre el diseño de reglas reales UK Days → luego /paul:plan 03-02
+Resume file: .paul/phases/03-ukdays/03-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

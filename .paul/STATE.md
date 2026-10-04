@@ -64,7 +64,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - [x] ¿El 02/10/2026 (FR2134/FR2135) está duplicado en PilotLog? → NO (captura PilotLog 05/10: una sola vez cada sector)
 - [x] ¿Los DH vienen en el email de vuelo como un sector más? → NO: los DH nunca generan email «verified flights», solo aparecen en el ROCS
 - [ ] Revisar uno a uno los 47 días previos (25 man + 22 R1) de 2026/27
-- [x] ¿Añadir el año a las fechas de "Sin decidir"? → SÍ, en toda la app (dateISOToDisplay → dd/mm/aaaa), 2026-10-05
+- [x] ¿Añadir el año a las fechas de "Sin decidir"? → SÍ, en toda la app (dateISOToDisplay → dd/mm/aa), 2026-10-05
 - (pendiente personal del usuario — detalle en memoria local)
 
 ### Blockers/Concerns

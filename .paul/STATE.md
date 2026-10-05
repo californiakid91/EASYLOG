@@ -11,10 +11,10 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 5 of 8 (Seguridad) — In Progress (1/2 plans)
-Plan: 05-01 complete (prod v2026.10.05-102039, commit 16e5c94); siguiente 05-02 (SRI/CSP + firestore.rules)
-Status: Ready for next PLAN
-Last activity: 2026-10-05 — 05-01 UNIFY (SUMMARY creado). Aplicado: harness rojo→verde, G6 (1 conf + 2 plaus. corregidos), checkpoint verificado por Claude a petición del usuario (WebKit iPhone 13, datos reales, vieja vs nueva idénticas)
+Phase: 5 of 8 (Seguridad) — Planning (1/2 plans)
+Plan: 05-02 created, awaiting approval (SheetJS vendorizado + meta CSP + firestore.rules = prod; Fable adversario incorporado)
+Status: PLAN created, ready for APPLY
+Last activity: 2026-10-05 — Created .paul/phases/05-seguridad/05-02-PLAN.md
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
@@ -25,7 +25,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete - ready for next PLAN (05-02)]
+  ✓        ○        ○     [Plan 05-02 created, awaiting approval]
 ```
 
 ## Accumulated Context
@@ -97,9 +97,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: 05-01 loop cerrado (UNIFY)
-Next action: /paul:plan 5 → plan 05-02 (SRI/CSP SheetJS+Firebase, firestore.rules versionado = producción)
-Resume file: .paul/HANDOFF-2026-10-05-05-01-completo.md
+Stopped at: Plan 05-02 created
+Next action: Review and approve plan, then run /paul:apply .paul/phases/05-seguridad/05-02-PLAN.md
+Resume file: .paul/phases/05-seguridad/05-02-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

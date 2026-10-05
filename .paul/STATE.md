@@ -12,8 +12,8 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 Milestone: v0.1 Datos fiables
 Phase: 4 of 4 (Pista en uso) — In progress
 Plan: 04-02 APPLY (04-01 ✅)
-Status: APPLY 04-02 — código + arnés + E2E hechos; G6/G8 en curso; falta checkpoint PilotLog
-Last activity: 2026-10-05 — 04-01 desplegado (cf0c453); 04-02 implementado en local
+Status: APPLY 04-02 — en producción v2026.10.05-004818 (60efbe5); G6/G8 corregidos; ESPERANDO checkpoint humano (iPhone + importar en PilotLog)
+Last activity: 2026-10-05 — 04-01 (cf0c453) y 04-02 (60efbe5) desplegados
 
 Progress:
 - Milestone: [████████░░] 80% (todas las fases menos la 4)
@@ -24,7 +24,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ◐        ○     [04-02 en APPLY]
+  ✓        ◐        ○     [04-02 APPLY: falta checkpoint humano AC-6]
 ```
 
 ## Accumulated Context
@@ -82,9 +82,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: Phase 3.2 complete (UNIFY 03.2-02 + transición)
-Next action: /paul:plan Phase 4 — pista en uso (dialéctica de fuente: METAR/IEM + OurAirports vs FR24+proxy vs manual)
-Resume file: .paul/HANDOFF-2026-10-05-fase3.2-completa.md
+Stopped at: 04-02 checkpoint humano (Task 3): confirmar pistas en iPhone + importar CSV en PilotLog
+Next action: con «approved» → /paul:unify 04-02 + transición de fase 4 (cierra milestone v0.1)
+Resume file: .paul/phases/04-pista-en-uso/04-02-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

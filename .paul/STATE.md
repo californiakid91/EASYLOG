@@ -5,27 +5,27 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.2 Seguridad y robustez — Fase 5 (Seguridad)
+**Current focus:** v0.2 Seguridad y robustez — Fase 6 (Barrera de tests)
 
 ## Current Position
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 5 of 8 (Seguridad) — Planning (1/2 plans)
-Plan: 05-02 created, awaiting approval (SheetJS vendorizado + meta CSP + firestore.rules = prod; Fable adversario incorporado)
-Status: PLAN created, ready for APPLY
-Last activity: 2026-10-05 — Created .paul/phases/05-seguridad/05-02-PLAN.md
+Phase: 6 of 8 (Barrera de tests) — Not started
+Plan: Not started (Fase 5 completa: 05-01 + 05-02)
+Status: Ready to plan
+Last activity: 2026-10-05 — Fase 5 completa (05-02 UNIFY; prod v2026.10.05-120346), transición a Fase 6
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
-- v0.2 Seguridad y robustez: [█░░░░░░░░░] ~12% (Fase 5: 1/2 planes)
+- v0.2 Seguridad y robustez: [██▌░░░░░░░] 25% (Fase 5 ✓, 1/4 fases)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 05-02 created, awaiting approval]
+  ✓        ✓        ✓     [Loop complete - Fase 5 cerrada, ready to plan Fase 6]
 ```
 
 ## Accumulated Context
@@ -51,6 +51,9 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 4 (dialéctica + Fable): pistas = METAR IEM + rumbos OurAirports (AIRPORT_DB embebida, gen-airports.py) + preferente aprendida de _runways; solo lo confirmado va al CSV
 - CSV: columnas con nombres del IMPORTER de CrewLounge (RWY_DEP/RWY_ARR); el importer empareja por nombre; el export usa otros nombres
 - 05-01: datos externos validados ANTES de interpolar (IATA_RE/ISO_RE/CAL_STATES, isoKeys filtra en origen de lista sin podar estado); onclick inline se mantiene (claves validadas = seguras); F-04-007 fórmulas CSV = monitor (REMARKS = nº vuelo, no tocar logbook legal)
+- 05-02: SheetJS vendorizado (vendor/, sha384 fijado; nunca carga al clic por la activación de usuario en iOS); meta CSP con hosts concretos + #csp-watch (aviso solo para webs bloqueadas); firestore.rules = copia de prod, verificar con check-firestore-rules.mjs (solo GET, nunca deploy)
+- Script inline del <head> SIEMPRE con atributo (p.ej. id): los harness localizan el principal con /<script>\n…<\/script>\s*<\/body>/
+- E2E WebKit en Linux no tiene TLS → https:// vía Node (ctx.route + route.fetch); la CSP se sigue aplicando
 - _runways = mapa propio (localStorage + campo Firestore `runways` con guard _runwaysSaving); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -60,7 +63,6 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Histórico ya importado en PilotLog: sin NIGHT y posibles fechas post-medianoche → informe sobre export de PilotLog (no reimportar meses) | Phase 2 | S | antes de Fase 3 |
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
 | Barra «Hay una versión nueva» (fija abajo) tapa el final del botón de exportar mientras está visible → padding-bottom al body cuando se muestra | 03.1 checkpoint | XS | — |
-| semgrep: <script> CDN sin atributo integrity (SRI) en index.html:494 (preexistente) — confirmado por Aegis F-04-002 | Phase 2 | S | 05-02 |
 | UK Days: reconstrucción de tax years anteriores desde el plan ROCS (2024/25 falta plan abr–dic 2024) | Phase 2 | M | — |
 | Revisar uno a uno los 47 días previos de 2026/27 (25 man + 22 R1) | 03-02 checkpoint | S | otra sesión |
 | SBY + email = conflicto; quizá debería mandar el email (regla usuario: SBY no cuenta solo si activado y acaba fuera/después de 00:00) | 03.2-01 checkpoint | S | — |
@@ -71,6 +73,9 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Preferente de pista única por aeropuerto (sin franja horaria/flujo) | 04 dialéctica | S | — |
 | Auto-actualización baja index.html entero cada 5 min (+32 KB DB) → fetch con cache:'no-cache' (304) | 04 Fable | XS | — |
 | semgrep: urllib dinámico en gen-airports.py (script local, URL base fija; riesgo nulo) | 04 G8 | XS | — |
+| API key del navegador con apiTargets amplios por defecto → limitar a firestore/identitytoolkit/securetoken (consola GCP, opcional) | 05-02 | XS | — |
+| E2E dependen de playwright-core en ~/manuales-motos y fixture real gitignored; rutas /home/ricardo en los .mjs | 05-02 | S | Fase 6 |
+| GitHub: ticket de purga de caché de commits (abierto 2026-10-05) → comprobar que los SHA antiguos dan 404 | 05 post | XS | cuando responda GitHub |
 
 ### Preguntas pendientes al usuario — de UNA en UNA
 - Checkpoint 03-02 cerrado (detalle día a día en .paul/phases/03-ukdays/03-02-SUMMARY.md)
@@ -79,9 +84,10 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - [ ] Revisar uno a uno los 47 días previos (25 man + 22 R1) de 2026/27
 - [x] ¿Añadir el año a las fechas de "Sin decidir"? → SÍ, en toda la app (dateISOToDisplay → dd/mm/aa), 2026-10-05
 - (pendiente personal del usuario — detalle en memoria local)
+- [ ] ¿Sacar del repo público el código de piloto/nombre (hoy fijos en index.html para T/O-LDG y CREWLIST; también en PROJECT.md, harness y AUDIT)? → requiere configuración en la app + quizá otra purga de historial (G8 Fase 5)
 
 ### Post-Aegis (2026-10-05)
-- Reglas Firestore en producción = per-uid (request.auth.uid == uid) ✓ — falta versionarlas en el repo
+- Reglas Firestore en producción = per-uid (request.auth.uid == uid) ✓ — versionadas en el repo (05-02), comprobador check-firestore-rules.mjs
 - Doc Firestore medido: 127 KiB (12%) y ~1.9k entradas de índice (5%); excelData ≈2 KiB/día → ~2,5 años de margen → ya no es HIGH
 - Rama main protegida (sin force-push ni borrado); 2FA GitHub ACTIVADO (TOTP, confirmado por el usuario 2026-10-05)
 - Límite UK Days: criterio fiscal del usuario documentado SOLO en la memoria local de Claude (reference_srt_aircrew) — nunca en el repo (público)
@@ -89,17 +95,18 @@ PLAN ──▶ APPLY ──▶ UNIFY
 
 ### Blockers/Concerns
 - Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
+- Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: ver git log — 05-01 desplegado en GitHub Pages (v2026.10.05-102039)
+Last commit: ver git log — Fase 5 completa, prod v2026.10.05-120346
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: Plan 05-02 created
-Next action: Review and approve plan, then run /paul:apply .paul/phases/05-seguridad/05-02-PLAN.md
-Resume file: .paul/phases/05-seguridad/05-02-PLAN.md
+Stopped at: Fase 5 completa, ready to plan Fase 6
+Next action: /paul:plan 6 (Barrera de tests: runner único + fixtures anonimizadas + gate)
+Resume file: .paul/ROADMAP.md
 
 ---
 *STATE.md — Updated after every significant action*

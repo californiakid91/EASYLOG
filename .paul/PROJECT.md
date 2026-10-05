@@ -14,8 +14,8 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 |-----------|-------|
 | Type | Application |
 | Version | 0.1.0 (v0.1 Datos fiables, cerrado 2026-10-05) |
-| Status | Production — v0.1.0 cerrado + auditoría Aegis pre-milestone (informe local en .aegis/report/): CSV (2), UK Days (3), auto-actualización (3.1), datos coherentes (3.2), pistas (4) |
-| Last Updated | 2026-10-05 (Fase 4) |
+| Status | Production — v0.1.0 cerrado; v0.2 en curso: Fase 5 Seguridad completa (anti-inyección, CSP, SheetJS vendorizado, reglas Firestore versionadas) |
+| Last Updated | 2026-10-05 (Fase 5) |
 
 **Production URLs:**
 - https://californiakid91.github.io/EASYLOG/ — app (deploy automático al push a `main`)
@@ -48,6 +48,9 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - [x] Duplicados al pegar: idéntico en lista → aviso; idéntico solo-Excel → vuelve a la lista; distinto (incl. capitán/tripulación) → resumen y confirmación — Phase 3.2
 - [x] Base OurAirports embebida (896 aeropuertos: ICAO, coordenadas, pistas) — sin prompts de lat/lon — Phase 4
 - [x] Pistas RWY_DEP/RWY_ARR: sugeridas por viento METAR (IEM) + preferente aprendida, confirmadas por día (🛬); importa en PilotLog — Phase 4
+- [x] Datos externos validados antes de pintarse (IATA, claves ISO, calendario, claves del email) — Phase 5 (05-01)
+- [x] SheetJS servido desde el propio repo (hash fijado) + meta CSP de control de salida con aviso visible de bloqueos — Phase 5 (05-02)
+- [x] Reglas de Firestore versionadas = producción (per-uid) + comprobador repo↔prod de solo lectura; API key restringida por referrer verificada — Phase 5 (05-02)
 
 ### Active (In Progress)
 
@@ -55,12 +58,12 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 - [ ] Seguridad y robustez post-Aegis (informe 2026-10-05, roadmap en .aegis/report/05-remediation-roadmap.md):
   - [ ] Documento único de Firestore: medir tamaño + entradas de índice; partir history/excelData o eximir índices (único HIGH)
-  - [ ] XSS por código de aeropuerto (validar /^[A-Z]{3}$/, sin onclick inline) + SRI/CSP para CDNs
-  - [ ] Reglas de Firestore versionadas en el repo (per-uid) + restricciones de la apiKey
+  - [x] XSS por código de aeropuerto + SRI/CSP para CDNs — Phase 5
+  - [x] Reglas de Firestore versionadas en el repo (per-uid) + restricciones de la apiKey — Phase 5
   - [ ] Año fiscal derivado de la fecha (hoy fijo 2026/27) — antes del 06/04/2027
   - [ ] Avisos "ok" que tapan escrituras bloqueadas; estado obsoleto tras confirm()
   - [ ] Barrera de tests (runner único + fixtures anonimizadas versionadas)
-- [ ] Propietario (sin código): GitHub 2FA + protección de rama main; decidir purga de datos personales del historial git público
+- [x] Propietario (sin código): GitHub 2FA activado + protección de rama main; historial git purgado (2026-10-05, ticket de caché a GitHub abierto)
 
 ### Planned (Next)
 
@@ -78,7 +81,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ### Technical Constraints
 
-- Un solo `index.html`, sin build, sin servidor; deploy = push a `main`
+- Un solo `index.html` (+ `vendor/` con SheetJS desde 05-02), sin build, sin servidor; deploy = push a `main`
 - Todo client-side: cualquier API externa (Flightradar, etc.) debe ser accesible desde navegador (CORS) — Flightradar24 no tiene API pública gratuita → requiere investigación
 - Caché de iOS PWA: resuelta con auto-actualización (Fase 3.1); verificar deploy con `curl … | grep "^const APP_VERSION"`; no usar `git commit -n`
 - Importer de PilotLog estricto con enums (TAG_DELAY, AC_ENGTYPE) — validar contra referencia CrewLounge
@@ -112,6 +115,10 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Pistas: METAR (IEM) + rumbos OurAirports + preferente aprendida; solo lo confirmado va al CSV | Dialéctica Fable: gratis, sin claves; libro legal sin datos inventados | 2026-10-05 | Active |
 | CSV: nombres de columna = lista del IMPORTER de CrewLounge (RWY_DEP/RWY_ARR), no los del export | El importer rechazó DEP_RWY/ARR_RWY | 2026-10-05 | Active |
 | Firestore: mergeFields por campo + no escribir antes del primer snapshot del servidor | merge:true no borraba claves; evitar pisar la nube desde caché offline | 2026-10-03 | Active |
+| Datos externos validados antes de interpolar; onclick inline se mantiene | Claves validadas no llevan comillas; migrar 53 handlers no compensa | 2026-10-05 | Active |
+| SheetJS vendorizado (no CDN, no carga al clic) | iOS pierde la activación de usuario tras un await de red; quita un tercero de confianza (Fable) | 2026-10-05 | Active |
+| Meta CSP con hosts concretos ('unsafe-inline' necesario): control de salida, no anti-XSS | *.googleapis.com permitiría exfiltrar a otro proyecto Firebase; residuales documentados | 2026-10-05 | Active |
+| Reglas Firestore = copia de prod en repo, nunca se despliegan desde aquí | El repo audita; prod manda; check-firestore-rules.mjs detecta divergencia | 2026-10-05 | Active |
 
 ## Success Metrics
 
@@ -127,7 +134,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Frontend | HTML/JS vanilla en `index.html` | Una sola página, PWA |
 | Hosting | GitHub Pages | Deploy al push a `main` |
 | Datos | localStorage + Firebase Firestore | Auth Google |
-| Excel | SheetJS 0.20.3 (CDN) | |
+| Excel | SheetJS 0.20.3 (vendorizado en `vendor/`, sha384 fijado) | Desde 05-02; antes CDN |
 | Referencia CSV | Export CrewLounge PILOTLOG (memoria `reference_crewlounge_export`) | 99 columnas |
 
 ## Links
@@ -139,4 +146,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-05 after v0.1 Datos fiables (milestone cerrado + Aegis)*
+*Last updated: 2026-10-05 after Phase 5 (Seguridad)*

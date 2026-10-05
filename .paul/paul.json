@@ -7,9 +7,9 @@
     "status": "in_progress"
   },
   "phase": {
-    "number": "5",
-    "name": "Seguridad",
-    "status": "in_progress"
+    "number": "6",
+    "name": "Barrera de tests",
+    "status": "not_started"
   },
   "loop": {
     "plan": null,
@@ -17,7 +17,7 @@
   },
   "timestamps": {
     "created_at": "2026-10-03T12:31:08+01:00",
-    "updated_at": "2026-10-05T11:26:53+01:00"
+    "updated_at": "2026-10-05T13:40:00+01:00"
   },
   "satellite": {
     "groom": true

@@ -8,13 +8,13 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 
 **v0.2 Seguridad y robustez** (v0.2.0)
 Status: 🚧 In Progress
-Phases: 0 of 4 complete
+Phases: 1 of 4 complete
 Theme: Cerrar los hallazgos de la auditoría Aegis (2026-10-05) sin cambiar el flujo de uso: que nadie pueda inyectar código, que nada se pierda en silencio, que UK Days siga bien el año que viene y que los tests frenen regresiones.
 Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
-| 5 | Seguridad: XSS aeropuerto, SRI/CSP, reglas Firestore en repo | 1/2 | In progress | - |
+| 5 | Seguridad: XSS aeropuerto, SRI/CSP, reglas Firestore en repo | 2/2 | ✅ Complete | 2026-10-05 |
 | 6 | Barrera de tests: runner único + fixtures anonimizadas + gate | TBD | Not started | - |
 | 7 | UK Days: año fiscal dinámico + límite configurable + máximo posible | TBD | Not started | - |
 | 8 | Sin pérdidas silenciosas: avisos de escritura bloqueada + estado tras confirm() | TBD | Not started | - |
@@ -22,7 +22,8 @@ Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 ### Phase 5: Seguridad
 Plans:
 - [x] 05-01: anti-inyección (IATA, claves ISO al pintar, esc, whitelist calendario, claves email Firestore) — prod v2026.10.05-102039
-- [ ] 05-02: SRI/CSP + firestore.rules versionado
+- [x] 05-02: SheetJS vendorizado + meta CSP + firestore.rules = producción — prod v2026.10.05-120346
+Status: ✅ Complete 2026-10-05
 Focus: F-04-001 (código de aeropuerto → /^[A-Z]{3}$/ + esc + sin onclick inline en esa lista), F-04-002 (SRI SheetJS o vendorizar + meta CSP con connect-src/img-src/form-action), F-04-003 (firestore.rules versionado = producción), F-04-004 (shape-check mínimo de estado cargado), F-04-007 (CSV formula injection).
 Plans: TBD (defined during /paul:plan)
 
@@ -66,4 +67,4 @@ Detalle completo: .paul/milestones/v0.1.0-ROADMAP.md
 </details>
 
 ---
-*Roadmap created: 2026-10-03 · Updated: 2026-10-05 (v0.2 creado)*
+*Roadmap created: 2026-10-03 · Updated: 2026-10-05 (Fase 5 completa)*

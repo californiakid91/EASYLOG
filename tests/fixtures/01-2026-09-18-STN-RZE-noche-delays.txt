@@ -1,0 +1,85 @@
+2026/09/18
+
+FlightNumber : FR9134
+Registration : 9HZZA
+City Pair : STN - RZE
+STD : 16:10
+STA : 18:35
+Block : 6891
+Trip+Taxi : 4483
+Reserves : 1877
+Uplift : 6042
+Dep : 7160
+Arr : 2610
+Burn Off : 4550
+Burn Diff : 67
+Reason For Extra Fuel : 2 - WX at Alternate
+Reason for 0 Uplift : --
+Adult : 168
+Child : 17
+Infant : 0
+Actual Pax : 185
+Freight : 0
+Placard Weight : 76200
+Airborne : 17:15
+Landed : 19:13
+Total flight : 01:58
+Off Block : 17:01
+On Block : 19:16
+Total Block : 02:15
+Delay Time 1 : 00:11
+Delay Code 1 : 41
+Delay Time 2 : 00:40
+Delay Code 2 : 93
+
+Pilot Flying :
+Take Off : VEGRIC
+Landing : VEGRIC
+
+Captain Remarks : Test remarks (anonymised).
+
+FlightNumber : FR9135
+Registration : 9HZZA
+City Pair : RZE - STN
+STD : 19:00
+STA : 21:35
+Block : 7153
+Trip+Taxi : 4712
+Reserves : 1897
+Uplift : 6688
+Dep : 7830
+Arr : 2920
+Burn Off : 4910
+Burn Diff : 198
+Reason For Extra Fuel : 2 - WX at Alternate
+Reason for 0 Uplift : --
+Adult : 174
+Child : 6
+Infant : 0
+Actual Pax : 180
+Freight : 0
+Placard Weight : 76200
+Airborne : 20:16
+Landed : 22:27
+Total flight : 02:11
+Off Block : 20:00
+On Block : 22:36
+Total Block : 02:36
+Delay Time 1 : 00:41
+Delay Code 1 : 93
+Delay Time 2 : 00:14
+Delay Code 2 : 62
+Delay Time 3 : 00:05
+Delay Code 3 : 15
+
+Pilot Flying :
+Take Off : TSTCAP
+Landing : TSTCAP
+
+Captain Remarks : Test remarks (anonymised).
+
+Verified By : TSTCAP , CP , 2026/09/18 23:14
+
+Flight Deck Crew
+TSTCAP : CP : ALEX EXAMPLE
+VEGRIC : FO : FIRST OFFICER

@@ -52,8 +52,11 @@ export function watchdog(ms = 220000) {
   setTimeout(() => { console.log(`FAIL  watchdog: el e2e no terminó en ${ms / 1000} s`); process.exit(1); }, ms).unref();
 }
 
-// Servidor local de la app: /EASYLOG/ → html (string o función, p. ej. variante sin CSP); /EASYLOG/<fichero> → fichero del repo (vendor/…), nunca ocultos (.git/…).
+// Servidor local de la app: /EASYLOG/ → html (string o función, p. ej. variante sin CSP); /EASYLOG/<fichero> → fichero VERSIONADO del repo (vendor/…), nunca ocultos (.git/…) ni sin trackear.
 // Puerto libre (0). Devuelve { url, close }.
+// Solo ficheros versionados (como GitHub Pages): nunca los Excel Tax Year ni otros sin trackear de la carpeta (G8 Fase 6)
+let _tracked = null;
+const tracked = () => _tracked ??= new Set(execFileSync('git', ['-C', ROOT, 'ls-files', '-z']).toString().split('\0').filter(Boolean));
 const TYPES = { '.js': 'application/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.html': 'text/html' };
 export function serveRepo(html) {
   const srv = http.createServer((q, r) => {
@@ -61,7 +64,7 @@ export function serveRepo(html) {
     if (u.pathname === '/EASYLOG/') { r.writeHead(200, { 'content-type': 'text/html' }); return r.end(typeof html === 'function' ? html() : html); }
     const rel = u.pathname.replace(/^\/EASYLOG\//, '');
     const f = path.join(ROOT, rel);
-    if (u.pathname.startsWith('/EASYLOG/') && f.startsWith(ROOT + path.sep) && !rel.includes('..') && !rel.split('/').some(x => x.startsWith('.')) && fs.existsSync(f) && fs.statSync(f).isFile()) {
+    if (u.pathname.startsWith('/EASYLOG/') && f.startsWith(ROOT + path.sep) && !rel.includes('..') && !rel.split('/').some(x => x.startsWith('.')) && tracked().has(rel) && fs.existsSync(f) && fs.statSync(f).isFile()) {
       r.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' }); return r.end(fs.readFileSync(f));
     }
     r.writeHead(404); r.end();

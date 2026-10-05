@@ -14,8 +14,8 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 |-----------|-------|
 | Type | Application |
 | Version | 0.1.0 (v0.1 Datos fiables, cerrado 2026-10-05) |
-| Status | Production — v0.1.0 cerrado; v0.2 en curso: Fase 5 Seguridad completa (anti-inyección, CSP, SheetJS vendorizado, reglas Firestore versionadas) |
-| Last Updated | 2026-10-05 (Fase 5) |
+| Status | Production — v0.1.0 cerrado; v0.2 en curso: Fase 5 Seguridad y Fase 6 Barrera de tests completas |
+| Last Updated | 2026-10-05 (Fase 6) |
 
 **Production URLs:**
 - https://californiakid91.github.io/EASYLOG/ — app (deploy automático al push a `main`)
@@ -51,6 +51,8 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - [x] Datos externos validados antes de pintarse (IATA, claves ISO, calendario, claves del email) — Phase 5 (05-01)
 - [x] SheetJS servido desde el propio repo (hash fijado) + meta CSP de control de salida con aviso visible de bloqueos — Phase 5 (05-02)
 - [x] Reglas de Firestore versionadas = producción (per-uid) + comprobador repo↔prod de solo lectura; API key restringida por referrer verificada — Phase 5 (05-02)
+- [x] Barrera de tests: `node tests/run-all.mjs` (12 harness, fixtures anonimizadas versionadas, golden de CSV y cabeceras del importer) — Phase 6 (06-01)
+- [x] e2e propios (playwright-core fijado, `npm ci`) + gate git: commit bloqueado si fallan los harness; push (= deploy) bloqueado si fallan harness o e2e — Phase 6 (06-02)
 
 ### Active (In Progress)
 
@@ -62,7 +64,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
   - [x] Reglas de Firestore versionadas en el repo (per-uid) + restricciones de la apiKey — Phase 5
   - [ ] Año fiscal derivado de la fecha (hoy fijo 2026/27) — antes del 06/04/2027
   - [ ] Avisos "ok" que tapan escrituras bloqueadas; estado obsoleto tras confirm()
-  - [ ] Barrera de tests (runner único + fixtures anonimizadas versionadas)
+  - [x] Barrera de tests (runner único + fixtures anonimizadas versionadas + gate pre-commit/pre-push) — Phase 6
 - [x] Propietario (sin código): GitHub 2FA activado + protección de rama main; historial git purgado (2026-10-05, ticket de caché a GitHub abierto)
 
 ### Planned (Next)
@@ -119,6 +121,9 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | SheetJS vendorizado (no CDN, no carga al clic) | iOS pierde la activación de usuario tras un await de red; quita un tercero de confianza (Fable) | 2026-10-05 | Active |
 | Meta CSP con hosts concretos ('unsafe-inline' necesario): control de salida, no anti-XSS | *.googleapis.com permitiría exfiltrar a otro proyecto Firebase; residuales documentados | 2026-10-05 | Active |
 | Reglas Firestore = copia de prod en repo, nunca se despliegan desde aquí | El repo audita; prod manda; check-firestore-rules.mjs detecta divergencia | 2026-10-05 | Active |
+| Tests en tests/ con golden absoluto en fichero (no git HEAD); cambios legítimos con --update-golden | Un fallo commiteado no puede pasar a ser «lo correcto» (F-06-003) | 2026-10-05 | Active |
+| Gate git: pre-commit = harness; pre-push = harness + e2e; e2e-csp (terceros) con reintento y escape EASYLOG_PUSH_SKIP_NET=1; nunca --no-verify | Push = deploy; no bloquear un arreglo urgente por Google caído (flake gen_204 demostrado, Fable) | 2026-10-05 | Active |
+| e2e con reloj fijo (FIXED_NOW) solo sin Firebase | Resultado independiente del día; Firestore/Auth se cuelgan con Date fijo (Fable) | 2026-10-05 | Active |
 
 ## Success Metrics
 
@@ -135,6 +140,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Hosting | GitHub Pages | Deploy al push a `main` |
 | Datos | localStorage + Firebase Firestore | Auth Google |
 | Excel | SheetJS 0.20.3 (vendorizado en `vendor/`, sha384 fijado) | Desde 05-02; antes CDN |
+| Tests | node:vm harness + playwright-core 1.63.0 (WebKit) | `npm ci`; `node tests/run-all.mjs tests/harness tests/e2e` |
 | Referencia CSV | Export CrewLounge PILOTLOG (memoria `reference_crewlounge_export`) | 99 columnas |
 
 ## Links
@@ -146,4 +152,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-05 after Phase 5 (Seguridad)*
+*Last updated: 2026-10-05 after Phase 6 (Barrera de tests)*

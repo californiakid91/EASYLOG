@@ -5,27 +5,27 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.2 Seguridad y robustez — Fase 6 (Barrera de tests)
+**Current focus:** v0.2 Seguridad y robustez — Fase 7 (UK Days: año fiscal dinámico + límite)
 
 ## Current Position
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 6 of 8 (Barrera de tests) — Planning (06-02)
-Plan: 06-02 created, awaiting approval (revisión Fable incorporada)
-Status: APPLY in progress
-Last activity: 2026-10-05 — Created .paul/phases/06-barrera-tests/06-02-PLAN.md (Fable: aprobado con cambios; e2e-runways ya fallaba)
+Phase: 7 of 8 (UK Days año y límite) — Not started
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-05 — Fase 6 completa (06-02: e2e propios + gate pre-commit/pre-push, 14/14); transición a Fase 7
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
-- v0.2 Seguridad y robustez: [███▊░░░░░░] 37% (Fase 5 ✓, Fase 6 1/2)
+- v0.2 Seguridad y robustez: [█████░░░░░] 50% (Fase 5 ✓, Fase 6 ✓)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ◐        ○     [APPLY 06-02 en curso]
+  ✓        ✓        ✓     [Loop 06-02 cerrado — Fase 6 completa, ready to plan Fase 7]
 ```
 
 ## Accumulated Context
@@ -55,6 +55,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Script inline del <head> SIEMPRE con atributo (p.ej. id): los harness localizan el principal con /<script>\n…<\/script>\s*<\/body>/
 - E2E WebKit en Linux no tiene TLS → https:// vía Node (ctx.route + route.fetch); la CSP se sigue aplicando
 - 06-01: tests en tests/ (harness/, fixtures/ anonimizadas, golden/); rutas SOLO desde tests/lib.mjs; `node tests/run-all.mjs` = barrera (✗ con exit≠0, SKIP, FAIL/✗ o 0 checks); golden de caracterización → cambios legítimos con `node tests/harness/harness-csv.mjs --update-golden` y revisar diff; lista importer PilotLog = 115 cabeceras; fixture 01 (18/09/2026) debe caer dentro de UK_DAYS_START/END (re-desplazar en Fase 7); BASELINES fa78eeb/6cb4a5a
+- 06-02: `npm ci` (playwright-core 1.63.0) + `node tests/run-all.mjs tests/harness tests/e2e` = 14/14; e2e usan serveRepo/loadPlaywright/watchdog/FIXED_NOW de lib.mjs; reloj fijo solo sin Firebase; pre-commit = harness (bloquea), pre-push = harness + e2e (e2e-csp 1 reintento; escape solo `EASYLOG_PUSH_SKIP_NET=1 git push`); nunca --no-verify; push desde Bash de Claude con timeout ≥ 5 min
 - _runways = mapa propio (localStorage + campo Firestore `runways` con guard _runwaysSaving); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -75,8 +76,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Auto-actualización baja index.html entero cada 5 min (+32 KB DB) → fetch con cache:'no-cache' (304) | 04 Fable | XS | — |
 | semgrep: urllib dinámico en gen-airports.py (script local, URL base fija; riesgo nulo) | 04 G8 | XS | — |
 | API key del navegador con apiTargets amplios por defecto → limitar a firestore/identitytoolkit/securetoken (consola GCP, opcional) | 05-02 | XS | — |
-| E2E dependen de playwright-core en ~/manuales-motos y fixture real gitignored; rutas /home/ricardo en los .mjs | 05-02 | S | 06-02 |
 | Helpers duplicados entre harness (load/check/extract) → harness-lib | 06-01 (D6/F-06-006) | M | — |
+| Fase 7: al hacer dinámico el año fiscal, mover FIXED_NOW (tests/lib.mjs), fixture 01 y calendario sembrado de e2e-csp | 06-02 | XS | Fase 7 |
 | GitHub: ticket de purga de caché de commits (abierto 2026-10-05) → comprobar que los SHA antiguos dan 404 | 05 post | XS | cuando responda GitHub |
 
 ### Preguntas pendientes al usuario — de UNA en UNA
@@ -86,6 +87,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - [ ] Revisar uno a uno los 47 días previos (25 man + 22 R1) de 2026/27
 - [x] ¿Añadir el año a las fechas de "Sin decidir"? → SÍ, en toda la app (dateISOToDisplay → dd/mm/aa), 2026-10-05
 - (pendiente personal del usuario — detalle en memoria local)
+- [ ] ¿Push de los commits de Fase 6 (06-01 + 06-02; solo tests/, docs, package.json, hooks — no cambia la app)? El push ya pasa por el gate nuevo (~50 s)
+- [ ] ¿Tolerar en e2e-csp el beacon `connect-src https://apis.google.com/js/gen_204` (telemetría de gapi, intermitente)? Hoy lo amortigua el reintento del pre-push
 - [ ] ¿Sacar del repo público el código de piloto/nombre (hoy fijos en index.html para T/O-LDG y CREWLIST; también en PROJECT.md, harness y AUDIT)? → requiere configuración en la app + quizá otra purga de historial (G8 Fase 5)
 
 ### Post-Aegis (2026-10-05)
@@ -100,15 +103,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: ver git log — 06-01 cerrado (local, sin push); prod sigue en v2026.10.05-120346
+Last commit: ver git log — Fase 6 cerrada (local, sin push); prod sigue en v2026.10.05-120346
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: Plan 06-02 created (Fable incorporado)
-Next action: Review and approve plan, then run /paul:apply .paul/phases/06-barrera-tests/06-02-PLAN.md
-Resume file: .paul/phases/06-barrera-tests/06-02-PLAN.md
+Stopped at: Fase 6 completa (06-01 + 06-02 UNIFY, transición con G7/G8)
+Next action: /paul:plan 7 (UK Days: año fiscal dinámico + límite configurable); antes, decidir push de Fase 6
+Resume file: .paul/phases/06-barrera-tests/06-02-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

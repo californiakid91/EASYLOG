@@ -99,7 +99,7 @@ Branch: main
 Last session: 2026-10-05
 Stopped at: 05-01 loop cerrado (UNIFY)
 Next action: /paul:plan 5 → plan 05-02 (SRI/CSP SheetJS+Firebase, firestore.rules versionado = producción)
-Resume file: .paul/phases/05-seguridad/05-01-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-05-05-01-completo.md
 
 ---
 *STATE.md — Updated after every significant action*

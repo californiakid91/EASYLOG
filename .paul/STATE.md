@@ -84,8 +84,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Reglas Firestore en producción = per-uid (request.auth.uid == uid) ✓ — falta versionarlas en el repo
 - Doc Firestore medido: 127 KiB (12%) y ~1.9k entradas de índice (5%); excelData ≈2 KiB/día → ~2,5 años de margen → ya no es HIGH
 - Rama main protegida (sin force-push ni borrado); 2FA GitHub pendiente de confirmar por el usuario
-- Límite UK Days: criterio fiscal del usuario en memoria local (fuera del repo)
-- [ ] Límite de la app pendiente de confirmación fiscal del usuario
+- Límite UK Days: criterio fiscal del usuario documentado SOLO en la memoria local de Claude (reference_srt_aircrew) — nunca en el repo (público)
+- [ ] Límite de la app (MAX) pendiente de confirmación fiscal del usuario → Fase 7 lo hace configurable
 
 ### Blockers/Concerns
 - Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo

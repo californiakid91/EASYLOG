@@ -60,7 +60,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
   - [ ] Año fiscal derivado de la fecha (hoy fijo 2026/27) — antes del 06/04/2027
   - [ ] Avisos "ok" que tapan escrituras bloqueadas; estado obsoleto tras confirm()
   - [ ] Barrera de tests (runner único + fixtures anonimizadas versionadas)
-- [ ] Propietario (sin código): GitHub 2FA + protección de rama main; asesor fiscal: qué regula el límite de 91 días; decidir purga de datos personales del historial git público
+- [ ] Propietario (sin código): GitHub 2FA + protección de rama main; decidir purga de datos personales del historial git público
 
 ### Planned (Next)
 

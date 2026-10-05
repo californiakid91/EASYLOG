@@ -13,8 +13,8 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Attribute | Value |
 |-----------|-------|
 | Type | Application |
-| Version | 0.0.0 (en producción, sin versionado formal) |
-| Status | Production — milestone v0.1 completo: CSV (2), UK Days (3), auto-actualización (3.1), datos coherentes (3.2), pistas (4) |
+| Version | 0.1.0 (v0.1 Datos fiables, cerrado 2026-10-05) |
+| Status | Production — v0.1.0 cerrado + auditoría Aegis pre-milestone (informe local en .aegis/report/): CSV (2), UK Days (3), auto-actualización (3.1), datos coherentes (3.2), pistas (4) |
 | Last Updated | 2026-10-05 (Fase 4) |
 
 **Production URLs:**
@@ -53,6 +53,15 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 - [ ] Comprobar histórico ya importado en PilotLog (sin NIGHT; posibles fechas post-medianoche) con informe sobre export de PilotLog
 
+- [ ] Seguridad y robustez post-Aegis (informe 2026-10-05, roadmap en .aegis/report/05-remediation-roadmap.md):
+  - [ ] Documento único de Firestore: medir tamaño + entradas de índice; partir history/excelData o eximir índices (único HIGH)
+  - [ ] XSS por código de aeropuerto (validar /^[A-Z]{3}$/, sin onclick inline) + SRI/CSP para CDNs
+  - [ ] Reglas de Firestore versionadas en el repo (per-uid) + restricciones de la apiKey
+  - [ ] Año fiscal derivado de la fecha (hoy fijo 2026/27) — antes del 06/04/2027
+  - [ ] Avisos "ok" que tapan escrituras bloqueadas; estado obsoleto tras confirm()
+  - [ ] Barrera de tests (runner único + fixtures anonimizadas versionadas)
+- [ ] Propietario (sin código): GitHub 2FA + protección de rama main; asesor fiscal: qué regula el límite de 91 días; decidir purga de datos personales del historial git público
+
 ### Planned (Next)
 
 - [ ] (opcional) Pistas exactas: FR24 API (token + 9 $/mes del usuario) o ADS-B adsb.lol vía proxy — decisión del usuario
@@ -90,7 +99,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Prioridad v0.1 = corrección de datos CSV + UK Days | Fallos reportados por el usuario | 2026-10-03 | Active |
 | Auditoría la hace Claude contra referencia CrewLounge | Usuario: "audita tú todo esto" | 2026-10-03 | Active |
 | Testear index.html vía node:vm sin copiar código | Evita desincronización; arnés reutilizable | 2026-10-03 | Active |
-| UK Day = on-block último vuelo antes de 00:00 hora Londres (sin exigir aeropuerto UK) | Confirmado por usuario + REGLAS_EXCEL_TAX_YEAR.md | 2026-10-03 | Active |
+| UK Day = on-block último vuelo antes de 00:00 hora Londres (sin exigir aeropuerto UK) | Confirmado por usuario + REGLAS_EXCEL_TAX_YEAR.md | 2026-10-03 | Superseded (2026-10-04, regla R1/R2/R3) |
 | Pistas: sin claves secretas en cliente; fuente a decidir por dialéctica | Seguridad #1; app sin servidor | 2026-10-03 | Active |
 | Noche = EASA (licencia IAA): sol < −6° (crepúsculo civil), no sunset+30 | Usuario con licencia irlandesa; validado vs PyEphem ≤10 s | 2026-10-03 | Active |
 | DELAY = 1 código (el de más minutos); resto a FLIGHTLOG; PILOTLOG_DATE = fecha UTC off-block | Importer acepta 1 código; convención PilotLog UTC | 2026-10-03 | Active |
@@ -109,7 +118,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
 | CSV importa en PilotLog con night, pistas, T/O-LDG y delays correctos | 100% de vuelos de prueba | Night/T-O-LDG/delays OK (0 errores); pistas confirmadas importan (Fase 4) | Done |
-| UK Days usa on-block correcto del último vuelo | 100% de días de prueba | 54/91 verificado día a día con el usuario (2026/27) | Done |
+| UK Days usa on-block correcto del último vuelo | 100% de días de prueba | 54/91 calculados; 47 días previos de 2026/27 aún sin revisar uno a uno (Aegis F-RG-002) | Parcial |
 
 ## Tech Stack / Tools
 
@@ -130,4 +139,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-05 after Phase 4 (milestone v0.1 completo)*
+*Last updated: 2026-10-05 after v0.1 Datos fiables (milestone cerrado + Aegis)*

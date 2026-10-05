@@ -4,3 +4,6 @@
 *.xlsx
 *:Zone.Identifier
 *:mshield
+
+# AEGIS audit state (generated)
+.aegis/

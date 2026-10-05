@@ -7,10 +7,23 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 ## Current Milestone
 
 **v0.1 Datos fiables** (v0.1.0)
-Status: ✅ Complete (2026-10-05)
-Phases: 4 of 4 complete (+3.1 y 3.2 insertadas ✅)
+Status: ✅ Complete
+Completed: 2026-10-05
 
-## Phases
+## Next Milestone
+
+Por definir con /paul:milestone. Candidato: v0.2 Seguridad y robustez (roadmap Aegis 2026-10-05, .aegis/report/05-remediation-roadmap.md).
+
+## Version Overview
+
+| Version | Name | Status |
+|---------|------|--------|
+| v0.1.0 | Datos fiables | ✅ Complete 2026-10-05 |
+
+## Completed Milestones
+
+<details>
+<summary>v0.1 Datos fiables - 2026-10-05 (8 phases, 11 plans)</summary>
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
@@ -23,50 +36,9 @@ Phases: 4 of 4 complete (+3.1 y 3.2 insertadas ✅)
 | 3.2 | [INSERTED] Datos coherentes: Excel U/UW = UK Days + SD; duplicados al pegar | 2/2 | ✅ Complete | 2026-10-05 |
 | 4 | Pista en uso (dialéctica de fuente + implementación) | 2/2 | ✅ Complete | 2026-10-05 |
 
-## Phase Details
+Detalle completo: .paul/milestones/v0.1.0-ROADMAP.md
 
-### Phase 1: Auditoría
-**Goal:** Causa raíz reproducible de cada fallo reportado, con arnés Node sobre index.html real.
-**Plans:** - [x] 01-01: Arnés + AUDIT.md
-
-### Phase 1.1: Borrados persisten en la nube [INSERTED]
-**Goal:** Borrar un UK Day, un día guardado o un estado del calendario se mantiene tras recargar.
-**Reason:** `setDoc merge:true` no elimina claves de mapas anidados (AUDIT.md) — bloquea al usuario ahora (18/09).
-**Scope:** persistCloud + saveDayMap con `mergeFields`; verificación real con el 18/09.
-**Plans:** - [x] 01.1-01: mergeFields + guard hidratación (deploy 7b922f7)
-
-### Phase 2: CSV
-**Goal:** El CSV importa en PilotLog con T/O-LDG, night, delays y columnas correctas.
-**Depends on:** Phase 1 (AUDIT.md H1, H4, H7, H8)
-**Plans:** - [x] 02-01: DELAY único + TIME_NIGHT + ENGTYPE Jet + modelo temporal UTC por sector
-**Scope:** prueba de importación con el usuario (35 vs 37 cols, mapeo posicional H8; ENGTYPE/CREWLIST H7) → fijar esquema; TIME_NIGHT por interpolación; delays alfanuméricos + minutos; fecha de sectores post-medianoche.
-
-### Phase 3: UK Days
-**Goal:** El UK Day usa siempre el on-block del último sector real.
-**Depends on:** Phase 1 (H5, H5b, H6)
-**Scope:** orden cronológico con cruce de medianoche; recalcular al reemplazar un día (no `manual`); tests con fixtures 01/90/91.
-**Plans:**
-- [x] 03-01: fixes H5/H6, removeDay, solo-Excel, periodo 05-04, Cargando…
-- [x] 03-02: reglas reales R1/R2/R3 (calzos 00:00 = UK), No UK persistente, pendientes/huecos, exportar sin perder datos (verificado 54/91)
-
-### Phase 3.1: Auto-actualización PWA [INSERTED]
-**Goal:** El iPhone ejecuta siempre la última versión desplegada sin ?v=N y sin perder datos.
-**Reason:** Versiones viejas en caché causaron pérdida de datos y un recuento falso (03-02).
-**Plans:** - [x] 03.1-01: APP_VERSION + comprobación (arranque/volver/foco/5 min) + recarga segura + texto conservado + hook pre-commit (verificado en iPhone)
-
-### Phase 3.2: Datos coherentes [INSERTED]
-**Goal:** El Excel Tax Year no contradice a UK Days y pegar un día repetido no pisa ni duplica nada.
-**Reason:** 06/05/2026 SBY→U=1 aunque «No UK»; U no exige aeropuerto UK; día solo-Excel se sobrescribe sin aviso.
-**Plans:**
-- [x] 03.2-01: U/UW desde UK Days + estado SD + decidir pendientes (UK/No UK) + descarga bloqueada con pendientes pasados
-- [x] 03.2-02: duplicados al pegar (idéntico en lista → aviso; idéntico solo-Excel → vuelve a la lista; distinto/capitán → resumen + confirmación) — verificado en iPhone
-
-### Phase 4: Pista en uso
-**Goal:** DEP_RWY/ARR_RWY rellenos sin servidor ni claves públicas.
-**Research:** Dialéctica hecha (04-DIALECTIC.md): METAR (IEM) + rumbos OurAirports + preferente aprendida + confirmación del piloto; FR24/ADS-B diferidos.
-**Plans:**
-- [x] 04-01: base OurAirports embebida (ICAO, coordenadas, pistas) — sin prompts de lat/lon
-- [x] 04-02: sugerencia por viento + confirmar pistas por día + RWY_DEP/RWY_ARR en el CSV (importa en PilotLog)
+</details>
 
 ---
-*Roadmap created: 2026-10-03*
+*Roadmap created: 2026-10-03 · Updated: 2026-10-05 (v0.1 cerrado)*

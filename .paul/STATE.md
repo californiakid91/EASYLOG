@@ -5,26 +5,26 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.1 Datos fiables ✅ completo — siguiente: cerrar milestone / Aegis pre-milestone
+**Current focus:** v0.1.0 cerrado — siguiente: definir v0.2 (Seguridad y robustez, desde el roadmap Aegis)
 
 ## Current Position
 
-Milestone: v0.1 Datos fiables
-Phase: 4 of 4 (Pista en uso) — ✅ Complete
-Plan: 04-02 ✅ (2/2)
-Status: Milestone v0.1 completo (todas las fases)
-Last activity: 2026-10-05 — 04-02 UNIFY + transición de fase 4 (prod v2026.10.05-083341, PilotLog importa RWY_DEP/RWY_ARR)
+Version: v0.1.0
+Milestone: Awaiting next milestone
+Phase: None active
+Plan: None
+Status: Milestone v0.1 Datos fiables complete — ready for next
+Last activity: 2026-10-05 — Aegis pre-milestone + milestone completed (tag v0.1.0)
 
 Progress:
-- Milestone: [██████████] 100%
-- Phase 4: [██████████] 100%
+- v0.1 Datos fiables: [██████████] 100% ✓
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — Fase 4 y milestone v0.1 completos]
+  ○        ○        ○     [Milestone complete - ready for next]
 ```
 
 ## Accumulated Context
@@ -58,7 +58,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Histórico ya importado en PilotLog: sin NIGHT y posibles fechas post-medianoche → informe sobre export de PilotLog (no reimportar meses) | Phase 2 | S | antes de Fase 3 |
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
 | Barra «Hay una versión nueva» (fija abajo) tapa el final del botón de exportar mientras está visible → padding-bottom al body cuando se muestra | 03.1 checkpoint | XS | — |
-| semgrep: <script> CDN sin atributo integrity (SRI) en index.html:462 (preexistente) | Phase 2 | S | Aegis pre-deploy |
+| semgrep: <script> CDN sin atributo integrity (SRI) en index.html:494 (preexistente) — confirmado por Aegis F-04-002 | Phase 2 | S | v0.2 |
 | UK Days: reconstrucción de tax years anteriores desde el plan ROCS (2024/25 falta plan abr–dic 2024) | Phase 2 | M | — |
 | Revisar uno a uno los 47 días previos de 2026/27 (25 man + 22 R1) | 03-02 checkpoint | S | otra sesión |
 | SBY + email = conflicto; quizá debería mandar el email (regla usuario: SBY no cuenta solo si activado y acaba fuera/después de 00:00) | 03.2-01 checkpoint | S | — |
@@ -88,9 +88,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: Fase 4 completa → milestone v0.1 Datos fiables completo
-Next action: /aegis:audit (pre-milestone, recoge SRI del CDN) y luego /paul:complete-milestone
-Resume file: .paul/HANDOFF-2026-10-05-fase4-completa.md
+Stopped at: Milestone v0.1 Datos fiables complete (Aegis hecho, tag v0.1.0)
+Next action: /paul:milestone (v0.2 Seguridad y robustez) — y acciones del propietario: medir doc Firestore, GitHub 2FA + protección de main
+Resume file: .paul/MILESTONES.md
 
 ---
 *STATE.md — Updated after every significant action*

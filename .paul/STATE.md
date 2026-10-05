@@ -11,21 +11,21 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 5 of 8 (Seguridad) — Planning
-Plan: 05-01 created, awaiting approval
-Status: PLAN created, ready for APPLY
-Last activity: 2026-10-05 — Created .paul/phases/05-seguridad/05-01-PLAN.md (revisión adversaria Fable incorporada)
+Phase: 5 of 8 (Seguridad) — In Progress (1/2 plans)
+Plan: 05-01 complete (prod v2026.10.05-102039, commit 16e5c94); siguiente 05-02 (SRI/CSP + firestore.rules)
+Status: Ready for next PLAN
+Last activity: 2026-10-05 — 05-01 UNIFY (SUMMARY creado). Aplicado: harness rojo→verde, G6 (1 conf + 2 plaus. corregidos), checkpoint verificado por Claude a petición del usuario (WebKit iPhone 13, datos reales, vieja vs nueva idénticas)
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
-- v0.2 Seguridad y robustez: [░░░░░░░░░░] 0%
+- v0.2 Seguridad y robustez: [█░░░░░░░░░] ~12% (Fase 5: 1/2 planes)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan created, awaiting approval]
+  ✓        ✓        ✓     [Loop complete - ready for next PLAN (05-02)]
 ```
 
 ## Accumulated Context
@@ -50,6 +50,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Días solo-Excel se borran sin tocar UK Days; "Cargando…" solo en UK Days (calendario desde caché local)
 - Fase 4 (dialéctica + Fable): pistas = METAR IEM + rumbos OurAirports (AIRPORT_DB embebida, gen-airports.py) + preferente aprendida de _runways; solo lo confirmado va al CSV
 - CSV: columnas con nombres del IMPORTER de CrewLounge (RWY_DEP/RWY_ARR); el importer empareja por nombre; el export usa otros nombres
+- 05-01: datos externos validados ANTES de interpolar (IATA_RE/ISO_RE/CAL_STATES, isoKeys filtra en origen de lista sin podar estado); onclick inline se mantiene (claves validadas = seguras); F-04-007 fórmulas CSV = monitor (REMARKS = nº vuelo, no tocar logbook legal)
 - _runways = mapa propio (localStorage + campo Firestore `runways` con guard _runwaysSaving); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -59,7 +60,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Histórico ya importado en PilotLog: sin NIGHT y posibles fechas post-medianoche → informe sobre export de PilotLog (no reimportar meses) | Phase 2 | S | antes de Fase 3 |
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
 | Barra «Hay una versión nueva» (fija abajo) tapa el final del botón de exportar mientras está visible → padding-bottom al body cuando se muestra | 03.1 checkpoint | XS | — |
-| semgrep: <script> CDN sin atributo integrity (SRI) en index.html:494 (preexistente) — confirmado por Aegis F-04-002 | Phase 2 | S | v0.2 |
+| semgrep: <script> CDN sin atributo integrity (SRI) en index.html:494 (preexistente) — confirmado por Aegis F-04-002 | Phase 2 | S | 05-02 |
 | UK Days: reconstrucción de tax years anteriores desde el plan ROCS (2024/25 falta plan abr–dic 2024) | Phase 2 | M | — |
 | Revisar uno a uno los 47 días previos de 2026/27 (25 man + 22 R1) | 03-02 checkpoint | S | otra sesión |
 | SBY + email = conflicto; quizá debería mandar el email (regla usuario: SBY no cuenta solo si activado y acaba fuera/después de 00:00) | 03.2-01 checkpoint | S | — |
@@ -90,15 +91,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
 
 ### Git State
-Last commit: ver git log (fase 4 completa) — pusheado y desplegado en GitHub Pages (v2026.10.05-083341)
+Last commit: ver git log — 05-01 desplegado en GitHub Pages (v2026.10.05-102039)
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: Plan 05-01 created
-Next action: Review and approve plan, then run /paul:apply .paul/phases/05-seguridad/05-01-PLAN.md
-Resume file: .paul/phases/05-seguridad/05-01-PLAN.md
+Stopped at: 05-01 loop cerrado (UNIFY)
+Next action: /paul:plan 5 → plan 05-02 (SRI/CSP SheetJS+Firebase, firestore.rules versionado = producción)
+Resume file: .paul/phases/05-seguridad/05-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

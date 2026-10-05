@@ -9,7 +9,7 @@
   "phase": {
     "number": "5",
     "name": "Seguridad",
-    "status": "not_started"
+    "status": "in_progress"
   },
   "loop": {
     "plan": null,
@@ -17,7 +17,7 @@
   },
   "timestamps": {
     "created_at": "2026-10-03T12:31:08+01:00",
-    "updated_at": "2026-10-05T11:07:04+01:00"
+    "updated_at": "2026-10-05T11:26:53+01:00"
   },
   "satellite": {
     "groom": true

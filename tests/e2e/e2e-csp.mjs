@@ -3,7 +3,8 @@
 // Línea base = el mismo recorrido con la meta CSP quitada del HTML servido → los pageerror deben ser los mismos.
 // Reloj: recorrido local con FIXED_NOW; recorrido nube con reloj real (Firestore/Auth se cuelgan con Date fijo).
 import fs from 'node:fs';
-import { INDEX_PATH, FIXED_NOW, readFixture, serveRepo, loadPlaywright } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW, readFixture, serveRepo, loadPlaywright, watchdog } from '../lib.mjs';
+watchdog();
 const HTML = fs.readFileSync(INDEX_PATH, 'utf8');
 const NOCSP = HTML.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\n/, '');
 if (NOCSP === HTML) { console.log('FAIL  no se encontró la meta CSP'); process.exit(1); }

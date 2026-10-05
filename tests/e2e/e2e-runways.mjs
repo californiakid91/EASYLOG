@@ -1,7 +1,8 @@
 // E2E 04-02 (WebKit, iPhone 13, IEM interceptado): botón 🛬 → modal de pistas → confirmar → CSV con RWY_DEP/RWY_ARR.
 // Uso: node tests/e2e/e2e-runways.mjs (o run-all tests/e2e). Hermético: sin red; reloj fijo en FIXED_NOW. Necesita «npm ci».
 import fs from 'node:fs'; import path from 'node:path';
-import { INDEX_PATH, TMP, FIXED_NOW, readFixture, serveRepo, loadPlaywright } from '../lib.mjs';
+import { INDEX_PATH, TMP, FIXED_NOW, readFixture, serveRepo, loadPlaywright, watchdog } from '../lib.mjs';
+watchdog();
 const { webkit, devices } = await loadPlaywright();
 const html = fs.readFileSync(INDEX_PATH, 'utf8');
 const fixture = readFixture('01');

@@ -112,4 +112,3 @@ Resume file: .paul/phases/06-barrera-tests/06-02-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*
-<!-- -->

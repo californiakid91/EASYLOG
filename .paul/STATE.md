@@ -5,26 +5,26 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.1 Datos fiables — Phase 4 (Pista en uso)
+**Current focus:** v0.1 Datos fiables ✅ completo — siguiente: cerrar milestone / Aegis pre-milestone
 
 ## Current Position
 
 Milestone: v0.1 Datos fiables
-Phase: 4 of 4 (Pista en uso) — In progress
-Plan: 04-02 APPLY (04-01 ✅)
-Status: APPLY 04-02 — en producción v2026.10.05-004818 (60efbe5); G6/G8 corregidos; ESPERANDO checkpoint humano (iPhone + importar en PilotLog)
-Last activity: 2026-10-05 — 04-01 (cf0c453) y 04-02 (60efbe5) desplegados
+Phase: 4 of 4 (Pista en uso) — ✅ Complete
+Plan: 04-02 ✅ (2/2)
+Status: Milestone v0.1 completo (todas las fases)
+Last activity: 2026-10-05 — 04-02 UNIFY + transición de fase 4 (prod v2026.10.05-083341, PilotLog importa RWY_DEP/RWY_ARR)
 
 Progress:
-- Milestone: [████████░░] 80% (todas las fases menos la 4)
-- Phase 4: [█████░░░░░] 50%
+- Milestone: [██████████] 100%
+- Phase 4: [██████████] 100%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ◐        ○     [04-02 APPLY: falta checkpoint humano AC-6]
+  ✓        ✓        ✓     [Loop complete — Fase 4 y milestone v0.1 completos]
 ```
 
 ## Accumulated Context
@@ -47,6 +47,9 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Rol (usuario 2026-10-05): hoy SIEMPRE FO → SIC; PICUS lo pone él a mano en PilotLog (firma del capitán, raro); la app nunca genera PICUS; CPT/PIC en el futuro → al re-pegar no se cambia el rol guardado (revisar al ascender)
 - 03.2-02: re-pegar compara solo CMP_KEYS normalizados + capitán/tripulación (crewDiff); idéntico no escribe (salvo volver a la lista / reparar Excel); distinto → confirm con resumen
 - Días solo-Excel se borran sin tocar UK Days; "Cargando…" solo en UK Days (calendario desde caché local)
+- Fase 4 (dialéctica + Fable): pistas = METAR IEM + rumbos OurAirports (AIRPORT_DB embebida, gen-airports.py) + preferente aprendida de _runways; solo lo confirmado va al CSV
+- CSV: columnas con nombres del IMPORTER de CrewLounge (RWY_DEP/RWY_ARR); el importer empareja por nombre; el export usa otros nombres
+- _runways = mapa propio (localStorage + campo Firestore `runways` con guard _runwaysSaving); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
 | Issue | Origin | Effort | Revisit |
@@ -58,11 +61,14 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | semgrep: <script> CDN sin atributo integrity (SRI) en index.html:462 (preexistente) | Phase 2 | S | Aegis pre-deploy |
 | UK Days: reconstrucción de tax years anteriores desde el plan ROCS (2024/25 falta plan abr–dic 2024) | Phase 2 | M | — |
 | Revisar uno a uno los 47 días previos de 2026/27 (25 man + 22 R1) | 03-02 checkpoint | S | otra sesión |
-| Aeropuertos desconocidos piden lat/lon a mano (usuario: «un auténtico coñazo») → embeber OurAirports IATA→coords | 03.2-01 checkpoint | S | Fase 4 |
 | SBY + email = conflicto; quizá debería mandar el email (regla usuario: SBY no cuenta solo si activado y acaba fuera/después de 00:00) | 03.2-01 checkpoint | S | — |
 | UW en blanco en días sin vuelos con UK manual (DUTY sin email) → ¿UW=1? | 03.2-01 | XS | — |
 | Regla de rol al re-pegar (rol guardado manda) → revisar al ascender a CPT | 03.2-02 | XS | ascenso |
 | Mismo vuelo pegado con OTRA fecha (PilotLog lo duplicaría) no se detecta | 03.2-02 | S | — |
+| Pistas exactas: FR24 API (token + 9 $/mes) o ADS-B adsb.lol vía proxy (sin CORS) — decisión del usuario | 04 dialéctica | M | si el usuario lo pide |
+| Preferente de pista única por aeropuerto (sin franja horaria/flujo) | 04 dialéctica | S | — |
+| Auto-actualización baja index.html entero cada 5 min (+32 KB DB) → fetch con cache:'no-cache' (304) | 04 Fable | XS | — |
+| semgrep: urllib dinámico en gen-airports.py (script local, URL base fija; riesgo nulo) | 04 G8 | XS | — |
 
 ### Preguntas pendientes al usuario — de UNA en UNA
 - Checkpoint 03-02 cerrado (detalle día a día en .paul/phases/03-ukdays/03-02-SUMMARY.md)
@@ -76,15 +82,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
 
 ### Git State
-Last commit: ver git log (fase 3.2 completa) — pusheado y desplegado en GitHub Pages
+Last commit: ver git log (fase 4 completa) — pusheado y desplegado en GitHub Pages (v2026.10.05-083341)
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: 04-02 checkpoint humano (Task 3): confirmar pistas en iPhone + importar CSV en PilotLog
-Next action: con «approved» → /paul:unify 04-02 + transición de fase 4 (cierra milestone v0.1)
-Resume file: .paul/phases/04-pista-en-uso/04-02-PLAN.md
+Stopped at: Fase 4 completa → milestone v0.1 Datos fiables completo
+Next action: /aegis:audit (pre-milestone, recoge SRI del CDN) y luego /paul:complete-milestone
+Resume file: .paul/HANDOFF-2026-10-05-fase4-completa.md
 
 ---
 *STATE.md — Updated after every significant action*

@@ -7,8 +7,8 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 ## Current Milestone
 
 **v0.1 Datos fiables** (v0.1.0)
-Status: In progress
-Phases: 3 of 4 complete (+3.1 y 3.2 insertadas ✅)
+Status: ✅ Complete (2026-10-05)
+Phases: 4 of 4 complete (+3.1 y 3.2 insertadas ✅)
 
 ## Phases
 
@@ -21,7 +21,7 @@ Phases: 3 of 4 complete (+3.1 y 3.2 insertadas ✅)
 | 3 | UK Days: fixes (03-01) + reglas reales (03-02, dialéctica) | 2/2 | ✅ Complete | 2026-10-04 |
 | 3.1 | [INSERTED] Auto-actualización PWA (Safari sirve versiones viejas) | 1/1 | ✅ Complete | 2026-10-05 |
 | 3.2 | [INSERTED] Datos coherentes: Excel U/UW = UK Days + SD; duplicados al pegar | 2/2 | ✅ Complete | 2026-10-05 |
-| 4 | Pista en uso (dialéctica de fuente + implementación) | 1/2 | In progress | - |
+| 4 | Pista en uso (dialéctica de fuente + implementación) | 2/2 | ✅ Complete | 2026-10-05 |
 
 ## Phase Details
 
@@ -66,7 +66,7 @@ Phases: 3 of 4 complete (+3.1 y 3.2 insertadas ✅)
 **Research:** Dialéctica hecha (04-DIALECTIC.md): METAR (IEM) + rumbos OurAirports + preferente aprendida + confirmación del piloto; FR24/ADS-B diferidos.
 **Plans:**
 - [x] 04-01: base OurAirports embebida (ICAO, coordenadas, pistas) — sin prompts de lat/lon
-- [ ] 04-02: sugerencia por viento + confirmar pistas por día + DEP_RWY/ARR_RWY en el CSV
+- [x] 04-02: sugerencia por viento + confirmar pistas por día + RWY_DEP/RWY_ARR en el CSV (importa en PilotLog)
 
 ---
 *Roadmap created: 2026-10-03*

@@ -14,8 +14,8 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 (en producción, sin versionado formal) |
-| Status | Production — CSV (Fase 2), UK Days (Fase 3), auto-actualización (3.1) y datos coherentes (3.2); pistas pendientes |
-| Last Updated | 2026-10-05 |
+| Status | Production — milestone v0.1 completo: CSV (2), UK Days (3), auto-actualización (3.1), datos coherentes (3.2), pistas (4) |
+| Last Updated | 2026-10-05 (Fase 4) |
 
 **Production URLs:**
 - https://californiakid91.github.io/EASYLOG/ — app (deploy automático al push a `main`)
@@ -46,6 +46,8 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - [x] Auto-actualización de la PWA: APP_VERSION visible, recarga sola y segura, texto pegado conservado, hook que sube la versión — Phase 3.1
 - [x] Excel coherente con UK Days: U = estado UK Days ('?' pendiente), UW por primer sector, estado SD, decidir pendientes, descarga bloqueada con pendientes pasados — Phase 3.2
 - [x] Duplicados al pegar: idéntico en lista → aviso; idéntico solo-Excel → vuelve a la lista; distinto (incl. capitán/tripulación) → resumen y confirmación — Phase 3.2
+- [x] Base OurAirports embebida (896 aeropuertos: ICAO, coordenadas, pistas) — sin prompts de lat/lon — Phase 4
+- [x] Pistas RWY_DEP/RWY_ARR: sugeridas por viento METAR (IEM) + preferente aprendida, confirmadas por día (🛬); importa en PilotLog — Phase 4
 
 ### Active (In Progress)
 
@@ -53,7 +55,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ### Planned (Next)
 
-- [ ] CSV: pista en uso (DEP_RWY / ARR_RWY) vacía — usuario propone derivarla de Flightradar (rumbo al despegue y justo antes de aterrizar)
+- [ ] (opcional) Pistas exactas: FR24 API (token + 9 $/mes del usuario) o ADS-B adsb.lol vía proxy — decisión del usuario
 
 ### Out of Scope
 
@@ -98,13 +100,15 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Auto-actualización sin service worker: APP_VERSION + fetch no-store al arrancar/volver/foco/cada 5 min → location.replace(?v=); bloqueos si se perdería algo; texto pegado se conserva | Caché HTTP + iOS reanudando sin navegar causaron pérdida de datos; SW sería un 3er nivel de caché | 2026-10-05 | Active |
 | Excel U = UK Days (no = vacío, pendiente = '?'); Excel no descargable con pendientes pasados | Excel fiscal no puede contradecir a UK Days (06/05 SBY); usuario | 2026-10-05 | Active |
 | Re-pegar: compara solo campos usados (CMP_KEYS) + capitán/tripulación; rol guardado manda (siempre FO/SIC; PICUS manual) | Fable + G6 + usuario | 2026-10-05 | Active |
+| Pistas: METAR (IEM) + rumbos OurAirports + preferente aprendida; solo lo confirmado va al CSV | Dialéctica Fable: gratis, sin claves; libro legal sin datos inventados | 2026-10-05 | Active |
+| CSV: nombres de columna = lista del IMPORTER de CrewLounge (RWY_DEP/RWY_ARR), no los del export | El importer rechazó DEP_RWY/ARR_RWY | 2026-10-05 | Active |
 | Firestore: mergeFields por campo + no escribir antes del primer snapshot del servidor | merge:true no borraba claves; evitar pisar la nube desde caché offline | 2026-10-03 | Active |
 
 ## Success Metrics
 
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
-| CSV importa en PilotLog con night, pistas, T/O-LDG y delays correctos | 100% de vuelos de prueba | Night/T-O-LDG/delays OK (0 errores); pistas pendientes (Fase 4) | In progress |
+| CSV importa en PilotLog con night, pistas, T/O-LDG y delays correctos | 100% de vuelos de prueba | Night/T-O-LDG/delays OK (0 errores); pistas confirmadas importan (Fase 4) | Done |
 | UK Days usa on-block correcto del último vuelo | 100% de días de prueba | 54/91 verificado día a día con el usuario (2026/27) | Done |
 
 ## Tech Stack / Tools
@@ -126,4 +130,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-05 after Phase 3.2*
+*Last updated: 2026-10-05 after Phase 4 (milestone v0.1 completo)*

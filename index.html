@@ -4,20 +4,22 @@
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://mesonet.agron.iastate.edu; frame-src https://easylog-ce18d.firebaseapp.com; img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <script id="csp-watch">
-// 05-02: lo que bloquee la CSP se avisa en pantalla (una vez por host) para poder reportarlo; el detalle va a consola.
-// Ignora extensiones del navegador. Hasta que el script principal define window.__cspShow, los avisos se encolan.
+// 05-02: si la CSP bloquea una web (http/https/wss) se avisa en pantalla, una vez por host, para poder reportarlo.
+// inline/eval/data/blob (típicos de extensiones) y las extensiones del navegador solo van a consola.
+// Hasta que el script principal define window.__cspShow, los avisos se encolan.
 (function () {
-  var seen = new Set(), EXT = /^(chrome|moz|safari-web)-extension:/;
+  var seen = new Set(), EXT = /^(chrome|moz|safari-web|safari)-extension:/;
   window.__cspQ = [];
   document.addEventListener('securitypolicyviolation', function (e) {
     var src = String(e.sourceFile || ''), uri = String(e.blockedURI || '');
-    if (EXT.test(src) || EXT.test(uri)) return;
-    var host = uri || 'inline';
-    if (/^(https?|wss?):/.test(uri)) { try { host = new URL(uri).host; } catch (_) { host = '?'; } }
+    var msg = 'Bloqueado por seguridad (' + (e.effectiveDirective || e.violatedDirective) + '): ';
+    if (EXT.test(src) || EXT.test(uri) || !/^(https?|wss?):/.test(uri)) { console.warn(msg + (uri || 'inline'), src, e.lineNumber); return; }
+    var host;
+    try { host = new URL(uri).host; } catch (_) { host = '?'; }
     if (seen.has(host)) return;
     seen.add(host);
-    var msg = 'Bloqueado por seguridad (' + (e.effectiveDirective || e.violatedDirective) + '): ' + host;
-    console.warn(msg, uri, src, e.lineNumber);
+    console.warn(msg + host, uri, src, e.lineNumber);
+    msg += host;
     if (typeof window.__cspShow === 'function') window.__cspShow(msg); else window.__cspQ.push(msg);
   });
 })();
@@ -726,7 +728,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.05-115955';
+const APP_VERSION = '2026.10.05-120346';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────

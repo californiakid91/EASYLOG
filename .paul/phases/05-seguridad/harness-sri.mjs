@@ -49,14 +49,28 @@ if (watch) {
   fire({ blockedURI: 'https://evil.example.com/otra' });
   ok('d: un aviso por host (deduplica)', shown.length === 0);
   fire({ blockedURI: 'chrome-extension://abc/x.js' }); fire({ sourceFile: 'safari-web-extension://x/c.js', blockedURI: 'inline', effectiveDirective: 'script-src-elem' });
-  fire({ sourceFile: 'moz-extension://y/z.js', blockedURI: 'https://otro.example.com/' });
+  fire({ sourceFile: 'moz-extension://y/z.js', blockedURI: 'https://otro.example.com/' }); fire({ sourceFile: 'safari-extension://q/r.js', blockedURI: 'https://otro2.example.com/' });
   ok('d: ignora extensiones del navegador', shown.length === 0, JSON.stringify(shown));
-  fire({ blockedURI: 'inline', effectiveDirective: 'script-src-attr' }); fire({ blockedURI: 'eval', effectiveDirective: 'script-src' }); fire({ blockedURI: 'data', effectiveDirective: 'img-src' });
-  ok('d: etiquetas inline/eval/data', JSON.stringify(shown) === JSON.stringify(['Bloqueado por seguridad (script-src-attr): inline', 'Bloqueado por seguridad (script-src): eval', 'Bloqueado por seguridad (img-src): data']), JSON.stringify(shown));
+  const nWarn = warns.length;
+  fire({ blockedURI: 'inline', effectiveDirective: 'script-src-attr' }); fire({ blockedURI: 'eval', effectiveDirective: 'script-src' }); fire({ blockedURI: 'data', effectiveDirective: 'img-src' }); fire({ blockedURI: 'blob', effectiveDirective: 'worker-src' });
+  ok('d: inline/eval/data/blob solo a consola (no en pantalla)', shown.length === 0 && warns.length === nWarn + 4 && warns.slice(-4).every(w => /\): (inline|eval|data|blob)/.test(w)), JSON.stringify(shown));
+  fire({ blockedURI: 'wss://ws.example.net/s', effectiveDirective: 'connect-src' });
+  ok('d: wss también se avisa en pantalla', shown[0] === 'Bloqueado por seguridad (connect-src): ws.example.net', JSON.stringify(shown));
   ok('d: detalle completo solo en consola', warns.some(w => w.includes('steal?token')) && !shown.concat(win.__cspQ).some(m => m.includes('token')));
 }
-// (e) el script principal vacía la cola en showStatus
+// (e) el script principal conecta __cspShow con showStatus y vacía la cola (ejecutado de verdad, no solo regex)
 const main = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)?.[1] || '';
-ok('e: el script principal conecta __cspShow con showStatus y vacía la cola', /window\.__cspShow\s*=/.test(main) && /__cspQ/.test(main) && /showStatus\('err'/.test(main.slice(main.search(/window\.__cspShow\s*=/))));
+const hook = (main.match(/\/\/ 05-02: avisos de la CSP[^\n]*\n([\s\S]*?forEach\(window\.__cspShow\);)/) || [])[1];
+ok('e: bloque de enganche presente en el script principal', !!hook);
+if (watch && hook) {
+  const st = []; let handler = null; const win = {};
+  const ctx = vm.createContext({ window: win, document: { addEventListener: (t, f) => { handler = f; } }, console: { warn() {} }, URL, Set, showStatus: (type, m) => st.push(type + ':' + m) });
+  vm.runInContext(watch, ctx);
+  handler({ effectiveDirective: 'img-src', sourceFile: '', blockedURI: 'https://pronto.example.com/a.png' });  // llega ANTES del enganche
+  vm.runInContext(hook, ctx);
+  ok('e: el aviso encolado antes del arranque se muestra al enganchar', JSON.stringify(st) === JSON.stringify(['err:Bloqueado por seguridad (img-src): pronto.example.com']) && win.__cspQ.length === 0, JSON.stringify(st));
+  handler({ effectiveDirective: 'connect-src', sourceFile: '', blockedURI: 'https://tarde.example.com/x' });
+  ok('e: después del enganche va directo a showStatus', st[1] === 'err:Bloqueado por seguridad (connect-src): tarde.example.com', JSON.stringify(st));
+}
 
 console.log(fails ? `\n${fails} FAIL` : '\nTODO PASS'); process.exit(fails ? 1 : 0);

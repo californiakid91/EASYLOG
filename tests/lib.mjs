@@ -1,5 +1,5 @@
 // Rutas y bases comunes de los tests (fase 6). Única fuente para tests/harness/* (y tests/e2e/* en 06-02).
-import fs from 'node:fs'; import path from 'node:path'; import { fileURLToPath } from 'node:url';
+import fs from 'node:fs'; import path from 'node:path'; import { fileURLToPath } from 'node:url'; import { execFileSync } from 'node:child_process';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const INDEX_PATH = path.join(ROOT, 'index.html');
@@ -18,3 +18,9 @@ export function readFixture(prefix) {
 // Commits base de los golden «versión anterior». La purga de historial del 2026-10-05 cambió los SHA:
 // cbbbb44 → fa78eeb (index.html anterior a 04-02, sin pistas) y 33ae9b9 → 6cb4a5a (anterior a 05-01).
 export const BASELINES = { preFase4: 'fa78eeb', preFase5: '6cb4a5a' };
+
+// index.html de un commit base, con un error claro si falta (clon superficial u otra purga de historial)
+export function indexAt(sha) {
+  try { return execFileSync('git', ['-C', ROOT, 'show', `${sha}:index.html`], { stdio: ['ignore', 'pipe', 'pipe'] }).toString(); }
+  catch { throw new Error(`Falta el commit base ${sha} (¿clon superficial o historial reescrito?). Trae el historial completo o actualiza BASELINES en tests/lib.mjs.`); }
+}

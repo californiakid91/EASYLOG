@@ -108,13 +108,15 @@ for (const [k, c] of Object.entries({ '01': c01, '90': c90, '91': c91 })) {
 }
 // ═══ Golden (06-01): cabeceras del importer + CSV celda a celda ═══
 console.log('\nGolden');
-const IMPORTER = new Set(fs.readFileSync(path.join(GOLDEN_DIR, 'pilotlog-importer-headers.txt'), 'utf8').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#')));
-const notInImporter = c01.header.filter(h => !IMPORTER.has(h.toUpperCase()));
+const IMPORTER = new Set(fs.readFileSync(path.join(GOLDEN_DIR, 'pilotlog-importer-headers.txt'), 'utf8').split('\n').map(l => l.trim().toUpperCase()).filter(l => l && !l.startsWith('#')));
+const notInImporter = [...new Set([...c01.header, ...c90.header, ...c91.header])].filter(h => !IMPORTER.has(h.toUpperCase()));
 ok(IMPORTER.size >= 100 && notInImporter.length === 0, `cabeceras del CSV ⊂ lista del importer (${IMPORTER.size})`, 'no aceptadas por el importer: ' + notInImporter.join(', '));
 const rawCSV = k => { const { flights } = NEW.run('parseText(__t)', { __t: fixtures[k] }); return NEW.run('buildCSV(__l)', { __l: flights.map(flight => ({ flight, role: 'FO' })) }); };
 const goldenPath = k => path.join(GOLDEN_DIR, `csv-${k}.csv`);
 if (process.argv.includes('--update-golden')) {
   for (const k of ['01', '90', '91']) { fs.writeFileSync(goldenPath(k), rawCSV(k)); console.log('  · golden regenerado: ' + path.relative(process.cwd(), goldenPath(k))); }
+  console.log('\n⚠ Golden regenerados: NO se ha comprobado nada. Revisa `git diff tests/golden/` y vuelve a ejecutar sin --update-golden.');
+  process.exit(0);
 }
 for (const [k, n] of Object.entries({ '01': c01, '90': c90, '91': c91 })) {
   if (!fs.existsSync(goldenPath(k))) { ok(false, `golden fixture ${k}: existe tests/golden/csv-${k}.csv`, 'falta; generar con --update-golden'); continue; }

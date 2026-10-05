@@ -2,7 +2,7 @@
 // (sobre el <script> real de index.html, modo local, DOM falso). Emails sintéticos: los fixtures reales son privados.
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { ROOT, BASELINES } from '../lib.mjs';
+import { ROOT, BASELINES, indexAt } from '../lib.mjs';
 // Último commit que tocó index.html antes de la Fase 5: referencia fija para "el CSV no cambia" (HEAD sería auto-comparación)
 const BASE_SHA = BASELINES.preFase5;  // index.html previo a 05-01 (ver tests/lib.mjs)
 const scriptOf = html => html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
@@ -125,7 +125,7 @@ check('(e) día guardado', keys.length > 0);
 check('(e) sin claves __…__ ni de >500 chars', !keys.some(k => /__.*__/.test(k) || k.length > 500), JSON.stringify(keys.filter(k => k.length > 40 || /__/.test(k)).map(k => k.slice(0, 20))));
 
 // ── (f) CSV de un email normal byte-idéntico al de BASE_SHA
-const base = load(scriptOf(execFileSync('git', ['-C', ROOT, 'show', `${BASE_SHA}:index.html`]).toString()));
+const base = load(scriptOf(indexAt(BASE_SHA)));
 const normal = email('2026/10/09', [{ cp: 'STN - DUB', off: '06:00', on: '07:15' }, { cp: 'DUB - STN', off: '08:00', on: '09:10', fn: 'FR201' }]);
 const csvOf = env => env.run(`buildCSV(parseText(${JSON.stringify(normal)}).flights.map(flight => ({ flight, role: 'FO' })))`);
 check('(f) CSV de email normal idéntico a ' + BASE_SHA, csvOf(app) === csvOf(base));

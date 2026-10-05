@@ -11,10 +11,10 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 6 of 8 (Barrera de tests) — Not started
-Plan: Not started (Fase 5 completa: 05-01 + 05-02)
-Status: Ready to plan
-Last activity: 2026-10-05 — Fase 5 completa (05-02 UNIFY; prod v2026.10.05-120346), transición a Fase 6
+Phase: 6 of 8 (Barrera de tests) — Planning
+Plan: 06-01 created, awaiting approval (fixtures anonimizadas + golden + tests/ + run-all; revisado por Fable)
+Status: PLAN created, ready for APPLY
+Last activity: 2026-10-05 — Created .paul/phases/06-barrera-tests/06-01-PLAN.md
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
@@ -25,7 +25,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete - Fase 5 cerrada, ready to plan Fase 6]
+  ✓        ○        ○     [Plan 06-01 created, awaiting approval]
 ```
 
 ## Accumulated Context
@@ -104,9 +104,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: Fase 5 completa, ready to plan Fase 6
-Next action: /paul:plan 6 (Barrera de tests: runner único + fixtures anonimizadas + gate)
-Resume file: .paul/ROADMAP.md
+Stopped at: Plan 06-01 created (Fable: APPROVE WITH CHANGES, 13 puntos incorporados)
+Next action: Aprobar el plan y ejecutar /paul:apply .paul/phases/06-barrera-tests/06-01-PLAN.md
+Resume file: .paul/phases/06-barrera-tests/06-01-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

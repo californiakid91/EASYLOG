@@ -83,7 +83,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 ### Post-Aegis (2026-10-05)
 - Reglas Firestore en producción = per-uid (request.auth.uid == uid) ✓ — falta versionarlas en el repo
 - Doc Firestore medido: 127 KiB (12%) y ~1.9k entradas de índice (5%); excelData ≈2 KiB/día → ~2,5 años de margen → ya no es HIGH
-- Rama main protegida (sin force-push ni borrado); 2FA GitHub pendiente de confirmar por el usuario
+- Rama main protegida (sin force-push ni borrado); 2FA GitHub ACTIVADO (TOTP, confirmado por el usuario 2026-10-05)
 - Límite UK Days: criterio fiscal del usuario documentado SOLO en la memoria local de Claude (reference_srt_aircrew) — nunca en el repo (público)
 - [ ] Límite de la app (MAX) pendiente de confirmación fiscal del usuario → Fase 7 lo hace configurable
 

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Barrera antes de cada push (push a main = deploy a GitHub Pages) — fase 6, 06-02.
+# 1) harness + e2e herméticos: bloquean siempre.
+# 2) e2e-csp (necesita Internet y terceros reales: Google, gstatic, Unsplash): 1 reintento; si vuelve a fallar bloquea,
+#    salvo escape EXPLÍCITO para un arreglo urgente con un tercero caído:  EASYLOG_PUSH_SKIP_NET=1 git push
+# Nunca git push --no-verify (misma norma que «nunca git commit -n»).
+# OJO: tarda ~1 min; desde la herramienta Bash de Claude, timeout ≥ 5 min.
+set -uo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+if [ ! -d node_modules/playwright-core ]; then
+  echo "pre-push: falta playwright-core. Ejecuta «npm ci» en la raíz del repo; push abortado." >&2
+  exit 1
+fi
+
+echo "pre-push: ejecutando la barrera de tests (~1 min)…" >&2
+if ! node tests/run-all.mjs --skip-net tests/harness tests/e2e >&2; then
+  echo "pre-push: la barrera de tests falla; push abortado (ver arriba)." >&2
+  exit 1
+fi
+
+if node tests/run-all.mjs --only e2e-csp tests/e2e >&2; then exit 0; fi
+echo "pre-push: e2e-csp ha fallado; reintento (puede ser un tercero intermitente)…" >&2
+if node tests/run-all.mjs --only e2e-csp tests/e2e >&2; then exit 0; fi
+
+if [ "${EASYLOG_PUSH_SKIP_NET:-}" = "1" ]; then
+  echo "pre-push: AVISO — push sin e2e-csp (EASYLOG_PUSH_SKIP_NET=1). Ejecútalo antes del siguiente push: node tests/run-all.mjs --only e2e-csp tests/e2e" >&2
+  exit 0
+fi
+echo "pre-push: e2e-csp falla dos veces; push abortado. Si es un tercero caído y el arreglo es urgente: EASYLOG_PUSH_SKIP_NET=1 git push" >&2
+exit 1

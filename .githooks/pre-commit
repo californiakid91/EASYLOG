@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
 # Sube APP_VERSION de index.html en cada commit que lo incluye (auto-actualización de la PWA, fase 3.1).
-# Activar en cada clon:  git config core.hooksPath .githooks
+# Antes, en TODOS los commits: barrera de tests (harness, ~2 s); si falla, no hay commit (fase 6, 06-02).
+# Activar en cada clon:  git config core.hooksPath .githooks   — nunca saltarlo con git commit -n / --no-verify
 set -euo pipefail
+
+if ! node tests/run-all.mjs >&2; then
+  echo "pre-commit: la barrera de tests falla; commit abortado (ver arriba)." >&2
+  exit 1
+fi
+# Los tests leen el árbol de trabajo, no el stage: avisar si tests/ no es lo que se va a commitear
+PEND=$(git status --porcelain -- tests/ | grep -v '^[MADRC] ' || true)
+if [ -n "$PEND" ]; then
+  echo "pre-commit: AVISO — los tests se han ejecutado con cambios en tests/ que no van en este commit:" >&2
+  echo "$PEND" >&2
+fi
 
 FILE=index.html
 git diff --cached --quiet -- "$FILE" && exit 0

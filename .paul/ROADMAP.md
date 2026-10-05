@@ -20,7 +20,7 @@ Phases: 3 of 4 complete (+3.1 insertada ✅)
 | 2 | CSV: esquema validado + TIME_NIGHT + delays | 1/1 | ✅ Complete | 2026-10-03 |
 | 3 | UK Days: fixes (03-01) + reglas reales (03-02, dialéctica) | 2/2 | ✅ Complete | 2026-10-04 |
 | 3.1 | [INSERTED] Auto-actualización PWA (Safari sirve versiones viejas) | 1/1 | ✅ Complete | 2026-10-05 |
-| 3.2 | [INSERTED] Datos coherentes: Excel U/UW = UK Days + SD; duplicados al pegar | 0/2 | Planning | - |
+| 3.2 | [INSERTED] Datos coherentes: Excel U/UW = UK Days + SD; duplicados al pegar | 1/2 | In progress | - |
 | 4 | Pista en uso (dialéctica de fuente + implementación) | TBD | Not started | - |
 
 ## Phase Details
@@ -58,7 +58,7 @@ Phases: 3 of 4 complete (+3.1 insertada ✅)
 **Goal:** El Excel Tax Year no contradice a UK Days y pegar un día repetido no pisa ni duplica nada.
 **Reason:** 06/05/2026 SBY→U=1 aunque «No UK»; U no exige aeropuerto UK; día solo-Excel se sobrescribe sin aviso.
 **Plans:**
-- [ ] 03.2-01: U/UW desde UK Days + estado SD + decidir pendientes (UK/No UK) + descarga bloqueada con pendientes pasados
+- [x] 03.2-01: U/UW desde UK Days + estado SD + decidir pendientes (UK/No UK) + descarga bloqueada con pendientes pasados
 - [ ] 03.2-02: duplicados al pegar (idéntico en lista → aviso; idéntico solo-Excel → vuelve a la lista; distinto → discrepancias)
 
 ### Phase 4: Pista en uso

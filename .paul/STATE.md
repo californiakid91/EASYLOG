@@ -10,21 +10,21 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 ## Current Position
 
 Milestone: v0.1 Datos fiables
-Phase: 3.2 [INSERTED] (Datos coherentes) — Planning
-Plan: 03.2-01 created, awaiting approval
-Status: PLAN created, ready for APPLY
-Last activity: 2026-10-05 — preguntas 1,2,4 resueltas; fechas dd/mm/aa desplegadas (1b1d40f, v2026.10.04-231250)
+Phase: 3.2 [INSERTED] (Datos coherentes) — In progress (1/2)
+Plan: 03.2-01 ✅ complete · siguiente 03.2-02 (duplicados al pegar)
+Status: Ready for next PLAN
+Last activity: 2026-10-05 01:05 — UNIFY 03.2-01 (Excel U/UW = UK Days, SD, bloqueo); prod v2026.10.04-233847; UK Days 54/91
 
 Progress:
 - Milestone: [████████░░] 75%
-- Phase 3.2: [░░░░░░░░░░] 0%
+- Phase 3.2: [█████░░░░░] 50%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 03.2-01 created, awaiting approval]
+  ✓        ✓        ✓     [Loop complete - ready for next PLAN (03.2-02)]
 ```
 
 ## Accumulated Context
@@ -43,6 +43,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - UK Days 03-02 (dialéctica + Fable): regla cerrada R1/R2/R3 exigiendo aterrizar en UK (sustituye "sin exigir aeropuerto UK"); estados uk/no con source/reason; calendario _dayMap como declaración de días sin email; P = pendientes pasados, alarma solo con N
 - DH (posicionamiento) NUNCA llega en email verified flights; solo en ROCS → UK Day/Excel de días con DH = manual o desde plan ROCS, nunca desde el email
 - 03.2 (usuario 2026-10-05): SD = toggle ≈SIM; re-pegar idéntico solo-Excel → vuelve a la lista sin preguntar (PilotLog no duplica por fecha+vuelo; sí si cambia la fecha); U pendiente → '?' y Excel NO descargable con pendientes pasados (futuros no bloquean)
+- 03.2-01: U del Excel = UK Days ('no' = vacío, pendiente con datos = '?'); UW = primer sector sale de UK_RES; vuelos > calendario en Excel; Excel bloqueado con pendientes pasados; pendientes no-hueco se deciden con botones UK/No UK (manual)
 - Días solo-Excel se borran sin tocar UK Days; "Cargando…" solo en UK Days (calendario desde caché local)
 
 ### Deferred Issues
@@ -51,14 +52,14 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | PilotLog: fichero de cambios 2025 APLICADO por el usuario (2026-10-04); falta re-exportar CSV de PilotLog para re-verificar. Resto de años (2023, 2024, 2026) cuando el usuario reciba el roster plan completo desde que empezó a volar (ya pedido) | 2026-10-04 | S | — |
 | Histórico ya importado en PilotLog: sin NIGHT y posibles fechas post-medianoche → informe sobre export de PilotLog (no reimportar meses) | Phase 2 | S | antes de Fase 3 |
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
-| Literal 'Tax Year 2025-2026' en downloadTaxExcel | 03-01 | XS | 03.2-01 |
 | IDEA usuario: al pegar, detectar vuelo duplicado (ya en historial/Excel): si es idéntico → avisar "duplicado" y no guardar; si difiere → mostrar discrepancias campo a campo. Hoy addDay solo mira el historial (no _excelData) | 03-02 checkpoint | S-M | 03.2-02 |
 | Barra «Hay una versión nueva» (fija abajo) tapa el final del botón de exportar mientras está visible → padding-bottom al body cuando se muestra | 03.1 checkpoint | XS | — |
-| Calendario sin estado SD/ground duty (meeting): 06/05/2026 marcado SBY → Excel pone SBY U=1 aunque durmió en VLC | 03-02 checkpoint | S | 03.2-01 |
 | semgrep: <script> CDN sin atributo integrity (SRI) en index.html:462 (preexistente) | Phase 2 | S | Aegis pre-deploy |
 | UK Days: reconstrucción de tax years anteriores desde el plan ROCS (2024/25 falta plan abr–dic 2024) | Phase 2 | M | — |
-| Columna U del Excel Tax Year no exige aeropuerto UK y pone SBY U=1 → puede divergir de UK Days | 03-02 | S | 03.2-01 |
 | Revisar uno a uno los 47 días previos de 2026/27 (25 man + 22 R1) | 03-02 checkpoint | S | otra sesión |
+| Aeropuertos desconocidos piden lat/lon a mano (usuario: «un auténtico coñazo») → embeber OurAirports IATA→coords | 03.2-01 checkpoint | S | Fase 4 |
+| SBY + email = conflicto; quizá debería mandar el email (regla usuario: SBY no cuenta solo si activado y acaba fuera/después de 00:00) | 03.2-01 checkpoint | S | — |
+| UW en blanco en días sin vuelos con UK manual (DUTY sin email) → ¿UW=1? | 03.2-01 | XS | — |
 
 ### Preguntas pendientes al usuario — de UNA en UNA
 - Checkpoint 03-02 cerrado (detalle día a día en .paul/phases/03-ukdays/03-02-SUMMARY.md)
@@ -72,15 +73,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
 
 ### Git State
-Last commit: ver git log (fase 3.1 completa) — pusheado y desplegado en GitHub Pages
+Last commit: ver git log (03.2-01 completo) — pusheado y desplegado en GitHub Pages
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: Plan 03.2-01 creado y revisado por Fable
-Next action: aprobar plan → /paul:apply .paul/phases/03.2-datos-coherentes/03.2-01-PLAN.md
-Resume file: .paul/phases/03.2-datos-coherentes/03.2-01-PLAN.md
+Stopped at: Loop 03.2-01 cerrado (UNIFY)
+Next action: /paul:plan 03.2-02 — duplicados al pegar (decisiones ya cerradas, ver 03.2-01-SUMMARY «Siguiente»)
+Resume file: .paul/phases/03.2-datos-coherentes/03.2-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

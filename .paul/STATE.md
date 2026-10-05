@@ -84,7 +84,7 @@ Branch: main
 Last session: 2026-10-05
 Stopped at: Phase 3.2 complete (UNIFY 03.2-02 + transición)
 Next action: /paul:plan Phase 4 — pista en uso (dialéctica de fuente: METAR/IEM + OurAirports vs FR24+proxy vs manual)
-Resume file: .paul/ROADMAP.md
+Resume file: .paul/HANDOFF-2026-10-05-fase3.2-completa.md
 
 ---
 *STATE.md — Updated after every significant action*

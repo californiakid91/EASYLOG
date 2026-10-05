@@ -11,9 +11,9 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 
 Milestone: v0.1 Datos fiables
 Phase: 3.2 [INSERTED] (Datos coherentes) — In progress (1/2)
-Plan: 03.2-01 ✅ complete · siguiente 03.2-02 (duplicados al pegar)
-Status: Ready for next PLAN
-Last activity: 2026-10-05 01:05 — UNIFY 03.2-01 (Excel U/UW = UK Days, SD, bloqueo); prod v2026.10.04-233847; UK Days 54/91
+Plan: 03.2-02 created, awaiting approval (duplicados al pegar; revisado por Fable)
+Status: PLAN created, ready for APPLY
+Last activity: 2026-10-05 — Created .paul/phases/03.2-datos-coherentes/03.2-02-PLAN.md
 
 Progress:
 - Milestone: [████████░░] 75%
@@ -24,7 +24,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete - ready for next PLAN (03.2-02)]
+  ✓        ○        ○     [Plan 03.2-02 created, awaiting approval]
 ```
 
 ## Accumulated Context
@@ -44,6 +44,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - DH (posicionamiento) NUNCA llega en email verified flights; solo en ROCS → UK Day/Excel de días con DH = manual o desde plan ROCS, nunca desde el email
 - 03.2 (usuario 2026-10-05): SD = toggle ≈SIM; re-pegar idéntico solo-Excel → vuelve a la lista sin preguntar (PilotLog no duplica por fecha+vuelo; sí si cambia la fecha); U pendiente → '?' y Excel NO descargable con pendientes pasados (futuros no bloquean)
 - 03.2-01: U del Excel = UK Days ('no' = vacío, pendiente con datos = '?'); UW = primer sector sale de UK_RES; vuelos > calendario en Excel; Excel bloqueado con pendientes pasados; pendientes no-hueco se deciden con botones UK/No UK (manual)
+- Rol (usuario 2026-10-05): hoy SIEMPRE FO → SIC; PICUS lo pone él a mano en PilotLog (firma del capitán, raro); la app nunca genera PICUS; CPT/PIC en el futuro → al re-pegar no se cambia el rol guardado (revisar al ascender)
 - Días solo-Excel se borran sin tocar UK Days; "Cargando…" solo en UK Days (calendario desde caché local)
 
 ### Deferred Issues
@@ -79,9 +80,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: Loop 03.2-01 cerrado (UNIFY)
-Next action: /paul:plan 03.2-02 — duplicados al pegar (decisiones ya cerradas, ver 03.2-01-SUMMARY «Siguiente»)
-Resume file: .paul/HANDOFF-2026-10-05-03.2-01-completo.md
+Stopped at: Plan 03.2-02 created
+Next action: Review and approve plan, then run /paul:apply .paul/phases/03.2-datos-coherentes/03.2-02-PLAN.md
+Resume file: .paul/phases/03.2-datos-coherentes/03.2-02-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

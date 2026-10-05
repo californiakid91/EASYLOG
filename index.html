@@ -665,7 +665,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.04-233847';
+const APP_VERSION = '2026.10.05-001414';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -1304,21 +1304,50 @@ function addDay() {
   const iso = dateRawToISO(dates[0]);
   const hist = loadHistory();
 
-  if (hist[iso]) {
-    const existing = hist[iso].flights.length;
+  // Día ya existente (en la lista o solo en el Excel): comparar vuelos antes de escribir nada.
+  // El rol guardado manda (hoy siempre FO/SIC; un CPT marcado al re-pegar es un clic equivocado).
+  const prev = hist[iso] || _excelData[iso];
+  const prevRole = prev?.role || 'FO';
+  const dayRole = prev ? prevRole : role();
+  const roleNote = prev && role() !== prevRole ? ` Rol ${role()} ignorado: se mantiene ${prevRole}.` : '';
+  if (prev) {
+    const day = dateISOToDisplay(iso);
+    const crewLines = crewDiff(prev.flights, flights);
+    if (flightsKey(prev.flights) === flightsKey(flights) && !crewLines.length) {
+      let msg, type = 'ok';
+      if (hist[iso]) {
+        // Idéntico y en la lista: no se toca nada (salvo reparar el Excel si le falta el día)
+        const fixExcel = !_excelData[iso] || flightsKey(_excelData[iso].flights) !== flightsKey(hist[iso].flights);
+        if (fixExcel) { _excelData[iso] = { role: prevRole, flights: hist[iso].flights }; saveHistory(hist); }
+        msg = `El ${day} ya está en la lista (sin cambios).${fixExcel ? ' Añadido al Excel.' : ''}`;
+        if (!fixExcel) type = 'warn';
+      } else {
+        // Idéntico y solo en el Excel (se quitó de la lista tras exportar): vuelve a la lista
+        hist[iso] = { addedAt: new Date().toISOString(), role: prevRole, flights: prev.flights };
+        saveHistory(hist);
+        msg = `El ${day} vuelve a la lista (ya estaba en el Excel).`;
+      }
+      document.getElementById('input').value = '';
+      renderHistory();
+      const coords = askUnknownAirports(prev.flights);
+      showStatus(type, `${msg}${roleNote}${coords}`);
+      return;
+    }
+    const all = [...crewLines, ...flightsDiff(prev.flights, flights)];
+    const lines = all.length > 7 ? [...all.slice(0, 6), `…y ${all.length - 6} más`] : all;
     const ok = confirm(
-      `Ya tienes ${existing} vuelo${existing !== 1 ? 's' : ''} guardados el ${dateISOToDisplay(iso)} (${monthLabel(monthKey(iso))}).\n\n` +
-      `¿Reemplazar con los ${flights.length} vuelo${flights.length !== 1 ? 's' : ''} nuevos?`
+      `El ${day} ya está ${hist[iso] ? 'en la lista' : 'en el Excel (lo quitaste de la lista)'} con otros datos:\n\n` +
+      lines.join('\n') + '\n\n¿Reemplazar?'
     );
     if (!ok) { showStatus('warn', 'Cancelado. No se ha guardado nada.'); return; }
   }
 
   hist[iso] = {
     addedAt: new Date().toISOString(),
-    role: role(),
+    role: dayRole,
     flights,
   };
-  _excelData[iso] = { role: role(), flights };
+  _excelData[iso] = { role: dayRole, flights };
   // UK Day: se (re)calcula al pegar o re-pegar el día (las entradas manuales no se tocan). Una sola escritura con el historial.
   if (iso >= UK_DAYS_START && iso <= UK_DAYS_END) {
     const updated = { ..._ukdays };
@@ -1331,28 +1360,78 @@ function addDay() {
   document.getElementById('input').value = '';
   renderHistory();
   const warnMsg = warnings.length ? ` (${warnings.length} aviso${warnings.length !== 1 ? 's' : ''})` : '';
+  const skipMsg = askUnknownAirports(flights);
+  showStatus('ok', `${flights.length} vuelo${flights.length !== 1 ? 's' : ''} añadidos al ${dateISOToDisplay(iso)}${warnMsg}${skipMsg}.${roleNote}`);
+}
+
+// Pide lat/lon de los aeropuertos sin coordenadas; devuelve el sufijo del mensaje con los que quedan sin coords
+function askUnknownAirports(flights) {
   const unknown = unknownAirportsInFlights(flights);
-  if (unknown.length) {
-    const saved = [];
-    for (const iata of unknown) {
-      const latStr = prompt(`Aeropuerto ${iata} no encontrado en la base de datos.\n\nIntroduce la latitud (ej. 51.885):`);
-      if (latStr === null) break;
-      const lonStr = prompt(`Aeropuerto ${iata} — ahora la longitud (ej. -0.368):`);
-      if (lonStr === null) break;
-      const la = parseFloat(latStr), lo = parseFloat(lonStr);
-      if (!isNaN(la) && !isNaN(lo) && isFinite(la) && isFinite(lo)) {
-        _airports = { ..._airports, [iata]: { lat: la, lon: lo } };
-        saved.push(iata);
-      }
+  if (!unknown.length) return '';
+  const saved = [];
+  for (const iata of unknown) {
+    const latStr = prompt(`Aeropuerto ${iata} no encontrado en la base de datos.\n\nIntroduce la latitud (ej. 51.885):`);
+    if (latStr === null) break;
+    const lonStr = prompt(`Aeropuerto ${iata} — ahora la longitud (ej. -0.368):`);
+    if (lonStr === null) break;
+    const la = parseFloat(latStr), lo = parseFloat(lonStr);
+    if (!isNaN(la) && !isNaN(lo) && isFinite(la) && isFinite(lo)) {
+      _airports = { ..._airports, [iata]: { lat: la, lon: lo } };
+      saved.push(iata);
     }
-    if (saved.length) { saveAirports(_airports); renderHistory(); }
-    const skipMsg = unknown.length > saved.length
-      ? ` (${unknown.filter(x => !saved.includes(x)).join(', ')} sin coords — detección de noche desactivada para esos aeropuertos)`
-      : '';
-    showStatus('ok', `${flights.length} vuelo${flights.length !== 1 ? 's' : ''} añadidos al ${dateISOToDisplay(iso)}${warnMsg}${skipMsg}.`);
-  } else {
-    showStatus('ok', `${flights.length} vuelo${flights.length !== 1 ? 's' : ''} añadidos al ${dateISOToDisplay(iso)}${warnMsg}.`);
   }
+  if (saved.length) { saveAirports(_airports); renderHistory(); }
+  return unknown.length > saved.length
+    ? ` (${unknown.filter(x => !saved.includes(x)).join(', ')} sin coords — detección de noche desactivada para esos aeropuertos)`
+    : '';
+}
+
+// ── Duplicados al pegar: solo cuentan los campos del email que la app usa (captain/allCrew, «Verified by», pies… no)
+const CMP_KEYS = ['FlightNumber', 'Registration', 'City Pair', 'Dep', 'Arr', 'STD', 'STA', 'Off Block', 'On Block', 'Airborne', 'Landed',
+  'Block', 'Total Block', 'Total flight', 'Take Off', 'Landing', 'Actual Pax', 'Adult', 'Child', 'Infant', 'Freight', 'Placard Weight',
+  'Uplift', 'Burn Off', 'Burn Diff', 'Trip+Taxi', 'Reserves', 'Reason For Extra Fuel', 'Reason for 0 Uplift', 'Captain Remarks',
+  ...[1, 2, 3, 4, 5, 6, 7, 8, 9].flatMap(n => [`Delay Code ${n}`, `Delay Time ${n}`])];
+const normVal = v => String(v ?? '').replace(/\s+/g, ' ').trim().toUpperCase();
+function normFlightD(d) {
+  const keys = new Map(Object.keys(d || {}).map(k => [k.replace(/\s+/g, ' ').trim(), k]));
+  const out = {};
+  CMP_KEYS.forEach(k => { const v = keys.has(k) ? normVal(d[keys.get(k)]) : ''; if (v) out[k] = v; });
+  return out;
+}
+// Clave de comparación: sectores ordenados por FlightNumber (estable). Solo para comparar: lo guardado conserva el orden del email.
+function flightsKey(flights) {
+  return JSON.stringify((flights || []).map(f => normFlightD(f.d))
+    .map((n, i) => [n, i]).sort((a, b) => (a[0].FlightNumber || '').localeCompare(b[0].FlightNumber || '') || a[1] - b[1])
+    .map(([n]) => CMP_KEYS.filter(k => k in n).map(k => [k, n[k]])));
+}
+// Capitán y tripulación no cuentan para «vuelos distintos», pero van al CSV (PILOT1, CREWLIST): si cambian, se pregunta
+function crewDiff(oldF, newF) {
+  const cap = fs => { const f = (fs || []).find(x => x.captainCode || x.captain); return f ? (f.captain || f.captainCode) : ''; };
+  const capCode = fs => normVal((fs || []).find(x => x.captainCode)?.captainCode);
+  const crew = fs => [...new Set((fs || []).flatMap(f => (f.allCrew || []).map(c => `${normVal(c.code)}:${normVal(c.role)}`)))].sort().join(',');
+  const out = [];
+  if (capCode(oldF) !== capCode(newF)) out.push(`Capitán: ${cap(oldF) || '—'} → ${cap(newF) || '—'}`);
+  else if (crew(oldF) !== crew(newF)) out.push('Tripulación distinta');
+  return out;
+}
+// Diferencias legibles (máx. 6 líneas): sectores emparejados por FlightNumber (repetidos → por posición)
+function flightsDiff(oldF, newF) {
+  const cut = (v, n = 25) => { v = String(v ?? '').trim() || '—'; return v.length > n ? v.slice(0, n - 1) + '…' : v; };
+  const group = fs => { const m = new Map(); (fs || []).forEach(f => { const k = normVal(f.d?.FlightNumber); m.set(k, [...(m.get(k) || []), f]); }); return m; };
+  const route = f => cut(f.d?.['City Pair'] || '', 15).replace(/\s+/g, '');
+  const go = group(oldF), gn = group(newF), out = [];
+  [...new Set([...go.keys(), ...gn.keys()])].forEach(k => {
+    const a = go.get(k) || [], b = gn.get(k) || [];
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+      const fo = a[i], fn = b[i], num = (fn || fo).d?.FlightNumber || '?';
+      if (!fo) { out.push(`+ ${num} ${route(fn)}`); continue; }
+      if (!fn) { out.push(`− ${num} ${route(fo)}`); continue; }
+      const no = normFlightD(fo.d), nn = normFlightD(fn.d);
+      const raw = (f, key) => { const k = Object.keys(f.d || {}).find(x => x.replace(/\s+/g, ' ').trim() === key); return k ? f.d[k] : ''; };
+      CMP_KEYS.forEach(key => { if ((no[key] || '') !== (nn[key] || '')) out.push(`${num} ${key}: ${cut(raw(fo, key))} → ${cut(raw(fn, key))}`); });
+    }
+  });
+  return out.length > 6 ? [...out.slice(0, 6), `…y ${out.length - 6} más`] : out;
 }
 
 // ✕ en "Días guardados": solo quita el día de la lista (CSV). El Excel Tax Year y los UK Days se conservan;

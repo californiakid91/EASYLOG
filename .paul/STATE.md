@@ -111,7 +111,7 @@ Branch: main
 Last session: 2026-10-05
 Stopped at: Fase 6 completa (06-01 + 06-02 UNIFY, transición con G7/G8)
 Next action: /paul:plan 7 (UK Days: año fiscal dinámico + límite configurable); antes, decidir push de Fase 6
-Resume file: .paul/phases/06-barrera-tests/06-02-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-05-fase6-completa.md
 
 ---
 *STATE.md — Updated after every significant action*

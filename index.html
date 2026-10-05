@@ -706,7 +706,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.05-004818';
+const APP_VERSION = '2026.10.05-083341';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -958,7 +958,7 @@ const HEADER = [
   'REMARKS','CREWLIST','FLIGHTLOG',
   'PAX','FUEL','FUELUSED','DELAY',
   'AC_MAKE','AC_MODEL','AC_VARIANT','AC_REG','AC_ENGTYPE',
-  'DEP_RWY','ARR_RWY', // al final: no desplazan un mapeo por posición guardado en el importer (AUDIT H8)
+  'RWY_DEP','RWY_ARR', // nombres del IMPORTER (el export de PilotLog usa DEP_RWY/ARR_RWY y el importer los rechaza); al final por si acaso (AUDIT H8)
 ].join(SEP);
 
 function csv(v) {

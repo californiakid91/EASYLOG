@@ -1,11 +1,11 @@
 // Pruebas del plan 04-02: pista en uso — motor de sugerencia, viento IEM (fetch simulado), confirmación, persistencia (local + nube) y CSV
-// (sobre el <script> real de index.html en node:vm; la versión anterior sale de `git show HEAD:index.html` para el golden y el «cliente viejo»)
+// (sobre el <script> real de index.html en node:vm; la versión anterior a la fase 4 sale de `git show cbbbb44:index.html` para el golden y el «cliente viejo»)
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url'; import { execFileSync } from 'node:child_process';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../../..');
 const extract = html => html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const NEW_SRC = extract(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'));
-const OLD_SRC = extract(execFileSync('git', ['-C', ROOT, 'show', 'HEAD:index.html']).toString());
+const OLD_SRC = extract(execFileSync('git', ['-C', ROOT, 'show', 'cbbbb44:index.html']).toString());
 let fails = 0;
 const check = (n, ok, d = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? '  — ' + d : ''}`); if (!ok) fails++; };
 const clone = o => JSON.parse(JSON.stringify(o));
@@ -238,7 +238,7 @@ const okResp = text => Promise.resolve({ ok: true, text: () => Promise.resolve(t
   E.run(`_runways = { '2026-10-06|FR100|STN-ALC': { dep: '22', arr: '10', depAp: 'STN', arrAp: 'ALC', at: 1 } }`);
   const nw = E.run('buildCSV(allFlights())').split('\r\n'), od = O.run('buildCSV(allFlights())').split('\r\n');
   const hN = nw[0].replace(/^﻿/, '').split(';'), hO = od[0].replace(/^﻿/, '').split(';');
-  check('HEADER termina en …;AC_ENGTYPE;DEP_RWY;ARR_RWY', hN.slice(-3).join(';') === 'AC_ENGTYPE;DEP_RWY;ARR_RWY', hN.slice(-3).join(';'));
+  check('HEADER termina en …;AC_ENGTYPE;RWY_DEP;RWY_ARR', hN.slice(-3).join(';') === 'AC_ENGTYPE;RWY_DEP;RWY_ARR', hN.slice(-3).join(';'));
   check('columnas anteriores idénticas y en el mismo orden', hN.slice(0, -2).join(';') === hO.join(';'));
   const split = l => { const out = []; let cur = '', q = false;
     for (let i = 0; i < l.length; i++) { const c = l[i];

@@ -50,7 +50,7 @@ ok('tras recargar sigue ✓', (await page.locator('.day-rwy').first().textConten
 const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#btn-dl-all')]);
 const csv = fs.readFileSync(await dl.path(), 'utf8');
 const lines = csv.split('\r\n'); const head = lines[0].replace(/^﻿/, '').split(';');
-ok('CSV: cabecera con DEP_RWY;ARR_RWY al final', head.slice(-2).join(';') === 'DEP_RWY;ARR_RWY');
+ok('CSV: cabecera con RWY_DEP;RWY_ARR al final', head.slice(-2).join(';') === 'RWY_DEP;RWY_ARR');
 const tails = lines.slice(1).map(l => l.split(';').slice(-2).join('/'));
 console.log('pistas en CSV:', tails, 'elegidas:', chosen);
 ok('CSV: las 2 filas llevan pistas', tails.length === 2 && tails.every(t => /^\d{2}[LRC]?\/\d{2}[LRC]?$/.test(t)));

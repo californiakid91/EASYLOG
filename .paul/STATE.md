@@ -11,10 +11,10 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 6 of 8 (Barrera de tests) — In progress (1/2 planes)
-Plan: 06-01 complete (UNIFY); siguiente 06-02 (Playwright propio + e2e en tests/e2e + gate pre-commit/pre-push)
-Status: Ready to plan 06-02
-Last activity: 2026-10-05 — 06-01 UNIFY: tests/ + run-all 12/12 (435 checks, 1,3 s), clon limpio OK
+Phase: 6 of 8 (Barrera de tests) — Planning (06-02)
+Plan: 06-02 created, awaiting approval (revisión Fable incorporada)
+Status: APPLY in progress
+Last activity: 2026-10-05 — Created .paul/phases/06-barrera-tests/06-02-PLAN.md (Fable: aprobado con cambios; e2e-runways ya fallaba)
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
@@ -25,7 +25,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop 06-01 cerrado - ready to plan 06-02]
+  ✓        ◐        ○     [APPLY 06-02 en curso]
 ```
 
 ## Accumulated Context
@@ -106,9 +106,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: 06-01 cerrado (UNIFY); commits locales a71dc24..HEAD sin push (solo tests/ y docs, no toca index.html)
-Next action: /paul:plan 6 → plan 06-02 (package.json con playwright-core 1.63.0 fijado, e2e en tests/e2e con fixture anonimizada y lib.mjs, gate pre-commit run-all + pre-push con e2e)
-Resume file: .paul/phases/06-barrera-tests/06-01-SUMMARY.md
+Stopped at: Plan 06-02 created (Fable incorporado)
+Next action: Review and approve plan, then run /paul:apply .paul/phases/06-barrera-tests/06-02-PLAN.md
+Resume file: .paul/phases/06-barrera-tests/06-02-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

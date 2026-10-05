@@ -11,10 +11,10 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 5 of 8 (Seguridad) — Not started
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-05 — Milestone v0.2 created
+Phase: 5 of 8 (Seguridad) — Planning
+Plan: 05-01 created, awaiting approval
+Status: PLAN created, ready for APPLY
+Last activity: 2026-10-05 — Created .paul/phases/05-seguridad/05-01-PLAN.md (revisión adversaria Fable incorporada)
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
@@ -25,7 +25,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ○        ○        ○     [Ready for first PLAN]
+  ✓        ○        ○     [Plan created, awaiting approval]
 ```
 
 ## Accumulated Context
@@ -96,9 +96,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: Milestone v0.2 created, ready to plan
-Next action: /paul:plan para Fase 5 (Seguridad)
-Resume file: .paul/ROADMAP.md
+Stopped at: Plan 05-01 created
+Next action: Review and approve plan, then run /paul:apply .paul/phases/05-seguridad/05-01-PLAN.md
+Resume file: .paul/phases/05-seguridad/05-01-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

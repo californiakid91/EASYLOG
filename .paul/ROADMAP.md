@@ -14,7 +14,7 @@ Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
-| 5 | Seguridad: XSS aeropuerto, SRI/CSP, reglas Firestore en repo | TBD | Not started | - |
+| 5 | Seguridad: XSS aeropuerto, SRI/CSP, reglas Firestore en repo | 0/2 | Planning | - |
 | 6 | Barrera de tests: runner único + fixtures anonimizadas + gate | TBD | Not started | - |
 | 7 | UK Days: año fiscal dinámico + límite configurable + máximo posible | TBD | Not started | - |
 | 8 | Sin pérdidas silenciosas: avisos de escritura bloqueada + estado tras confirm() | TBD | Not started | - |

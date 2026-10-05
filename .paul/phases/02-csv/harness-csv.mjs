@@ -190,7 +190,8 @@ console.log('\nAviso de descarga');
 const st = [];
 NEW.run('showStatus = (t, m) => __st.push(t + ": " + m)', { __st: st });
 NEW.run('showDownloadStatus(__l, "OK.")', { __l: [synth({ 'City Pair': 'STN - ZZZ' })].map(flight => ({ flight, role: 'FO' })) });
-NEW.run('showDownloadStatus(__l, "OK.")', { __l: [synth({})].map(flight => ({ flight, role: 'FO' })) });
+// (fase 4) con las pistas del sector confirmadas, para aislar el aviso de coordenadas
+NEW.run('_runways = Object.fromEntries(rwyKeys(__l.map(x => x.flight)).map(k => [k, { dep: "22", arr: "10" }])); showDownloadStatus(__l, "OK."); _runways = {}', { __l: [synth({})].map(flight => ({ flight, role: 'FO' })) });
 ok(st[0].startsWith('warn:') && st[0].includes('ZZZ'), 'sin coordenadas → aviso con el IATA', st[0]);
 ok(st[1] === 'ok: OK.', 'con coordenadas → mensaje normal', st[1]);
 

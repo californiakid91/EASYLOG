@@ -455,6 +455,36 @@
   .day-opt.opt-sim  { background: rgba(120,40,180,.35);  color: #d4a8ff;      border-color: #8b3fc8; }
   .day-opt.opt-sd   { background: rgba(20,140,130,.30);  color: #8fe3d8;      border-color: #1f9e92; }
   .day-opt.selected { opacity: 1; filter: brightness(1.2); }
+  /* ── Pistas (fase 4) ── */
+  .day-rwy {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; font-size: .72rem; padding: .3rem .45rem; cursor: pointer; white-space: nowrap;
+  }
+  .day-rwy.done { color: var(--green); border-color: rgba(63,185,80,.4); }
+  .day-count { white-space: nowrap; }
+  @media (max-width: 430px) { .day-item { gap: .5rem; padding: .6rem .6rem; } .day-del { padding: .25rem .3rem; } }
+  .rwy-body { max-height: 62vh; overflow-y: auto; text-align: left; margin-bottom: .9rem; -webkit-overflow-scrolling: touch; }
+  .rwy-sector { padding: .6rem 0; border-bottom: 1px solid var(--border); }
+  .rwy-sector:last-child { border-bottom: none; }
+  .rwy-title { font-family: 'Courier New', monospace; font-weight: 700; font-size: .9rem; margin-bottom: .35rem; }
+  .rwy-field { margin: .35rem 0 .5rem; }
+  .rwy-head { display: flex; gap: .5rem; align-items: baseline; font-size: .78rem; color: var(--muted); }
+  .rwy-tag { font-size: .68rem; padding: .05rem .4rem; border-radius: 4px; background: var(--surface2); }
+  .rwy-tag.t-sugerida { color: var(--amber); }
+  .rwy-tag.t-confirmada { color: var(--green); }
+  .rwy-tag.t-elige { color: var(--red); }
+  .rwy-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .3rem; align-items: center; }
+  .rwy-chip {
+    min-width: 2.9rem; min-height: 2.5rem; padding: 0 .6rem; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-weight: 700; font-size: .9rem;
+  }
+  .rwy-chip.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .rwy-other {
+    width: 4.2rem; min-height: 2.5rem; font-size: 16px; text-align: center; text-transform: uppercase;
+    border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); box-sizing: border-box;
+  }
+  .rwy-other::placeholder { text-transform: none; }
+  .rwy-wind { font-size: .7rem; color: var(--muted); margin-top: .2rem; }
   .day-modal-cancel {
     margin-top: .9rem; background: none; border: none;
     color: var(--muted); cursor: pointer; font-size: .85rem; width: 100%;
@@ -650,6 +680,17 @@
     </div>
   </div>
 
+  <!-- Pistas de un día (fase 4): sugeridas por el viento del METAR; solo lo confirmado va al CSV -->
+  <div id="rwy-modal" class="day-modal hidden" onclick="closeRwyModal()">
+    <div class="day-modal-box" onclick="event.stopPropagation()">
+      <div class="day-modal-handle"></div>
+      <div class="day-modal-date" id="rwy-modal-title">Pistas</div>
+      <div class="rwy-body" id="rwy-modal-body"></div>
+      <button class="btn btn-blue" id="rwy-confirm" style="width:100%; justify-content:center;" onclick="confirmRwyModal()">Confirmar</button>
+      <button class="day-modal-cancel" onclick="closeRwyModal()">Cancelar</button>
+    </div>
+  </div>
+
   <div class="footer">
     🔒 EasyLog no recoge ni vende datos de usuarios.
     <a href="https://github.com/californiakid91/EASYLOG" target="_blank">Código abierto</a>.
@@ -665,7 +706,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.05-003630';
+const APP_VERSION = '2026.10.05-004818';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -917,6 +958,7 @@ const HEADER = [
   'REMARKS','CREWLIST','FLIGHTLOG',
   'PAX','FUEL','FUELUSED','DELAY',
   'AC_MAKE','AC_MODEL','AC_VARIANT','AC_REG','AC_ENGTYPE',
+  'DEP_RWY','ARR_RWY', // al final: no desplazan un mapeo por posición guardado en el importer (AUDIT H8)
 ].join(SEP);
 
 function csv(v) {
@@ -1005,7 +1047,7 @@ function nightMinutes(off, on, a, b) {
   return minToHM(night);
 }
 
-function toRow(f, r, dayOffset = 0) {
+function toRow(f, r, dayOffset = 0, rwy = null) {
   const isCPT   = r === 'CPT';
   const d       = f.d;
   const t       = sectorUTC(f, dayOffset);
@@ -1095,22 +1137,135 @@ function toRow(f, r, dayOffset = 0) {
     flightNo, crewList, flightLog,
     d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '', delayCode,
     'Boeing', 'B737', variant, reg, 'Jet',
+    RWY_RE.test(rwy?.dep || '') ? rwy.dep : '', RWY_RE.test(rwy?.arr || '') ? rwy.arr : '',
   ];
 
   return vals.map(csv).join(SEP);
 }
 
-function buildCSV(flightsWithRole) {
-  // Desplazamiento de día por sector, calculado por duty (vuelos consecutivos con la misma fecha)
-  const offsets = [];
+// Por sector (en el orden de la lista): desplazamiento de día y clave de pista, calculados por duty (vuelos consecutivos con la misma fecha)
+function dutyMeta(flightsWithRole) {
+  const out = [];
   for (let i = 0; i < flightsWithRole.length;) {
     let j = i;
     while (j < flightsWithRole.length && flightsWithRole[j].flight.date === flightsWithRole[i].flight.date) j++;
-    offsets.push(...sectorDayOffsets(flightsWithRole.slice(i, j).map(x => x.flight)));
+    const group = flightsWithRole.slice(i, j).map(x => x.flight);
+    const offs = sectorDayOffsets(group), keys = rwyKeys(group);
+    group.forEach((_, k) => out.push({ offset: offs[k], key: keys[k] }));
     i = j;
   }
-  const rows = flightsWithRole.map(({ flight, role }, i) => toRow(flight, role, offsets[i]));
+  return out;
+}
+
+function buildCSV(flightsWithRole) {
+  const meta = dutyMeta(flightsWithRole);
+  const rows = flightsWithRole.map(({ flight, role }, i) => toRow(flight, role, meta[i].offset, _runways[meta[i].key]));
   return '﻿' + HEADER + '\r\n' + rows.join('\r\n');
+}
+
+// ─── Pista en uso (fase 4): sugerencia por viento METAR + confirmación del piloto ─────
+// Solo lo CONFIRMADO va al CSV; sin confirmar → vacío. Diseño: .paul/phases/04-pista-en-uso/04-DIALECTIC.md
+
+// Clave por sector, en el orden del email: día del duty | vuelo | DEP-ARR (+ #2, #3… si se repite en el día).
+// Sin horas: re-pegar el día con horas corregidas conserva lo confirmado.
+function rwyKeys(flights) {
+  const seen = {};
+  return (flights || []).map(f => {
+    const base = `${dateRawToISO(f.date)}|${normVal(f.d?.FlightNumber).replace(/\s+/g, '')}|${normVal(f.d?.['City Pair']).replace(/\s*-\s*/, '-')}`;
+    seen[base] = (seen[base] || 0) + 1;
+    return seen[base] > 1 ? `${base}#${seen[base]}` : base;
+  });
+}
+function cityPairOf(f) { return (f.d?.['City Pair'] || '').split(/\s*-\s*/).map(x => x.trim().toUpperCase()); }
+
+// Pista preferente = la confirmada más veces en ese aeropuerto (empate → la más reciente); semilla si aún no hay ninguna
+const RWY_SEED = { STN: '22' };
+const RWY_RE = /^\d{2}[LRC]?$/;
+function rwyPref(iata) {
+  const k = String(iata || '').trim().toUpperCase(), n = {}, last = {};
+  Object.values(_runways).forEach(e => [['dep', 'depAp'], ['arr', 'arrAp']].forEach(([f, a]) => {
+    const v = e?.[f];
+    if (e?.[a] === k && v) { n[v] = (n[v] || 0) + 1; last[v] = Math.max(last[v] || 0, e.at || 0); }
+  }));
+  const ids = Object.keys(n);
+  return ids.length ? ids.sort((a, b) => n[b] - n[a] || last[b] - last[a])[0] : (RWY_SEED[k] || null);
+}
+
+// Regla (rumbos verdaderos de OurAirports; el METAR da la dirección verdadera y la velocidad en nudos; rachas ignoradas):
+//  · cara ≥ 5 kt en una cabecera → esa ('high'); paralelas (≤ 15°) → la preferente si es una de ellas, si no 'low'
+//  · calma (< 3 kt / VRB / sin dirección), sin METAR o cara < 5 kt → la preferente si su cola ≤ 5 kt ('high'); si no 'low' (sin preselección)
+function suggestRunway(info, wind, pref) {
+  const rw = info?.rw || [], options = rw.map(r => r.id);
+  const low = { level: 'low', pick: null, options };
+  if (!rw.length) return low;
+  const prefRw = pref ? rw.find(r => r.id === pref) : null;
+  const head = r => wind.sknt * Math.cos((wind.drct - r.hdg) * Math.PI / 180);
+  const calm = !wind || !(wind.sknt >= 3) || !Number.isFinite(wind.drct);
+  if (calm) return prefRw ? { level: 'high', pick: prefRw.id, options } : low;
+  const best = rw.reduce((a, r) => head(r) > head(a) ? r : a);
+  if (head(best) >= 5) {
+    const diff = r => Math.abs(((r.hdg - best.hdg) % 360 + 540) % 360 - 180);
+    const group = rw.filter(r => diff(r) <= 15);
+    if (group.length === 1) return { level: 'high', pick: best.id, options };
+    return prefRw && group.includes(prefRw) ? { level: 'high', pick: prefRw.id, options } : low;
+  }
+  return prefRw && head(prefRw) >= -5 ? { level: 'high', pick: prefRw.id, options } : low;
+}
+
+// Viento observado (IEM, METAR global, CORS *): una llamada por aeropuerto y duty (ventana duty−1 … duty+1)
+const IEM_URL = 'https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py';
+const _windCache = new Map(); // `${icao}|${dutyIso}` → Promise<[{ t, drct, sknt }] | null>
+function parseIEM(text) {
+  const lines = String(text || '').trim().split(/\r?\n/);
+  const h = (lines[0] || '').split(',');
+  const iv = h.indexOf('valid'), id = h.indexOf('drct'), is = h.indexOf('sknt');
+  if (iv < 0 || id < 0 || is < 0) return null; // HTML, «ERROR…» u otra cosa → sin METAR
+  const num = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
+  return lines.slice(1).map(l => l.split(',')).map(c => ({ t: new Date((c[iv] || '').replace(' ', 'T') + ':00Z'), drct: num(c[id]), sknt: num(c[is]) }))
+    .filter(o => !isNaN(o.t) && o.sknt !== null);
+}
+function fetchWinds(icao, dutyIso) {
+  const key = `${icao}|${dutyIso}`;
+  if (!_windCache.has(key)) {
+    const [a, b] = [addDaysISO(dutyIso, -1), addDaysISO(dutyIso, 2)].map(x => x.split('-').map(Number));
+    const q = `station=${encodeURIComponent(icao)}&data=drct&data=sknt&year1=${a[0]}&month1=${a[1]}&day1=${a[2]}` +
+      `&year2=${b[0]}&month2=${b[1]}&day2=${b[2]}&tz=Etc/UTC&format=onlycomma&missing=empty&latlon=no`;
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const tm = setTimeout(() => ctl?.abort(), 10000);
+    const p = fetch(`${IEM_URL}?${q}`, { referrerPolicy: 'no-referrer', ...(ctl ? { signal: ctl.signal } : {}) })
+      .then(r => r.ok ? r.text() : '').then(parseIEM).catch(() => null)
+      .finally(() => clearTimeout(tm));
+    p.then(v => { if (!v) _windCache.delete(key); }); // un fallo no se queda en caché: se reintenta al abrir otra vez
+    _windCache.set(key, p);
+  }
+  return _windCache.get(key);
+}
+// METAR con hora ≤ instante y ≤ 75 min antes; si no hay, el más cercano dentro de ±75 min
+function windAt(obs, when) {
+  if (!obs || !when) return null;
+  const W = 75 * 60000;
+  let best = null;
+  obs.forEach(o => { const d = when - o.t; if (d >= 0 && d <= W && (!best || o.t > best.t)) best = o; });
+  if (!best) obs.forEach(o => { const d = Math.abs(when - o.t); if (d <= W && (!best || d < Math.abs(when - best.t))) best = o; });
+  return best;
+}
+
+// Punto de enchufe: hoy METAR + preferente; una fuente exacta futura (FR24 / ADS-B) iría delante de esto
+async function getRunwaySuggestion(f, dayOffset, kind, dutyIso) {
+  const [dep, arr] = cityPairOf(f);
+  const iata = kind === 'dep' ? dep : arr;
+  const info = airportInfo(iata);
+  const t = sectorUTC(f, dayOffset);
+  const when = kind === 'dep' ? (t.airborne || t.off) : (t.landed || t.on);
+  const obs = info?.icao ? await fetchWinds(info.icao, dutyIso) : null;
+  const wind = windAt(obs, when);
+  return { iata, metar: !!obs, wind, ...suggestRunway(info, wind, rwyPref(iata)) };
+}
+
+// Sectores del CSV sin pista confirmada (salida o llegada)
+function runwaysMissing(list) {
+  const meta = dutyMeta(list);
+  return meta.filter(m => !(_runways[m.key]?.dep && _runways[m.key]?.arr)).length;
 }
 
 // ─── Storage (mode-aware: local | cloud) ─────────────────────────────────────
@@ -1118,6 +1273,7 @@ const STORAGE_KEY   = 'easylog_history_v1';
 const AIRPORTS_KEY  = 'easylog_airports_v1';
 const UK_DAYS_KEY   = 'easylog_ukdays_v1';
 const EXCEL_KEY     = 'easylog_excel_v1';
+const RUNWAYS_KEY   = 'easylog_runways_v1';
 const MODE_KEY      = 'easylog_mode';
 
 // In-memory state. Always the source of truth for render functions.
@@ -1125,11 +1281,13 @@ let _cache      = {};  // history for CSV: { iso: { addedAt, role, flights } } �
 let _excelData  = {};  // historial permanente para Excel: { iso: { role, flights } } — nunca se borra con clearHistory
 let _airports   = {};  // custom airports: { IATA: { lat, lon } }
 let _ukdays     = {};  // UK Days: { iso: { route, onBlock, tz } } — persiste aunque se borre el historial
+let _runways    = {};  // pistas CONFIRMADAS: { rwyKey: { dep?, arr?, depAp, arrAp, at } } — persiste aunque se borre el historial
 // Cloud state (populated only when mode === 'cloud')
 let cloud = { app: null, auth: null, db: null, user: null, unsub: null, hydrated: false, pendingWrite: false, loadError: false };
 let _dayMap       = {};    // calendario { 'YYYY-MM-DD': 'off'|'stby'|'duty'|'sim'|'sd' } (sd = ground duty / reunión) (lo leen el Excel y UK Days)
 let _dayMapSaving  = false; // evita que onSnapshot sobreescriba _dayMap mientras guardamos
 let _ukdaysSaving  = false; // evita que onSnapshot sobreescriba _ukdays mientras guardamos
+let _runwaysSaving = false; // ídem para _runways
 let _cloudWrites   = 0;     // escrituras a Firestore en vuelo (la auto-actualización no recarga mientras > 0)
 
 function getMode() { return localStorage.getItem(MODE_KEY); } // 'local' | 'cloud' | null
@@ -1149,6 +1307,7 @@ function saveAirports(a) { _airports = a; persist(); }
 // Cambia _ukdays sin escribir (para agrupar con otra escritura); el flag evita que onSnapshot lo pise mientras se guarda
 function setUKDays(u)    { _ukdays = u; _ukdaysSaving = true; setTimeout(() => { _ukdaysSaving = false; }, 3000); }
 function saveUKDays(u)   { setUKDays(u); persist(); }
+function saveRunways(w)  { _runways = w; _runwaysSaving = true; setTimeout(() => { _runwaysSaving = false; }, 3000); persist(); }
 
 function persist() {
   const mode = getMode();
@@ -1160,6 +1319,7 @@ function persist() {
       localStorage.setItem(AIRPORTS_KEY, JSON.stringify(_airports));
       localStorage.setItem(UK_DAYS_KEY, JSON.stringify(_ukdays));
       localStorage.setItem(EXCEL_KEY, JSON.stringify(_excelData));
+      localStorage.setItem(RUNWAYS_KEY, JSON.stringify(_runways));
     } catch (e) { console.warn('Local save failed:', e); }
   }
 }
@@ -1174,9 +1334,11 @@ function hydrateLocal() {
     _airports = a ? JSON.parse(a) : {};
     const u = localStorage.getItem(UK_DAYS_KEY);
     _ukdays = u ? JSON.parse(u) : {};
+    const w = localStorage.getItem(RUNWAYS_KEY);
+    _runways = w ? JSON.parse(w) : {};
   } catch (e) {
     console.warn('Local hydrate failed:', e);
-    _cache = {}; _airports = {}; _ukdays = {};
+    _cache = {}; _excelData = {}; _airports = {}; _ukdays = {}; _runways = {};
   }
 }
 
@@ -1191,8 +1353,8 @@ async function persistCloud() {
     // mergeFields reemplaza cada campo entero (así los borrados llegan a la nube; merge:true conservaba las claves borradas).
     // dayMap no está en la lista → queda intacto; se guarda por separado en saveDayMap()
     await setDoc(doc(cloud.db, 'users', cloud.user.uid), {
-      history: _cache, excelData: _excelData, airports: _airports, ukdays: _ukdays, updatedAt: Date.now()
-    }, { mergeFields: ['history', 'excelData', 'airports', 'ukdays', 'updatedAt'] });
+      history: _cache, excelData: _excelData, airports: _airports, ukdays: _ukdays, runways: _runways, updatedAt: Date.now()
+    }, { mergeFields: ['history', 'excelData', 'airports', 'ukdays', 'runways', 'updatedAt'] });
     setSync('ok', 'Sincronizado ✓');
   } catch (e) {
     console.error('Cloud save failed:', e);
@@ -1515,7 +1677,10 @@ function airportsWithoutCoords(list) {
 
 function showDownloadStatus(list, okMsg) {
   const missing = airportsWithoutCoords(list);
-  if (missing.length) showStatus('warn', `${okMsg} Sin coordenadas (no se calcula la noche): ${missing.join(', ')}. Vuelve a pegar el email de ese día para introducir sus coordenadas y descarga de nuevo.`);
+  const noRwy = runwaysMissing(list);
+  const rwyMsg = noRwy ? ` ${noRwy} sector${noRwy !== 1 ? 'es' : ''} sin pista confirmada (van vacías) — confírmalas en 🛬 antes de quitar el día de la lista.` : '';
+  if (missing.length) showStatus('warn', `${okMsg} Sin coordenadas (no se calcula la noche): ${missing.join(', ')}. Vuelve a pegar el email de ese día para introducir sus coordenadas y descarga de nuevo.${rwyMsg}`);
+  else if (noRwy) showStatus('warn', okMsg + rwyMsg);
   else showStatus('ok', okMsg);
 }
 
@@ -2153,6 +2318,7 @@ function renderHistory() {
           <span class="day-date">${dateISOToDisplay(iso)}</span>
           <span class="day-route">${esc(route || '—')}</span>
           <span class="day-count">${count} vuelo${count !== 1 ? 's' : ''}</span>
+          ${rwyButtonHTML(iso, day.flights)}
           <button class="day-del" title="Borrar día" onclick="removeDay('${iso}')">✕</button>
         </div>`;
     }).join('');
@@ -2171,6 +2337,125 @@ function renderHistory() {
       </div>`;
   }).join('') + excelOnlyHTML(hist);
   renderUKDays();
+}
+
+// ── Pistas: botón por día + ventana de confirmación
+function rwyButtonHTML(iso, flights) {
+  const keys = rwyKeys(flights), t = keys.length * 2;
+  const c = keys.reduce((n, k) => n + (_runways[k]?.dep ? 1 : 0) + (_runways[k]?.arr ? 1 : 0), 0);
+  return `<button class="day-rwy${c === t ? ' done' : ''}" title="Pistas" onclick="openRwyModal('${iso}')">🛬 ${c === t ? '✓' : `${c}/${t}`}</button>`;
+}
+
+let _rwySel = null; // { iso, token, rows: [{ key, fn, dep, arr, confirmed: {dep, arr}, val: {dep, arr}, sug: {dep, arr} }] }
+function openRwyModal(iso) {
+  const flights = loadHistory()[iso]?.flights;
+  if (!flights?.length) return;
+  const keys = rwyKeys(flights), offs = sectorDayOffsets(flights), token = Date.now() + Math.random();
+  _rwySel = { iso, token, rows: flights.map((f, i) => {
+    const [dep, arr] = cityPairOf(f), c = _runways[keys[i]] || {};
+    return { key: keys[i], fn: (f.d?.FlightNumber || '').replace(/\s+/g, ''), dep, arr,
+      confirmed: { dep: c.dep || null, arr: c.arr || null }, val: { dep: c.dep || null, arr: c.arr || null }, sug: { dep: null, arr: null },
+      touched: { dep: false, arr: false }, at: c.at || 0 };
+  }) };
+  document.getElementById('rwy-modal-title').textContent = `Pistas · ${dateISOToDisplay(iso)}`;
+  renderRwyModal();
+  document.getElementById('rwy-modal').classList.remove('hidden');
+  const sel = _rwySel;
+  Promise.all(flights.flatMap((f, i) => ['dep', 'arr'].map(kind =>
+    getRunwaySuggestion(f, offs[i], kind, iso).catch(() => ({ level: 'low', pick: null, options: [], metar: false }))
+      .then(sg => {
+        const r = sel.rows[i];
+        r.sug[kind] = sg;
+        if (!r.val[kind] && !r.touched[kind] && sg.level === 'high') r.val[kind] = sg.pick;
+      }))))
+    .then(() => { if (_rwySel?.token === token) renderRwyModal(); });
+}
+function rwyTag(r, kind) {
+  const v = r.val[kind], sg = r.sug[kind];
+  if (v && v === r.confirmed[kind]) return ['confirmada', 'confirmada'];
+  if (!sg && !v) return ['buscando', 'buscando viento…'];
+  if (!v) return ['elige', 'elige'];
+  if (sg?.level === 'high' && v === sg.pick) return ['sugerida', 'sugerida'];
+  return ['elegida', 'elegida'];
+}
+function rwyWindText(sg) {
+  if (!sg) return '';
+  if (!sg.metar) return 'sin METAR';
+  if (!sg.wind) return 'sin METAR a esa hora';
+  const w = sg.wind, hh = w.t.toISOString().slice(11, 16);
+  if (w.sknt < 1) return `viento en calma · METAR ${hh}Z`;
+  return `viento ${w.drct == null ? 'VRB' : String(Math.round(w.drct)).padStart(3, '0') + '°'}/${Math.round(w.sknt)} kt · METAR ${hh}Z`;
+}
+// Lo tecleado en «otra» sin salir del campo (iOS no dispara change al tocar un botón): se recoge antes de repintar o confirmar.
+// Devuelve el primer valor no válido (o null).
+function syncRwyOthers() {
+  let bad = null;
+  document.querySelectorAll('#rwy-modal-body .rwy-other').forEach(el => {
+    const r = _rwySel?.rows[+el.dataset.i], k = el.dataset.k, v = String(el.value || '').trim().toUpperCase();
+    if (!r || (k !== 'dep' && k !== 'arr') || !v || v === r.val[k]) return;
+    if (RWY_RE.test(v)) { r.val[k] = v; r.touched[k] = true; } else bad = bad || v;
+  });
+  return bad;
+}
+function renderRwyModal() {
+  const sel = _rwySel; if (!sel) return;
+  syncRwyOthers();
+  const field = (r, i, kind) => {
+    const ap = kind === 'dep' ? r.dep : r.arr, v = r.val[kind], sg = r.sug[kind];
+    const opts = [...new Set(sg?.options || airportInfo(ap)?.rw.map(x => x.id) || [])];
+    const other = v && !opts.includes(v) ? v : '';
+    const [cls, txt] = rwyTag(r, kind);
+    return `<div class="rwy-field">
+        <div class="rwy-head"><span>${kind === 'dep' ? 'Salida' : 'Llegada'} ${esc(ap)}</span><span class="rwy-tag t-${cls}">${esc(txt)}</span></div>
+        <div class="rwy-chips">${opts.map(id => `<button class="rwy-chip${id === v ? ' sel' : ''}" data-i="${i}" data-k="${kind}" data-v="${esc(id)}" onclick="rwyPick(this)">${esc(id)}</button>`).join('')}
+          <input class="rwy-other" data-i="${i}" data-k="${kind}" placeholder="otra" maxlength="3" inputmode="text" autocapitalize="characters" value="${esc(other)}" onchange="rwyOther(this)"></div>
+        <div class="rwy-wind">${esc(rwyWindText(sg))}</div>
+      </div>`;
+  };
+  document.getElementById('rwy-modal-body').innerHTML = sel.rows.map((r, i) =>
+    `<div class="rwy-sector"><div class="rwy-title">${esc(r.fn)} · ${esc(r.dep)} → ${esc(r.arr)}</div>${field(r, i, 'dep')}${field(r, i, 'arr')}</div>`).join('');
+  const n = sel.rows.reduce((a, r) => a + (r.val.dep ? 1 : 0) + (r.val.arr ? 1 : 0), 0);
+  document.getElementById('rwy-confirm').textContent = `Confirmar (${n}/${sel.rows.length * 2})`;
+}
+function rwyPick(el) {
+  const r = _rwySel?.rows[+el.dataset.i], k = el.dataset.k;
+  if (!r || (k !== 'dep' && k !== 'arr')) return;
+  r.val[k] = r.val[k] === el.dataset.v ? null : el.dataset.v; // tocar la marcada la desmarca
+  r.touched[k] = true;
+  const other = el.closest?.('.rwy-chips')?.querySelector('.rwy-other');
+  if (other) other.value = ''; // lo tecleado sin confirmar en «otra» no pisa el botón elegido
+  renderRwyModal();
+}
+function rwyOther(el) {
+  const r = _rwySel?.rows[+el.dataset.i], k = el.dataset.k;
+  if (!r || (k !== 'dep' && k !== 'arr')) return;
+  const v = String(el.value || '').trim().toUpperCase();
+  if (v && !RWY_RE.test(v)) { showStatus('warn', `«${v}» no es una pista válida (dos cifras y L/R/C opcional, p. ej. 09 o 27R).`); renderRwyModal(); return; }
+  r.val[k] = v || null;
+  r.touched[k] = true;
+  renderRwyModal();
+}
+function confirmRwyModal() {
+  const sel = _rwySel; if (!sel) return;
+  const bad = syncRwyOthers();
+  if (bad) { showStatus('warn', `«${bad}» no es una pista válida (dos cifras y L/R/C opcional, p. ej. 09 o 27R). No se ha guardado nada.`); return; }
+  const w = { ..._runways }, now = Date.now();
+  let n = 0;
+  sel.rows.forEach(r => {
+    const same = r.val.dep === r.confirmed.dep && r.val.arr === r.confirmed.arr; // sin cambios → conserva su fecha (desempate de la preferente)
+    const e = { depAp: r.dep || '', arrAp: r.arr || '', at: same && r.at ? r.at : now }; // sin undefined: Firestore no los acepta
+    if (r.val.dep) { e.dep = r.val.dep; n++; }
+    if (r.val.arr) { e.arr = r.val.arr; n++; }
+    if (e.dep || e.arr) w[r.key] = e; else delete w[r.key];
+  });
+  saveRunways(w);
+  closeRwyModal();
+  renderHistory();
+  showStatus('ok', `Pistas guardadas (${n}/${sel.rows.length * 2}) del ${dateISOToDisplay(sel.iso)}.`);
+}
+function closeRwyModal() {
+  _rwySel = null;
+  document.getElementById('rwy-modal').classList.add('hidden');
 }
 
 // Días que siguen en el Excel Tax Year pero ya no en el historial (p. ej. tras "Borrar historial"): sección plegada para poder borrarlos
@@ -2276,7 +2561,7 @@ async function applyCloudMode() {
         cloud.user = null;
         cloud.hydrated = false; cloud.pendingWrite = false; cloud.loadError = false;
         if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
-        _cache = {};
+        _cache = {}; _runways = {};
         renderHistory();
         document.getElementById('user-chip').classList.add('hidden');
         showAuth();
@@ -2308,6 +2593,7 @@ async function applyCloudMode() {
         _airports   = data.airports  || {};
         // El primer snapshot siempre manda: un cambio local previo no debe sustituir los mapas de la nube
         if (!cloud.hydrated || !_ukdaysSaving) _ukdays = data.ukdays || {};
+        if (!cloud.hydrated || !_runwaysSaving) _runways = data.runways || {};
         if (!cloud.hydrated || !_dayMapSaving) {
           _dayMap = data.dayMap || {};
           try { localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap)); } catch {}
@@ -2363,7 +2649,7 @@ function switchMode() {
   // tear down cloud listener if any
   if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
   cloud.hydrated = false; cloud.pendingWrite = false; cloud.loadError = false;
-  _cache = {};
+  _cache = {}; _runways = {};
   setMode(other);
   if (other === 'local') applyLocalMode();
   else applyCloudMode();
@@ -2717,7 +3003,7 @@ function updateBlockers() {
   const r = [];
   // El texto pegado no bloquea: se guarda antes de recargar y se repone al arrancar (si no se puede guardar, checkForUpdate no recarga)
   if (val('ap-iata') || val('ap-lat') || val('ap-lon')) r.push('hay un aeropuerto a medio añadir');
-  if (open('day-modal') || open('ukdate-modal')) r.push('cierra la ventana abierta');
+  if (open('day-modal') || open('ukdate-modal') || open('rwy-modal')) r.push('cierra la ventana abierta');
   if (open('auth-overlay') || open('welcome-overlay')) r.push('termina de iniciar sesión');
   if (_lastExport) r.push('cierra la barra de exportación');
   if (_cloudWrites > 0) r.push('guardando en la nube');

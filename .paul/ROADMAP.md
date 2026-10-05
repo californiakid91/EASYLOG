@@ -21,7 +21,7 @@ Phases: 3 of 4 complete (+3.1 y 3.2 insertadas ✅)
 | 3 | UK Days: fixes (03-01) + reglas reales (03-02, dialéctica) | 2/2 | ✅ Complete | 2026-10-04 |
 | 3.1 | [INSERTED] Auto-actualización PWA (Safari sirve versiones viejas) | 1/1 | ✅ Complete | 2026-10-05 |
 | 3.2 | [INSERTED] Datos coherentes: Excel U/UW = UK Days + SD; duplicados al pegar | 2/2 | ✅ Complete | 2026-10-05 |
-| 4 | Pista en uso (dialéctica de fuente + implementación) | TBD | Not started | - |
+| 4 | Pista en uso (dialéctica de fuente + implementación) | 1/2 | In progress | - |
 
 ## Phase Details
 
@@ -63,7 +63,10 @@ Phases: 3 of 4 complete (+3.1 y 3.2 insertadas ✅)
 
 ### Phase 4: Pista en uso
 **Goal:** DEP_RWY/ARR_RWY rellenos sin servidor ni claves públicas.
-**Research:** Likely → dialéctica: viento METAR (IEM) + OurAirports vs FR24+proxy vs manual.
+**Research:** Dialéctica hecha (04-DIALECTIC.md): METAR (IEM) + rumbos OurAirports + preferente aprendida + confirmación del piloto; FR24/ADS-B diferidos.
+**Plans:**
+- [x] 04-01: base OurAirports embebida (ICAO, coordenadas, pistas) — sin prompts de lat/lon
+- [ ] 04-02: sugerencia por viento + confirmar pistas por día + DEP_RWY/ARR_RWY en el CSV
 
 ---
 *Roadmap created: 2026-10-03*

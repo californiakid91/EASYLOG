@@ -10,21 +10,21 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 ## Current Position
 
 Milestone: v0.1 Datos fiables
-Phase: 4 of 4 (Pista en uso) — Not started
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-05 01:25 — Phase 3.2 complete (03.2-02 duplicados al pegar, prod v2026.10.05-001414), transitioned to Phase 4
+Phase: 4 of 4 (Pista en uso) — In progress
+Plan: 04-02 APPLY (04-01 ✅)
+Status: APPLY 04-02 — código + arnés + E2E hechos; G6/G8 en curso; falta checkpoint PilotLog
+Last activity: 2026-10-05 — 04-01 desplegado (cf0c453); 04-02 implementado en local
 
 Progress:
 - Milestone: [████████░░] 80% (todas las fases menos la 4)
-- Phase 4: [░░░░░░░░░░] 0%
+- Phase 4: [█████░░░░░] 50%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — Phase 3.2 done; ready to PLAN Phase 4]
+  ✓        ◐        ○     [04-02 en APPLY]
 ```
 
 ## Accumulated Context

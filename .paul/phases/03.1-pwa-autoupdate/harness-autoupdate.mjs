@@ -33,7 +33,7 @@ const page = v => `<html>\n<script>\n// x\nconst APP_VERSION = '${v}';\nconst MO
 const reset = () => { replaced.length = 0; fetches = []; fetchThrows = false; NOW += 120_000;
   run(`_lastExport = null; _cloudWrites = 0; cloud.pendingWrite = false; _pendingVersion = null; _bootV = null;`);
   for (const id of ['input', 'ap-iata', 'ap-lat', 'ap-lon']) el(id).value = '';
-  for (const id of ['day-modal', 'ukdate-modal', 'auth-overlay', 'welcome-overlay', 'update-bar']) el(id).classList.add('hidden'); };
+  for (const id of ['day-modal', 'ukdate-modal', 'rwy-modal', 'auth-overlay', 'welcome-overlay', 'update-bar']) el(id).classList.add('hidden'); };
 const check1 = async () => { await run('checkForUpdate()'); };
 const barShown = () => !el('update-bar').classList.contains('hidden');
 
@@ -62,6 +62,7 @@ const blockers = [
   ['aeropuerto a medio añadir', () => { el('ap-lat').value = '40.4'; }, 'aeropuerto'],
   ['modal de día abierto', () => el('day-modal').classList.remove('hidden'), 'ventana'],
   ['modal UK Day abierto', () => el('ukdate-modal').classList.remove('hidden'), 'ventana'],
+  ['modal de pistas abierto (fase 4)', () => el('rwy-modal').classList.remove('hidden'), 'ventana'],
   ['login abierto', () => el('auth-overlay').classList.remove('hidden'), 'sesión'],
   ['bienvenida abierta', () => el('welcome-overlay').classList.remove('hidden'), 'sesión'],
   ['barra de exportación', () => run(`_lastExport = { mk: null, n: 3, days: {} }`), 'exportación'],

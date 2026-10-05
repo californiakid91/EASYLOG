@@ -1,7 +1,7 @@
 // Harness 05-02: SheetJS vendorizado (mismo origen, hash fijado) + meta CSP + aviso de violaciones.
-// Uso: node .paul/phases/05-seguridad/harness-sri.mjs
+// Uso: node tests/harness/harness-sri.mjs
 import fs from 'node:fs'; import crypto from 'node:crypto'; import vm from 'node:vm';
-const ROOT = '/home/ricardo/easylog';
+import { ROOT } from '../lib.mjs';
 const html = fs.readFileSync(`${ROOT}/index.html`, 'utf8');
 const XLSX_FILE = 'vendor/xlsx-0.20.3.full.min.js';
 const XLSX_SHA384 = 'EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT';  // oficial cdn.sheetjs.com 0.20.3

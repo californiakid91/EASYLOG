@@ -117,7 +117,7 @@ function audit(file) {
   console.log('Estado UI:', statusLog.join(' | '));
 }
 
-const fixDir = path.join(HERE, 'fixtures');
+const fixDir = path.resolve(HERE, '../../../../tests/fixtures'); // fixtures anonimizadas (06-01); se aceptan rutas por argv
 const files = process.argv.slice(2).length
   ? process.argv.slice(2).map(f => path.resolve(f))
   : fs.readdirSync(fixDir).filter(f => f.endsWith('.txt')).sort().map(f => path.join(fixDir, f));

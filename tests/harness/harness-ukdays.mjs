@@ -1,7 +1,7 @@
 // Pruebas de UK Days (fase 3, plan 01) sobre el <script> real de index.html (modo local, DOM falso)
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url';
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const html = fs.readFileSync(path.resolve(HERE, '../../../index.html'), 'utf8');
+import { INDEX_PATH, readFixture } from '../lib.mjs';
+const html = fs.readFileSync(INDEX_PATH, 'utf8');
 const SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const els = new Map();
 const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', textContent: '' }, { get: (t, k) => k in t ? t[k] : k === 'classList' ? { add() {}, remove() {}, toggle() {}, contains() { return false; } } : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mk(), set: (t, k, v) => (t[k] = v, true) });
@@ -12,7 +12,7 @@ const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) ||
   setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, __st: st });
 vm.runInContext(SCRIPT, ctx);
 vm.runInContext('showStatus = (t, m) => __st.push(t + ": " + m); var __persists = 0; const __p = persist; persist = function () { __persists++; return __p(); };', ctx);
-const run = c => vm.runInContext(c, ctx); let fails = 0, skips = 0;
+const run = c => vm.runInContext(c, ctx); let fails = 0;
 const check = (n, ok, d = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? '  — ' + d : ''}`); if (!ok) fails++; };
 const reset = () => run('_cache = {}; _excelData = {}; _ukdays = {}; __persists = 0;');
 // 03-02: las entradas llevan state/source/reason; un "No UK" (state 'no') no cuenta → se lee como null
@@ -25,14 +25,12 @@ const email = (date, secs) => date + '\n\n' + secs.map((s, i) => [
   ...(s.off ? [`Off Block : ${s.off}`] : []), ...(s.on ? [`On Block : ${s.on}`] : []), 'Total Block : 02:00',
   '', 'Pilot Flying :', 'Take Off : VEGRIC', 'Landing : VEGRIC', ''].join('\n')).join('\n\n');
 
-// ── AC-1: fixtures reales/sintéticos de la auditoría (gitignored: solo en la máquina del usuario)
-const fixDir = path.resolve(HERE, '../01-auditoria/harness/fixtures');
-const fix = p => { const f = fs.existsSync(fixDir) && fs.readdirSync(fixDir).find(x => x.startsWith(p)); return f ? fs.readFileSync(path.join(fixDir, f), 'utf8') : null; };
+// ── AC-1: fixtures anonimizadas de la auditoría (tests/fixtures; si falta una, readFixture lanza → fallo)
 const isoOf = text => { const m = text.match(/^(\d{4})\/(\d{2})\/(\d{2})/m); return m && `${m[1]}-${m[2]}-${m[3]}`; };
 for (const [p, expect, name] of [['01', '{"route":"RZE→STN","onBlock":"23:36","tz":"BST"}', 'fixture 01 RZE→STN 23:36 BST → UK Day'],
                                  ['90', 'null', 'fixture 90 (Off 23:59Z, On 02:35Z) → NO UK Day'],
                                  ['91', 'null', 'fixture 91 (último Off 00:10Z) → NO UK Day (H5)']]) {
-  const t = fix(p); if (!t) { console.log(`SKIP  ${name} — fixtures ausentes`); skips++; continue; }
+  const t = readFixture(p);
   reset(); paste(t); check(name, uk(isoOf(t)) === expect, uk(isoOf(t)));
 }
 
@@ -93,8 +91,8 @@ reset(); paste('añade uk days 1 y 6 abril');
 check('comando: "1 abril" → 2027-04-01; "6 abril" → 2026-04-06', run(`'2027-04-01' in _ukdays && '2026-04-06' in _ukdays && !('2026-04-01' in _ukdays)`), Object.keys(run('_ukdays')).join(','));
 reset(); paste('añade uk days 6 y 7 abril'); 
 check('comando: "7 abril" → 2026-04-07 (no 2027-04-07)', run(`'2026-04-07' in _ukdays && !('2027-04-07' in _ukdays)`), Object.keys(run('_ukdays')).join(','));
-check('sin restos de 2027-04-07 / "7 abr 2027" en index.html', !/2027-04-07|7 abr 2027/.test(fs.readFileSync(path.resolve(HERE, '../../../index.html'), 'utf8')));
-check('downloadTaxExcel usa UK_DAYS_START/END', /TAX_START = UK_DAYS_START;[\s\S]{0,40}TAX_END\s+= UK_DAYS_END;/.test(fs.readFileSync(path.resolve(HERE, '../../../index.html'), 'utf8')));
+check('sin restos de 2027-04-07 / "7 abr 2027" en index.html', !/2027-04-07|7 abr 2027/.test(fs.readFileSync(INDEX_PATH, 'utf8')));
+check('downloadTaxExcel usa UK_DAYS_START/END', /TAX_START = UK_DAYS_START;[\s\S]{0,40}TAX_END\s+= UK_DAYS_END;/.test(fs.readFileSync(INDEX_PATH, 'utf8')));
 
 // ── AC-5: días en Excel sin historial
 const histHTML = () => ctx.document.getElementById('history').innerHTML;
@@ -120,4 +118,4 @@ ls.set('easylog_mode', 'local'); run('cloud.hydrated = false; renderUKDays()');
 check('modo local: sin "Cargando…" aunque hydrated=false', !/Cargando/.test(ukHTML()) && ukCount().startsWith('1 / 91'));
 check('renderCalendar sin cambios (no menciona hydrated)', !/function renderCalendar\(\) \{[\s\S]{0,600}hydrated/.test(html));
 
-console.log(fails ? `\n${fails} FALLO(S)` : `\nTODO OK${skips ? ` (${skips} SKIP)` : ''}`); process.exit(fails ? 1 : 0);
+console.log(fails ? `\n${fails} FALLO(S)` : '\nTODO OK'); process.exit(fails ? 1 : 0);

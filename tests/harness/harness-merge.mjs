@@ -8,8 +8,8 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const INDEX = process.argv[2] || path.resolve(HERE, '../../../index.html');
+import { INDEX_PATH } from '../lib.mjs';
+const INDEX = process.argv[2] || INDEX_PATH;
 const html = fs.readFileSync(INDEX, 'utf8');
 let SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 // Único cambio al script: redirigir los import() dinámicos de Firebase al falso

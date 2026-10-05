@@ -1,15 +1,13 @@
 // Arnés de regresión Fase 2 (CSV): ejecuta el <script> REAL de index.html en node:vm.
-// Uso: node .paul/phases/02-csv/harness-csv.mjs [--out ruta.csv]
-// Compara además con el <script> de `git show HEAD:index.html` (golden test, AC-1).
+// Uso: node tests/harness/harness-csv.mjs [--out ruta.csv] [--update-golden]
+// Golden (06-01): cabeceras ⊂ lista del importer de PilotLog y CSV celda a celda == tests/golden/csv-NN.csv.
+// Los golden son de CARACTERIZACIÓN (congelan la salida de hoy): si un cambio legítimo los altera,
+// regenerar con --update-golden y revisar el diff de tests/golden/ en el commit.
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { GOLDEN_DIR, INDEX_PATH, readFixture } from '../lib.mjs';
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(HERE, '../../..');
-const FIX = path.resolve(HERE, '../01-auditoria/harness/fixtures'); // gitignored (nombres de tripulación)
 
 const extract = html => {
   const m = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/);
@@ -79,13 +77,9 @@ const ok = (cond, msg, extra = '') => {
 };
 const hm = s => { const m = /^(\d+):(\d{2})$/.exec(s || ''); return m ? +m[1] * 60 + +m[2] : NaN; };
 
-const NEW = load(extract(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8')));
-const OLD = load(extract(execFileSync('git', ['-C', ROOT, 'show', 'HEAD:index.html']).toString()));
+const NEW = load(extract(fs.readFileSync(INDEX_PATH, 'utf8')));
 
-const fixtures = {};
-for (const f of fs.readdirSync(FIX).filter(f => f.endsWith('.txt')).sort()) {
-  fixtures[f.slice(0, 2)] = fs.readFileSync(path.join(FIX, f), 'utf8');
-}
+const fixtures = Object.fromEntries(['01', '90', '91'].map(k => [k, readFixture(k)]));  // anonimizadas (tests/fixtures)
 const csvOf = (env, text) => {
   const { flights } = env.run('parseText(__t)', { __t: text });
   return parseCSV(env.run('buildCSV(__l)', { __l: flights.map(flight => ({ flight, role: 'FO' })) }));
@@ -112,23 +106,32 @@ for (const [k, c] of Object.entries({ '01': c01, '90': c90, '91': c91 })) {
   ok(c.width.every(w => w === c.header.length), `fixture ${k}: todas las filas con ${c.header.length} columnas`);
   ok(c.rows.every(r => r.AC_ENGTYPE === 'Jet'), `fixture ${k}: AC_ENGTYPE = Jet`);
 }
-const CHANGED = new Set(['TAG_DELAY', 'DELAY', 'TIME_NIGHT', 'AC_ENGTYPE', 'FLIGHTLOG', 'PILOTLOG_DATE', 'TO_DAY', 'TO_NIGHT', 'LDG_DAY', 'LDG_NIGHT']);
-for (const k of ['01', '90', '91']) {
-  const o = csvOf(OLD, fixtures[k]), n = csvOf(NEW, fixtures[k]);
+// ═══ Golden (06-01): cabeceras del importer + CSV celda a celda ═══
+console.log('\nGolden');
+const IMPORTER = new Set(fs.readFileSync(path.join(GOLDEN_DIR, 'pilotlog-importer-headers.txt'), 'utf8').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#')));
+const notInImporter = c01.header.filter(h => !IMPORTER.has(h.toUpperCase()));
+ok(IMPORTER.size >= 100 && notInImporter.length === 0, `cabeceras del CSV ⊂ lista del importer (${IMPORTER.size})`, 'no aceptadas por el importer: ' + notInImporter.join(', '));
+const rawCSV = k => { const { flights } = NEW.run('parseText(__t)', { __t: fixtures[k] }); return NEW.run('buildCSV(__l)', { __l: flights.map(flight => ({ flight, role: 'FO' })) }); };
+const goldenPath = k => path.join(GOLDEN_DIR, `csv-${k}.csv`);
+if (process.argv.includes('--update-golden')) {
+  for (const k of ['01', '90', '91']) { fs.writeFileSync(goldenPath(k), rawCSV(k)); console.log('  · golden regenerado: ' + path.relative(process.cwd(), goldenPath(k))); }
+}
+for (const [k, n] of Object.entries({ '01': c01, '90': c90, '91': c91 })) {
+  if (!fs.existsSync(goldenPath(k))) { ok(false, `golden fixture ${k}: existe tests/golden/csv-${k}.csv`, 'falta; generar con --update-golden'); continue; }
+  const g = parseCSV(fs.readFileSync(goldenPath(k), 'utf8'));
   const diffs = [];
-  o.rows.forEach((r, i) => o.header.forEach(col => {
-    if (!CHANGED.has(col) && r[col] !== n.rows[i][col]) diffs.push(`${r.FLIGHTNUMBER}.${col}`);
+  if (g.header.join(';') !== n.header.join(';')) diffs.push(`cabecera: ${g.header.filter(h => !n.header.includes(h)).join(',') || '(orden)'} → ${n.header.filter(h => !g.header.includes(h)).join(',') || '(orden)'}`);
+  if (g.rows.length !== n.rows.length) diffs.push(`filas ${g.rows.length}→${n.rows.length}`);
+  g.rows.forEach((r, i) => g.header.forEach(col => {
+    const v = n.rows[i] && n.rows[i][col];
+    if (r[col] !== v) diffs.push(`${r.FLIGHTNUMBER}.${col} ${JSON.stringify(r[col])}→${JSON.stringify(v)}`);
   }));
-  ok(diffs.length === 0, `golden fixture ${k}: resto de columnas idénticas a HEAD`, diffs.join(', '));
-  o.rows.forEach((r, i) => {
-    const ch = ['PILOTLOG_DATE', 'TO_DAY', 'TO_NIGHT', 'LDG_DAY', 'LDG_NIGHT'].filter(c => r[c] !== n.rows[i][c]);
-    if (ch.length) console.log(`    · info ${k} ${r.FLIGHTNUMBER}: cambia ${ch.map(c => `${c} ${r[c]}→${n.rows[i][c]}`).join(', ')}`);
-  });
+  ok(diffs.length === 0, `golden fixture ${k}: CSV idéntico a tests/golden/csv-${k}.csv`, diffs.join(' | '));
 }
 
 // ═══ AC-2: DELAY único ═══
 console.log('\nAC-2 DELAY');
-ok(c01.rows.every(r => r.DELAY === '93'), 'fixture 01: DELAY = 93 en FR2134 y FR2135', c01.rows.map(r => r.DELAY).join('|'));
+ok(c01.rows.every(r => r.DELAY === '93'), 'fixture 01: DELAY = 93 en FR9134 y FR9135', c01.rows.map(r => r.DELAY).join('|'));
 const D = over => rowOf([synth(over)])[0];
 ok(D({}).DELAY === '', 'sin delays → DELAY vacío');
 ok(D({ 'Delay Code 1': '41', 'Delay Time 1': '00:10', 'Delay Code 2': '93A', 'Delay Time 2': '00:30' }).DELAY === '93', '"93A" con más minutos → 93');
@@ -141,8 +144,8 @@ ok(D({ 'Delay Code 1': '81', 'Delay Code 2': '93', 'Delay Time 2': '00:05' }).DE
 // ═══ AC-3: delays en notas ═══
 console.log('\nAC-3 FLIGHTLOG');
 const fl0 = c01.rows[0].FLIGHTLOG.split('\n');
-ok(fl0[0] === 'Delays: 93 0:40, 41 0:11', 'FR2134: primera línea "Delays: 93 0:40, 41 0:11"', fl0[0]);
-ok(c01.rows[1].FLIGHTLOG.split('\n')[0] === 'Delays: 93 0:41, 62 0:14, 15 0:05', 'FR2135: todos los códigos en orden de minutos', c01.rows[1].FLIGHTLOG.split('\n')[0]);
+ok(fl0[0] === 'Delays: 93 0:40, 41 0:11', 'FR9134: primera línea "Delays: 93 0:40, 41 0:11"', fl0[0]);
+ok(c01.rows[1].FLIGHTLOG.split('\n')[0] === 'Delays: 93 0:41, 62 0:14, 15 0:05', 'FR9135: todos los códigos en orden de minutos', c01.rows[1].FLIGHTLOG.split('\n')[0]);
 ok(c01.rows.every(r => !/^DT\//m.test(r.FLIGHTLOG)), 'sin líneas DT/n antiguas');
 ok(!D({}).FLIGHTLOG.includes('Delays:'), 'sin delays → sin línea "Delays:"');
 ok(D({ 'Delay Time 1': '00:07' }).FLIGHTLOG.startsWith('Delays: ? 0:07'), 'tiempo sin código se conserva como "?"');
@@ -151,8 +154,9 @@ ok(D({ 'Delay Code 1': 'ra', 'Delay Time 1': '00:03' }).FLIGHTLOG.startsWith('De
 // ═══ AC-4: TIME_NIGHT ═══
 console.log('\nAC-4 TIME_NIGHT');
 const near = (v, ref) => Math.abs(hm(v) - hm(ref)) <= 3;
-ok(near(c01.rows[0].TIME_NIGHT, '1:35'), 'FR2134 ≈ 1:35 (±3)', c01.rows[0].TIME_NIGHT);
-ok(near(c01.rows[1].TIME_NIGHT, '2:36'), 'FR2135 ≈ 2:36 (±3)', c01.rows[1].TIME_NIGHT);
+// 06-01: fixture 01 anonimizada (fecha −14 días, 18/09) → FR9134 1:15 (antes 1:35 el 02/10); FR9135 sin cambio
+ok(near(c01.rows[0].TIME_NIGHT, '1:15'), 'FR9134 ≈ 1:15 (±3)', c01.rows[0].TIME_NIGHT);
+ok(near(c01.rows[1].TIME_NIGHT, '2:36'), 'FR9135 ≈ 2:36 (±3)', c01.rows[1].TIME_NIGHT);
 ok([...c01.rows, ...c90.rows, ...c91.rows].every(r => /^\d+:\d{2}$/.test(r.TIME_NIGHT)), 'formato H:MM en fixtures');
 ok([...c01.rows, ...c90.rows, ...c91.rows].every(r => (r.TO_NIGHT !== '1' && r.LDG_NIGHT !== '1') || hm(r.TIME_NIGHT) > 0), 'fixtures: TO/LDG noche ⇒ TIME_NIGHT > 0:00');
 ok(D({ 'City Pair': 'STN - ZZZ' }).TIME_NIGHT === '', 'aeropuerto sin coordenadas → TIME_NIGHT vacío');
@@ -168,10 +172,10 @@ const utc = (fx, i) => {
   return Object.fromEntries(Object.entries(t).map(([k, v]) => [k, v && v.toISOString().slice(0, 16)]));
 };
 const u91 = utc('91', 1), u90 = utc('90', 1);
-ok(u91.off === '2026-10-06T00:10' && u91.on === '2026-10-06T02:35', 'fixture 91 FR2135: off/on = duty+1', JSON.stringify(u91));
+ok(u91.off === '2026-10-06T00:10' && u91.on === '2026-10-06T02:35', 'fixture 91 FR9135: off/on = duty+1', JSON.stringify(u91));
 ok(c91.rows[1].PILOTLOG_DATE === '2026-10-06' && c91.rows[0].PILOTLOG_DATE === '2026-10-05', 'fixture 91: PILOTLOG_DATE 05 → 06');
 ok(u90.off === '2026-10-05T23:59' && u90.airborne === '2026-10-06T00:15' && u90.landed === '2026-10-06T02:26' && u90.on === '2026-10-06T02:35',
-  'fixture 90 FR2135: off duty 23:59, airborne/landed/on duty+1', JSON.stringify(u90));
+  'fixture 90 FR9135: off duty 23:59, airborne/landed/on duty+1', JSON.stringify(u90));
 ok(c90.rows.every(r => r.PILOTLOG_DATE === '2026-10-05'), 'fixture 90: PILOTLOG_DATE = duty');
 const duty01 = flightsOf(NEW, fixtures['01'])[0].date.replace(/\//g, '-');
 ok(c01.rows.every(r => r.PILOTLOG_DATE === duty01), 'fixture 01: ninguna fecha cambia');

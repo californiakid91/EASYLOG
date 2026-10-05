@@ -1,7 +1,7 @@
 // Pruebas de la auto-actualización (fase 3.1) sobre el <script> real de index.html (modo local, DOM falso, fetch/location falsos)
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url';
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const html = fs.readFileSync(path.resolve(HERE, '../../../index.html'), 'utf8');
+import { INDEX_PATH } from '../lib.mjs';
+const html = fs.readFileSync(INDEX_PATH, 'utf8');
 const SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const LOCAL_V = /^const APP_VERSION = '([^']*)';$/m.exec(html)[1];
 

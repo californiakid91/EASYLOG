@@ -8,7 +8,7 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 
 **v0.1 Datos fiables** (v0.1.0)
 Status: In progress
-Phases: 3 of 4 complete (+3.1 insertada ✅)
+Phases: 3 of 4 complete (+3.1 y 3.2 insertadas ✅)
 
 ## Phases
 
@@ -20,7 +20,7 @@ Phases: 3 of 4 complete (+3.1 insertada ✅)
 | 2 | CSV: esquema validado + TIME_NIGHT + delays | 1/1 | ✅ Complete | 2026-10-03 |
 | 3 | UK Days: fixes (03-01) + reglas reales (03-02, dialéctica) | 2/2 | ✅ Complete | 2026-10-04 |
 | 3.1 | [INSERTED] Auto-actualización PWA (Safari sirve versiones viejas) | 1/1 | ✅ Complete | 2026-10-05 |
-| 3.2 | [INSERTED] Datos coherentes: Excel U/UW = UK Days + SD; duplicados al pegar | 1/2 | In progress | - |
+| 3.2 | [INSERTED] Datos coherentes: Excel U/UW = UK Days + SD; duplicados al pegar | 2/2 | ✅ Complete | 2026-10-05 |
 | 4 | Pista en uso (dialéctica de fuente + implementación) | TBD | Not started | - |
 
 ## Phase Details
@@ -59,7 +59,7 @@ Phases: 3 of 4 complete (+3.1 insertada ✅)
 **Reason:** 06/05/2026 SBY→U=1 aunque «No UK»; U no exige aeropuerto UK; día solo-Excel se sobrescribe sin aviso.
 **Plans:**
 - [x] 03.2-01: U/UW desde UK Days + estado SD + decidir pendientes (UK/No UK) + descarga bloqueada con pendientes pasados
-- [ ] 03.2-02: duplicados al pegar (idéntico en lista → aviso; idéntico solo-Excel → vuelve a la lista; distinto → discrepancias)
+- [x] 03.2-02: duplicados al pegar (idéntico en lista → aviso; idéntico solo-Excel → vuelve a la lista; distinto/capitán → resumen + confirmación) — verificado en iPhone
 
 ### Phase 4: Pista en uso
 **Goal:** DEP_RWY/ARR_RWY rellenos sin servidor ni claves públicas.

@@ -5,26 +5,26 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.1 Datos fiables — Phase 3.2 (Datos coherentes)
+**Current focus:** v0.1 Datos fiables — Phase 4 (Pista en uso)
 
 ## Current Position
 
 Milestone: v0.1 Datos fiables
-Phase: 3.2 [INSERTED] (Datos coherentes) — In progress (1/2)
-Plan: 03.2-02 created, awaiting approval (duplicados al pegar; revisado por Fable)
-Status: PLAN created, ready for APPLY
-Last activity: 2026-10-05 — Created .paul/phases/03.2-datos-coherentes/03.2-02-PLAN.md
+Phase: 4 of 4 (Pista en uso) — Not started
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-05 01:25 — Phase 3.2 complete (03.2-02 duplicados al pegar, prod v2026.10.05-001414), transitioned to Phase 4
 
 Progress:
-- Milestone: [████████░░] 75%
-- Phase 3.2: [█████░░░░░] 50%
+- Milestone: [████████░░] 80% (todas las fases menos la 4)
+- Phase 4: [░░░░░░░░░░] 0%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 03.2-02 created, awaiting approval]
+  ✓        ✓        ✓     [Loop complete — Phase 3.2 done; ready to PLAN Phase 4]
 ```
 
 ## Accumulated Context
@@ -45,6 +45,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 03.2 (usuario 2026-10-05): SD = toggle ≈SIM; re-pegar idéntico solo-Excel → vuelve a la lista sin preguntar (PilotLog no duplica por fecha+vuelo; sí si cambia la fecha); U pendiente → '?' y Excel NO descargable con pendientes pasados (futuros no bloquean)
 - 03.2-01: U del Excel = UK Days ('no' = vacío, pendiente con datos = '?'); UW = primer sector sale de UK_RES; vuelos > calendario en Excel; Excel bloqueado con pendientes pasados; pendientes no-hueco se deciden con botones UK/No UK (manual)
 - Rol (usuario 2026-10-05): hoy SIEMPRE FO → SIC; PICUS lo pone él a mano en PilotLog (firma del capitán, raro); la app nunca genera PICUS; CPT/PIC en el futuro → al re-pegar no se cambia el rol guardado (revisar al ascender)
+- 03.2-02: re-pegar compara solo CMP_KEYS normalizados + capitán/tripulación (crewDiff); idéntico no escribe (salvo volver a la lista / reparar Excel); distinto → confirm con resumen
 - Días solo-Excel se borran sin tocar UK Days; "Cargando…" solo en UK Days (calendario desde caché local)
 
 ### Deferred Issues
@@ -53,7 +54,6 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | PilotLog: fichero de cambios 2025 APLICADO por el usuario (2026-10-04); falta re-exportar CSV de PilotLog para re-verificar. Resto de años (2023, 2024, 2026) cuando el usuario reciba el roster plan completo desde que empezó a volar (ya pedido) | 2026-10-04 | S | — |
 | Histórico ya importado en PilotLog: sin NIGHT y posibles fechas post-medianoche → informe sobre export de PilotLog (no reimportar meses) | Phase 2 | S | antes de Fase 3 |
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
-| IDEA usuario: al pegar, detectar vuelo duplicado (ya en historial/Excel): si es idéntico → avisar "duplicado" y no guardar; si difiere → mostrar discrepancias campo a campo. Hoy addDay solo mira el historial (no _excelData) | 03-02 checkpoint | S-M | 03.2-02 |
 | Barra «Hay una versión nueva» (fija abajo) tapa el final del botón de exportar mientras está visible → padding-bottom al body cuando se muestra | 03.1 checkpoint | XS | — |
 | semgrep: <script> CDN sin atributo integrity (SRI) en index.html:462 (preexistente) | Phase 2 | S | Aegis pre-deploy |
 | UK Days: reconstrucción de tax years anteriores desde el plan ROCS (2024/25 falta plan abr–dic 2024) | Phase 2 | M | — |
@@ -61,6 +61,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Aeropuertos desconocidos piden lat/lon a mano (usuario: «un auténtico coñazo») → embeber OurAirports IATA→coords | 03.2-01 checkpoint | S | Fase 4 |
 | SBY + email = conflicto; quizá debería mandar el email (regla usuario: SBY no cuenta solo si activado y acaba fuera/después de 00:00) | 03.2-01 checkpoint | S | — |
 | UW en blanco en días sin vuelos con UK manual (DUTY sin email) → ¿UW=1? | 03.2-01 | XS | — |
+| Regla de rol al re-pegar (rol guardado manda) → revisar al ascender a CPT | 03.2-02 | XS | ascenso |
+| Mismo vuelo pegado con OTRA fecha (PilotLog lo duplicaría) no se detecta | 03.2-02 | S | — |
 
 ### Preguntas pendientes al usuario — de UNA en UNA
 - Checkpoint 03-02 cerrado (detalle día a día en .paul/phases/03-ukdays/03-02-SUMMARY.md)
@@ -74,15 +76,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
 
 ### Git State
-Last commit: ver git log (03.2-01 completo) — pusheado y desplegado en GitHub Pages
+Last commit: ver git log (fase 3.2 completa) — pusheado y desplegado en GitHub Pages
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: Plan 03.2-02 created
-Next action: Review and approve plan, then run /paul:apply .paul/phases/03.2-datos-coherentes/03.2-02-PLAN.md
-Resume file: .paul/phases/03.2-datos-coherentes/03.2-02-PLAN.md
+Stopped at: Phase 3.2 complete (UNIFY 03.2-02 + transición)
+Next action: /paul:plan Phase 4 — pista en uso (dialéctica de fuente: METAR/IEM + OurAirports vs FR24+proxy vs manual)
+Resume file: .paul/ROADMAP.md
 
 ---
 *STATE.md — Updated after every significant action*

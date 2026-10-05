@@ -14,7 +14,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 (en producción, sin versionado formal) |
-| Status | Production — CSV (Fase 2), UK Days (Fase 3) y auto-actualización (Fase 3.1); pistas pendientes |
+| Status | Production — CSV (Fase 2), UK Days (Fase 3), auto-actualización (3.1) y datos coherentes (3.2); pistas pendientes |
 | Last Updated | 2026-10-05 |
 
 **Production URLs:**
@@ -44,11 +44,11 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - [x] UK Days fiables: último sector cronológico, recálculo al re-pegar, periodo 06/04–05/04 (03-01); regla R1/R2/R3 con aeropuerto UK y calzos 00:00 = UK, "No UK" persistente, pendientes/huecos, contador N·P, backup con procedencia (03-02) — Phase 3
 - [x] Exportar CSV sin perder Excel/UK Days (barra "Quitar de la lista", ✕ seguro) — Phase 3
 - [x] Auto-actualización de la PWA: APP_VERSION visible, recarga sola y segura, texto pegado conservado, hook que sube la versión — Phase 3.1
+- [x] Excel coherente con UK Days: U = estado UK Days ('?' pendiente), UW por primer sector, estado SD, decidir pendientes, descarga bloqueada con pendientes pasados — Phase 3.2
+- [x] Duplicados al pegar: idéntico en lista → aviso; idéntico solo-Excel → vuelve a la lista; distinto (incl. capitán/tripulación) → resumen y confirmación — Phase 3.2
 
 ### Active (In Progress)
 
-- [ ] Detectar vuelos duplicados al pegar (idéntico → no guardar; distinto → mostrar discrepancias)
-- [ ] Calendario con estado SD/ground duty y columna U del Excel coherente con UK Days
 - [ ] Comprobar histórico ya importado en PilotLog (sin NIGHT; posibles fechas post-medianoche) con informe sobre export de PilotLog
 
 ### Planned (Next)
@@ -96,6 +96,8 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Días sin email: calendario (_dayMap) como declaración; nada se infiere sin respaldo; P fuera de la alarma | Dialéctica (Polo A enmendado) + revisión Fable | 2026-10-04 | Active |
 | ✕ de "Días guardados" solo quita de la lista; borrar del Excel solo en "Días en Excel sin historial" | Usuario perdió datos 2 veces limpiando la lista tras exportar | 2026-10-04 | Active |
 | Auto-actualización sin service worker: APP_VERSION + fetch no-store al arrancar/volver/foco/cada 5 min → location.replace(?v=); bloqueos si se perdería algo; texto pegado se conserva | Caché HTTP + iOS reanudando sin navegar causaron pérdida de datos; SW sería un 3er nivel de caché | 2026-10-05 | Active |
+| Excel U = UK Days (no = vacío, pendiente = '?'); Excel no descargable con pendientes pasados | Excel fiscal no puede contradecir a UK Days (06/05 SBY); usuario | 2026-10-05 | Active |
+| Re-pegar: compara solo campos usados (CMP_KEYS) + capitán/tripulación; rol guardado manda (siempre FO/SIC; PICUS manual) | Fable + G6 + usuario | 2026-10-05 | Active |
 | Firestore: mergeFields por campo + no escribir antes del primer snapshot del servidor | merge:true no borraba claves; evitar pisar la nube desde caché offline | 2026-10-03 | Active |
 
 ## Success Metrics
@@ -124,4 +126,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-05 after Phase 3.1*
+*Last updated: 2026-10-05 after Phase 3.2*

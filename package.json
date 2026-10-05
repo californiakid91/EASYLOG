@@ -1,0 +1,14 @@
+{
+  "name": "easylog-tests",
+  "private": true,
+  "description": "Solo tests (la app es index.html estático, sin build). Navegadores: ~/.cache/ms-playwright (webkit-2359).",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "test": "node tests/run-all.mjs",
+    "test:e2e": "node tests/run-all.mjs tests/e2e",
+    "test:all": "node tests/run-all.mjs tests/harness tests/e2e"
+  },
+  "devDependencies": {
+    "playwright-core": "1.63.0"
+  }
+}

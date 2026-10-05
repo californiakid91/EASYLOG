@@ -1,35 +1,28 @@
-// E2E 05-02 (WebKit, iPhone 13): la CSP no rompe ningún flujo. Uso: node .paul/phases/05-seguridad/e2e-csp.mjs
-// Necesita playwright-core (desde ~/manuales-motos) y el fixture 01 (gitignored). gstatic, Google y Unsplash son REALES (vía Node, ver ctx.route); IEM interceptado.
+// E2E 05-02 (WebKit, iPhone 13): la CSP no rompe ningún flujo. Uso: node tests/e2e/e2e-csp.mjs (o run-all tests/e2e). Necesita «npm ci».
+// NECESITA INTERNET: gstatic, Google y Unsplash son REALES (vía Node, ver ctx.route); IEM interceptado. run-all --skip-net lo excluye.
 // Línea base = el mismo recorrido con la meta CSP quitada del HTML servido → los pageerror deben ser los mismos.
-import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'; import { createRequire } from 'node:module';
-const require = createRequire('/home/ricardo/manuales-motos/');
-const { webkit, devices } = require('playwright-core');
-const ROOT = '/home/ricardo/easylog';
-const HTML = fs.readFileSync(`${ROOT}/index.html`, 'utf8');
+// Reloj: recorrido local con FIXED_NOW; recorrido nube con reloj real (Firestore/Auth se cuelgan con Date fijo).
+import fs from 'node:fs';
+import { INDEX_PATH, FIXED_NOW, readFixture, serveRepo, loadPlaywright } from '../lib.mjs';
+const HTML = fs.readFileSync(INDEX_PATH, 'utf8');
 const NOCSP = HTML.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\n/, '');
 if (NOCSP === HTML) { console.log('FAIL  no se encontró la meta CSP'); process.exit(1); }
-const fixture = fs.readFileSync(`${ROOT}/.paul/phases/01-auditoria/harness/fixtures/01-2026-10-02-STN-RZE-noche-delays.txt`, 'utf8');
+try { await fetch('https://www.gstatic.com/', { method: 'HEAD', signal: AbortSignal.timeout(8000) }); }
+catch (e) { console.log(`FAIL  sin red: e2e-csp necesita Internet (${e.cause?.code || e.name})`); process.exit(1); }
+const { webkit, devices } = await loadPlaywright();
+const fixture = readFixture('01');
 let served = HTML;
-const TYPES = { '.js': 'application/javascript', '.json': 'application/json', '.svg': 'image/svg+xml' };
-const srv = http.createServer((q, r) => {
-  const u = new URL(q.url, 'http://x');
-  if (u.pathname === '/EASYLOG/' ) { r.writeHead(200, { 'content-type': 'text/html' }); return r.end(served); }
-  const rel = u.pathname.replace(/^\/EASYLOG\//, '');
-  const f = path.join(ROOT, rel);
-  if (u.pathname.startsWith('/EASYLOG/') && f.startsWith(ROOT + '/') && !rel.includes('..') && fs.existsSync(f) && fs.statSync(f).isFile()) {
-    r.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' }); return r.end(fs.readFileSync(f));
-  }
-  r.writeHead(404); r.end();
-}).listen(8792);
-const URL0 = 'http://localhost:8792/EASYLOG/';
+const srv = await serveRepo(() => served);
+const URL0 = srv.url;
 let fails = 0; const ok = (n, c, d = '') => { console.log(`${c ? 'PASS' : 'FAIL'}  ${n}${d ? '  — ' + d : ''}`); if (!c) fails++; };
 const browser = await webkit.launch();
 
-// Calendario OFF del 06/04 al 04/10 (salvo el día del fixture) para que el Excel no quede bloqueado por pendientes
-const cal = {}; for (let t = Date.UTC(2026, 3, 6); t <= Date.UTC(2026, 9, 4); t += 86400000) { const iso = new Date(t).toISOString().slice(0, 10); if (iso !== '2026-10-02') cal[iso] = 'off'; }
+// Calendario OFF del 06/04 al 04/10 (= ayer según FIXED_NOW; salvo el día de la fixture 01) para que el Excel no quede bloqueado por pendientes
+const cal = {}; for (let t = Date.UTC(2026, 3, 6); t <= Date.UTC(2026, 9, 4); t += 86400000) { const iso = new Date(t).toISOString().slice(0, 10); if (iso !== '2026-09-18') cal[iso] = 'off'; }
 
 async function newPage(mode) {
-  const ctx = await browser.newContext({ ...devices['iPhone 13'], acceptDownloads: true });
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], acceptDownloads: true, timezoneId: 'Europe/London' });
+  if (mode === 'local') await ctx.clock.setFixedTime(new Date(FIXED_NOW));
   // El WebKit de Playwright en Linux no trae TLS: Node descarga los https:// y se los entrega al navegador.
   // La CSP se sigue aplicando (el navegador decide si pide la URL antes de llegar aquí).
   await ctx.route(/^https:\/\//, async route => { try { await route.fulfill({ response: await route.fetch() }); } catch { await route.abort(); } });
@@ -40,7 +33,7 @@ async function newPage(mode) {
   page.on('console', m => { if (/Content Security Policy|Refused/i.test(m.text())) cons.push(m.text().slice(0, 200)); });
   page.on('dialog', d => d.accept());
   await page.route('https://mesonet.agron.iastate.edu/**', route => route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'content-type': 'text/plain' },
-    body: 'station,valid,drct,sknt\nEGSS,2026-10-02 16:50,230.00,12.00\nEPRZ,2026-10-02 19:00,270.00,9.00\n' }));
+    body: 'station,valid,drct,sknt\nEGSS,2026-09-18 16:50,230.00,12.00\nEPRZ,2026-09-18 19:00,270.00,9.00\n' }));
   await page.addInitScript(([mode, cal]) => {
     window.__csp = [];
     document.addEventListener('securitypolicyviolation', e => window.__csp.push(`${e.effectiveDirective} ${e.blockedURI}`));
@@ -113,7 +106,7 @@ async function runCloud(label) {
 served = NOCSP; const A0 = await runLocal('base'); const B0 = await runCloud('base');
 served = HTML;  const A = await runLocal('csp');  const B = await runCloud('csp');
 
-console.log('--- A (local) ---');
+console.log('# --- A (local) ---');
 ok('A: pegar email añade los vuelos', A.added);
 ok('A: CSV idéntico con y sin CSP', A.csv === A0.csv && A.csv.length > 100, `${A.csv.length} bytes`);
 ok('A: modal de pistas con cabeceras sugeridas', A.rwyChips > 0 && A.rwyChips === A0.rwyChips, `${A.rwyChips}`);
@@ -127,7 +120,7 @@ ok('A: sin aviso «Bloqueado» antes de la prueba negativa', !/Bloqueado/.test(A
 ok('A: negativa — fetch a example.com bloqueado por connect-src', A.neg === 'bloqueado' && A.cspAfterNeg.some(v => v.startsWith('connect-src') && v.includes('example.com')), JSON.stringify(A.cspAfterNeg));
 ok('A: negativa — el usuario ve el aviso', /Bloqueado por seguridad \(connect-src\): example\.com/.test(A.statusAfterNeg), A.statusAfterNeg);
 ok('A: pageerror = línea base', JSON.stringify(A.errs) === JSON.stringify(A0.errs), `csp ${JSON.stringify(A.errs)} | base ${JSON.stringify(A0.errs)}`);
-console.log('--- B (nube) ---');
+console.log('# --- B (nube) ---');
 ok('B: Firebase cargado de gstatic', B.gstatic >= 3, `${B.gstatic}`);
 ok('B: botón «Entrar con Google» visible', B.btnVisible);
 ok('B: gapi (apis.google.com) cargado', B.gapi);
@@ -139,5 +132,5 @@ ok('B: 0 violaciones de CSP', B.csp.length === 0 && B.cons.length === 0, JSON.st
 ok('B: sin aviso «Bloqueado»', !/Bloqueado/.test(B.status), B.status);
 ok('B: pageerror = línea base', JSON.stringify(B.errs) === JSON.stringify(B0.errs), `csp ${JSON.stringify(B.errs)} | base ${JSON.stringify(B0.errs)}`);
 ok('B: línea base equivalente (gapi/iframe/popup también sin CSP)', B0.gapi === B.gapi && B0.authIframe === B.authIframe && !!B0.popupUrl === !!B.popupUrl);
-await browser.close(); srv.close();
+await browser.close(); await srv.close();
 console.log(fails ? `\n${fails} FAIL` : '\nE2E PASS'); process.exit(fails ? 1 : 0);

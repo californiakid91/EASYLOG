@@ -7,3 +7,6 @@
 
 # AEGIS audit state (generated)
 .aegis/
+
+# Dependencias de tests (npm ci)
+node_modules/

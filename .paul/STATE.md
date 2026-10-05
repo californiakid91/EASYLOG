@@ -78,6 +78,12 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - [x] ¿Añadir el año a las fechas de "Sin decidir"? → SÍ, en toda la app (dateISOToDisplay → dd/mm/aa), 2026-10-05
 - (pendiente personal del usuario — detalle en memoria local)
 
+### Post-Aegis (2026-10-05)
+- Reglas Firestore en producción = per-uid (request.auth.uid == uid) ✓ — falta versionarlas en el repo
+- Doc Firestore medido: 127 KiB (12%) y ~1.9k entradas de índice (5%); excelData ≈2 KiB/día → ~2,5 años de margen → ya no es HIGH
+- Rama main protegida (sin force-push ni borrado); 2FA GitHub pendiente de confirmar por el usuario
+- Límite 91 días: el usuario envía el documento que lo explica
+
 ### Blockers/Concerns
 - Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
 

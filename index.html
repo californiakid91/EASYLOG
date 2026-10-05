@@ -2,6 +2,26 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://mesonet.agron.iastate.edu; frame-src https://easylog-ce18d.firebaseapp.com; img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<script id="csp-watch">
+// 05-02: lo que bloquee la CSP se avisa en pantalla (una vez por host) para poder reportarlo; el detalle va a consola.
+// Ignora extensiones del navegador. Hasta que el script principal define window.__cspShow, los avisos se encolan.
+(function () {
+  var seen = new Set(), EXT = /^(chrome|moz|safari-web)-extension:/;
+  window.__cspQ = [];
+  document.addEventListener('securitypolicyviolation', function (e) {
+    var src = String(e.sourceFile || ''), uri = String(e.blockedURI || '');
+    if (EXT.test(src) || EXT.test(uri)) return;
+    var host = uri || 'inline';
+    if (/^(https?|wss?):/.test(uri)) { try { host = new URL(uri).host; } catch (_) { host = '?'; } }
+    if (seen.has(host)) return;
+    seen.add(host);
+    var msg = 'Bloqueado por seguridad (' + (e.effectiveDirective || e.violatedDirective) + '): ' + host;
+    console.warn(msg, uri, src, e.lineNumber);
+    if (typeof window.__cspShow === 'function') window.__cspShow(msg); else window.__cspQ.push(msg);
+  });
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EasyLog — Ryanair → PilotLog</title>
 <link rel="manifest" href="manifest.json">
@@ -491,7 +511,7 @@
     padding: .4rem;
   }
 </style>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="vendor/xlsx-0.20.3.full.min.js" defer></script>
 </head>
 <body>
 <div id="bg-tint"></div>
@@ -706,7 +726,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.05-102039';
+const APP_VERSION = '2026.10.05-115955';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -3099,6 +3119,9 @@ function initAutoUpdate() {
   setInterval(() => { if (document.visibilityState === 'visible') checkForUpdate(); }, 5 * 60000);
   setTimeout(checkForUpdate, 3000);
 }
+// 05-02: avisos de la CSP (script #csp-watch del <head>) → barra de estado; vacía los que llegaron antes
+window.__cspShow = m => showStatus('err', m);
+(window.__cspQ || []).splice(0).forEach(window.__cspShow);
 try { initAutoUpdate(); } catch (e) { console.warn('auto-update init failed:', e); }
 
 (function() {

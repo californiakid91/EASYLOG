@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../../..');
 // Último commit que tocó index.html antes de la Fase 5: referencia fija para "el CSV no cambia" (HEAD sería auto-comparación)
-const BASE_SHA = '33ae9b9';
+const BASE_SHA = '6cb4a5a';  // index.html previo a 05-01 (era 33ae9b9 antes de la purga de historial del 2026-10-05)
 const scriptOf = html => html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 
 function load(src) {

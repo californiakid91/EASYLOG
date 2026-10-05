@@ -1,0 +1,11 @@
+// Copia de las reglas de Firestore de PRODUCCIÓN (proyecto easylog-ce18d, ruleset del 2026-05-19).
+// Comprobar que siguen idénticas con: node .paul/phases/05-seguridad/check-firestore-rules.mjs
+// OJO: `firebase deploy` sin --only desplegaría este fichero (firebase.json lo referencia).
+rules_version = '2';
+  service cloud.firestore {
+    match /databases/{database}/documents {
+      match /users/{uid} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+  }

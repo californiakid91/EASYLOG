@@ -15,7 +15,7 @@ Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 5 | Seguridad: XSS aeropuerto, SRI/CSP, reglas Firestore en repo | 2/2 | ✅ Complete | 2026-10-05 |
-| 6 | Barrera de tests: runner único + fixtures anonimizadas + gate | 0/2 | Planning | - |
+| 6 | Barrera de tests: runner único + fixtures anonimizadas + gate | 1/2 | In progress | - |
 | 7 | UK Days: año fiscal dinámico + límite configurable + máximo posible | TBD | Not started | - |
 | 8 | Sin pérdidas silenciosas: avisos de escritura bloqueada + estado tras confirm() | TBD | Not started | - |
 
@@ -30,7 +30,7 @@ Plans: TBD (defined during /paul:plan)
 ### Phase 6: Barrera de tests
 Focus: F-06-001/002/003 — un `run-all` que ejecuta todos los harness con fixtures anonimizadas versionadas y golden de cabeceras del importer; gate en pre-commit/pre-push; Playwright sin rutas absolutas.
 Plans:
-- [ ] 06-01: fixtures anonimizadas + golden (cabeceras importer + CSV) + harness en tests/ + run-all
+- [x] 06-01: fixtures anonimizadas + golden (cabeceras importer + CSV) + harness en tests/ + run-all — 12/12 en 1,3 s, clon limpio OK
 - [ ] 06-02: Playwright propio (package.json) + e2e en tests/e2e + gate pre-commit/pre-push
 
 ### Phase 7: UK Days año y límite

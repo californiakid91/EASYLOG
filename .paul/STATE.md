@@ -11,21 +11,21 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 6 of 8 (Barrera de tests) — Planning
-Plan: 06-01 created, awaiting approval (fixtures anonimizadas + golden + tests/ + run-all; revisado por Fable)
-Status: PLAN created, ready for APPLY
-Last activity: 2026-10-05 — Created .paul/phases/06-barrera-tests/06-01-PLAN.md
+Phase: 6 of 8 (Barrera de tests) — In progress (1/2 planes)
+Plan: 06-01 complete (UNIFY); siguiente 06-02 (Playwright propio + e2e en tests/e2e + gate pre-commit/pre-push)
+Status: Ready to plan 06-02
+Last activity: 2026-10-05 — 06-01 UNIFY: tests/ + run-all 12/12 (435 checks, 1,3 s), clon limpio OK
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
-- v0.2 Seguridad y robustez: [██▌░░░░░░░] 25% (Fase 5 ✓, 1/4 fases)
+- v0.2 Seguridad y robustez: [███▊░░░░░░] 37% (Fase 5 ✓, Fase 6 1/2)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 06-01 created, awaiting approval]
+  ✓        ✓        ✓     [Loop 06-01 cerrado - ready to plan 06-02]
 ```
 
 ## Accumulated Context
@@ -33,7 +33,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 ### Decisions
 - Arnés node:vm sobre index.html real = base de tests de regresión (fases 2-3)
 - Pistas: sin secretos en cliente; fuente por dialéctica en fase 4
-- Fixtures con nombres de tripulación → gitignored
+- Fixtures con nombres de tripulación → gitignored (originales); copias anonimizadas versionadas en tests/fixtures (06-01, aprobadas por el usuario)
 - Deploy: la app se auto-actualiza (Fase 3.1) → ya NO hace falta ?v=N. Verificar deploy con `curl -s https://californiakid91.github.io/EASYLOG/ | grep "^const APP_VERSION"`. Hook `.githooks/pre-commit` sube la versión (core.hooksPath configurado); nunca `git commit -n`
 - iOS standalone: abrir desde el icono recarga la página; desde el selector de apps no siempre emite visibilitychange → la app comprueba también en focus y cada 5 min
 - Noche = regla EASA (licencia IAA del usuario): sol < −6° (crepúsculo civil), NO sunset+30 (UK CAA). sunAltitude NOAA validado vs PyEphem ≤10 s
@@ -54,6 +54,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 05-02: SheetJS vendorizado (vendor/, sha384 fijado; nunca carga al clic por la activación de usuario en iOS); meta CSP con hosts concretos + #csp-watch (aviso solo para webs bloqueadas); firestore.rules = copia de prod, verificar con check-firestore-rules.mjs (solo GET, nunca deploy)
 - Script inline del <head> SIEMPRE con atributo (p.ej. id): los harness localizan el principal con /<script>\n…<\/script>\s*<\/body>/
 - E2E WebKit en Linux no tiene TLS → https:// vía Node (ctx.route + route.fetch); la CSP se sigue aplicando
+- 06-01: tests en tests/ (harness/, fixtures/ anonimizadas, golden/); rutas SOLO desde tests/lib.mjs; `node tests/run-all.mjs` = barrera (✗ con exit≠0, SKIP, FAIL/✗ o 0 checks); golden de caracterización → cambios legítimos con `node tests/harness/harness-csv.mjs --update-golden` y revisar diff; lista importer PilotLog = 115 cabeceras; fixture 01 (18/09/2026) debe caer dentro de UK_DAYS_START/END (re-desplazar en Fase 7); BASELINES fa78eeb/6cb4a5a
 - _runways = mapa propio (localStorage + campo Firestore `runways` con guard _runwaysSaving); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -74,7 +75,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Auto-actualización baja index.html entero cada 5 min (+32 KB DB) → fetch con cache:'no-cache' (304) | 04 Fable | XS | — |
 | semgrep: urllib dinámico en gen-airports.py (script local, URL base fija; riesgo nulo) | 04 G8 | XS | — |
 | API key del navegador con apiTargets amplios por defecto → limitar a firestore/identitytoolkit/securetoken (consola GCP, opcional) | 05-02 | XS | — |
-| E2E dependen de playwright-core en ~/manuales-motos y fixture real gitignored; rutas /home/ricardo en los .mjs | 05-02 | S | Fase 6 |
+| E2E dependen de playwright-core en ~/manuales-motos y fixture real gitignored; rutas /home/ricardo en los .mjs | 05-02 | S | 06-02 |
+| Helpers duplicados entre harness (load/check/extract) → harness-lib | 06-01 (D6/F-06-006) | M | — |
 | GitHub: ticket de purga de caché de commits (abierto 2026-10-05) → comprobar que los SHA antiguos dan 404 | 05 post | XS | cuando responda GitHub |
 
 ### Preguntas pendientes al usuario — de UNA en UNA
@@ -98,15 +100,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: ver git log — Fase 5 completa, prod v2026.10.05-120346
+Last commit: ver git log — 06-01 cerrado (local, sin push); prod sigue en v2026.10.05-120346
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: Plan 06-01 created (Fable: APPROVE WITH CHANGES, 13 puntos incorporados)
-Next action: Aprobar el plan y ejecutar /paul:apply .paul/phases/06-barrera-tests/06-01-PLAN.md
-Resume file: .paul/phases/06-barrera-tests/06-01-PLAN.md
+Stopped at: 06-01 cerrado (UNIFY); commits locales a71dc24..HEAD sin push (solo tests/ y docs, no toca index.html)
+Next action: /paul:plan 6 → plan 06-02 (package.json con playwright-core 1.63.0 fijado, e2e en tests/e2e con fixture anonimizada y lib.mjs, gate pre-commit run-all + pre-push con e2e)
+Resume file: .paul/phases/06-barrera-tests/06-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

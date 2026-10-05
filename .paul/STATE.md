@@ -81,7 +81,7 @@ Branch: main
 Last session: 2026-10-05
 Stopped at: Loop 03.2-01 cerrado (UNIFY)
 Next action: /paul:plan 03.2-02 — duplicados al pegar (decisiones ya cerradas, ver 03.2-01-SUMMARY «Siguiente»)
-Resume file: .paul/phases/03.2-datos-coherentes/03.2-01-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-05-03.2-01-completo.md
 
 ---
 *STATE.md — Updated after every significant action*

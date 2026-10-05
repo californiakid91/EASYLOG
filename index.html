@@ -706,7 +706,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.05-083341';
+const APP_VERSION = '2026.10.05-102039';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -931,7 +931,8 @@ function parseText(text) {
       const d = {};
       fLines.forEach(line => {
         const m = line.match(/^(.+?)\s*:\s*(.*)$/);
-        if (m) d[m[1].trim()] = m[2].trim();
+        // Firestore rechaza nombres de campo __…__ (y >1500 bytes): una línea así haría fallar todos los guardados
+        if (m && !/__.*__/.test(m[1]) && m[1].trim().length <= 500) d[m[1].trim()] = m[2].trim();
       });
 
       if (!d['FlightNumber']) {
@@ -1171,7 +1172,8 @@ function buildCSV(flightsWithRole) {
 function rwyKeys(flights) {
   const seen = {};
   return (flights || []).map(f => {
-    const base = `${dateRawToISO(f.date)}|${normVal(f.d?.FlightNumber).replace(/\s+/g, '')}|${normVal(f.d?.['City Pair']).replace(/\s*-\s*/, '-')}`;
+    // Tope de longitud: la clave acaba como nombre de campo en Firestore (máx. 1500 bytes); con datos reales no cambia nada
+    const base = `${dateRawToISO(f.date)}|${normVal(f.d?.FlightNumber).replace(/\s+/g, '').slice(0, 64)}|${normVal(f.d?.['City Pair']).replace(/\s*-\s*/, '-').slice(0, 64)}`;
     seen[base] = (seen[base] || 0) + 1;
     return seen[base] > 1 ? `${base}#${seen[base]}` : base;
   });
@@ -1396,6 +1398,14 @@ function monthLabel(mk)  {
 // Route concatenation: STN-NTE-STN-PSA-STN
 // Escapa texto que viene del email antes de meterlo en innerHTML
 function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+// Formatos que pueden ir dentro de onclick="f('…')" sin escapar (no contienen comillas ni <): validar antes de pintar
+const ISO_RE  = /^\d{4}-\d{2}-\d{2}$/;
+const IATA_RE = /^[A-Z]{3}$/;
+const CAL_STATES = new Set(['off', 'stby', 'duty', 'sim', 'sd']);
+// Claves de estado guardadas con formato de fecha; las que no lo tienen se omiten al pintar (sin borrarlas)
+function isoKeys(obj, label) {
+  return Object.keys(obj).filter(k => ISO_RE.test(k) || (console.warn(`${label}: clave inválida ignorada`, k), false));
+}
 
 function routeOfDay(flights) {
   const segs = flights.map(f => (f.d['City Pair'] || '').split(' - '));
@@ -1776,6 +1786,15 @@ function removeAirport(iata) {
   saveAirports(a);
   renderAirports();
 }
+// Borra por posición en la lista ordenada (para claves que no pueden ir dentro de un onclick)
+function removeAirportAt(i) {
+  const k = Object.keys(_airports).sort()[i];
+  if (k === undefined || !confirm('¿Borrar esta entrada inválida?')) return;
+  const a = { ..._airports };
+  delete a[k];
+  saveAirports(a);
+  renderAirports();
+}
 
 function renderAirports() {
   const keys = Object.keys(_airports).sort();
@@ -1786,11 +1805,18 @@ function renderAirports() {
   if (!keys.length) {
     list.innerHTML = `<div class="empty" style="padding:.85rem 0;">Ninguno aún. La app ya conoce ${airportCount()} aeropuertos (base OurAirports) — solo añade los que falten.</div>`;
   } else {
-    list.innerHTML = keys.map(k => `
+    // Clave no IATA (solo posible con datos guardados manipulados): se enseña escapada y se borra por índice, nunca va en el onclick
+    list.innerHTML = keys.map((k, i) => IATA_RE.test(k) ? `
       <div class="day-item">
         <span class="day-date">${k}</span>
         <span class="day-route">${_airports[k].lat.toFixed(4)}, ${_airports[k].lon.toFixed(4)}</span>
         <button class="day-del" onclick="removeAirport('${k}')" title="Borrar">✕</button>
+      </div>
+    ` : `
+      <div class="day-item">
+        <span class="day-date">${esc(k)}</span>
+        <span class="day-route">inválido</span>
+        <button class="day-del" onclick="removeAirportAt(${i})" title="Borrar">✕</button>
       </div>
     `).join('');
   }
@@ -1812,7 +1838,7 @@ function unknownAirportsInFlights(flights) {
     [dep, arr].forEach(x => {
       if (!x) return;
       const k = x.trim().toUpperCase();
-      if (!k) return;
+      if (!IATA_RE.test(k)) return; // solo códigos IATA: nada del email llega a prompts ni a _airports
       if (!resolveAirport(k)) seen.add(k);
     });
   });
@@ -1908,7 +1934,7 @@ function ukFlightsOf(iso) { return loadHistory()[iso]?.flights || _excelData[iso
 function backfillUKDays() {
   const updated = { ..._ukdays };
   let changed = false;
-  new Set([...Object.keys(loadHistory()), ...Object.keys(_excelData)]).forEach(iso => {
+  new Set([...isoKeys(loadHistory(), 'Historial'), ...isoKeys(_excelData, 'Excel')]).forEach(iso => {
     if (iso < UK_DAYS_START || iso > UK_DAYS_END) return;
     const e = updated[iso];
     if (e && (e.manual || !e.source)) return;
@@ -1987,14 +2013,14 @@ function ukSummary(now = ukNow()) {
     const st = ukDayStatus(iso);
     if (st.state === 'uk') ukList.push({ iso, ...st });
   }
-  const noList = Object.keys(_ukdays).sort()
+  const noList = isoKeys(_ukdays, 'UK Days').sort()
     .filter(iso => iso >= UK_DAYS_START && iso <= UK_DAYS_END && ukDayStatus(iso).state === 'no')
     .map(iso => ({ iso, ...ukDayStatus(iso) }));
   const pending = pendingUKDays(now);
   return { ukList, noList, pending, blocks: pendingUKBlocks(now) };
 }
 function ukSourceLabel(src) {
-  if (!src) return '';
+  if (!src || typeof src !== 'string') return '';
   if (src === 'manual') return 'man';
   if (src.startsWith('cal:')) return 'cal';
   return src.replace('rule:', '');
@@ -2082,14 +2108,14 @@ function renderUKDays() {
       const items = entries.map(x => {
         const e = _ukdays[x.iso];
         const route = e ? e.route : calLabel((x.source || "").slice(4));
-        const ob = e ? `OB ${e.onBlock} ${e.tz}` : 'calendario';
+        const ob = e ? `OB ${esc(e.onBlock)} ${esc(e.tz)}` : 'calendario';
         const warn = x.legacyOutside ? ` <span style="color:var(--amber)" title="Acaba fuera de UK: re-pega el email">⚠ revisar</span>` : '';
         const del = `<button class="day-del" title="Marcar como NO UK Day / eliminar" onclick="removeUKDay('${x.iso}')">✕</button>`;
         return `
           <div class="day-item">
             <span class="day-date">${dateISOToDisplay(x.iso)}</span>
             <span class="day-route">${esc(route)}${warn}</span>
-            <span class="day-count" style="color:var(--green);">${ob} · ${ukSourceLabel(x.source)}</span>
+            <span class="day-count" style="color:var(--green);">${ob} · ${esc(ukSourceLabel(x.source))}</span>
             ${del}
           </div>`;
       }).join('');
@@ -2111,7 +2137,7 @@ function renderUKDays() {
       <div class="day-item">
         <span class="day-date">${dateISOToDisplay(x.iso)}</span>
         <span class="day-route" style="font-family:inherit;font-size:.78rem">${esc(x.reason)}</span>
-        <span class="day-count">${ukSourceLabel(x.source)}</span>
+        <span class="day-count">${esc(ukSourceLabel(x.source))}</span>
         <button class="btn btn-ghost btn-sm" title="Forzar UK Day" onclick="addUKDayManual('${x.iso}')">UK</button>
         ${_ukdays[x.iso]?.manual ? `<button class="day-del" title="Quitar la marca" onclick="removeUKDay('${x.iso}')">✕</button>` : ''}
       </div>`).join('');
@@ -2275,7 +2301,7 @@ function removeUKDay(iso) {
 // ─── Render ───────────────────────────────────────────────────────────────────
 function renderHistory() {
   const hist = loadHistory();
-  const isoList = Object.keys(hist).sort().reverse();
+  const isoList = isoKeys(hist, 'Historial').sort().reverse();
   const totalDays    = isoList.length;
   const totalFlights = isoList.reduce((s, iso) => s + hist[iso].flights.length, 0);
 
@@ -2290,7 +2316,7 @@ function renderHistory() {
     _lastExport = null;
     host.innerHTML = `<div class="empty">Aún no has guardado ningún día. Pega tu primer email arriba ↑</div>` + excelOnlyHTML(hist);
     dlAllBtn.disabled = true;
-    clearBtn.disabled = true;
+    clearBtn.disabled = !Object.keys(hist).length; // con solo claves inválidas (ocultas) se puede seguir borrando el historial
     renderUKDays();
     return;
   }
@@ -2460,7 +2486,7 @@ function closeRwyModal() {
 
 // Días que siguen en el Excel Tax Year pero ya no en el historial (p. ej. tras "Borrar historial"): sección plegada para poder borrarlos
 function excelOnlyHTML(hist) {
-  const list = Object.keys(_excelData).filter(iso => !hist[iso]).sort().reverse();
+  const list = isoKeys(_excelData, 'Excel').filter(iso => !hist[iso]).sort().reverse();
   if (!list.length) return '';
   const items = list.map(iso => `
         <div class="day-item">
@@ -2923,7 +2949,7 @@ function renderCalendar() {
   for (let d = 1; d <= lastDay.getDate(); d++) {
     const iso = `${_calYear}-${String(_calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday = d === today.getDate() && _calMonth === today.getMonth() && _calYear === today.getFullYear();
-    const st = _dayMap[iso] || '';
+    const st = CAL_STATES.has(_dayMap[iso]) ? _dayMap[iso] : '';
     const cls = ['cal-day', isToday ? 'today' : '', st ? `s-${st}` : ''].filter(Boolean).join(' ');
     html += `<div class="${cls}" data-iso="${iso}">${d}</div>`;
   }

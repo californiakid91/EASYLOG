@@ -5,26 +5,27 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.1.0 cerrado — siguiente: definir v0.2 (Seguridad y robustez, desde el roadmap Aegis)
+**Current focus:** v0.2 Seguridad y robustez — Fase 5 (Seguridad)
 
 ## Current Position
 
-Version: v0.1.0
-Milestone: Awaiting next milestone
-Phase: None active
-Plan: None
-Status: Milestone v0.1 Datos fiables complete — ready for next
-Last activity: 2026-10-05 — Aegis pre-milestone + milestone completed (tag v0.1.0)
+Version: v0.1.0 (en curso v0.2.0)
+Milestone: v0.2 Seguridad y robustez
+Phase: 5 of 8 (Seguridad) — Not started
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-05 — Milestone v0.2 created
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
+- v0.2 Seguridad y robustez: [░░░░░░░░░░] 0%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ○        ○        ○     [Milestone complete - ready for next]
+  ○        ○        ○     [Ready for first PLAN]
 ```
 
 ## Accumulated Context
@@ -95,9 +96,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-05
-Stopped at: Milestone v0.1 Datos fiables complete (Aegis hecho, tag v0.1.0)
-Next action: /paul:milestone (v0.2 Seguridad y robustez) — y acciones del propietario: medir doc Firestore, GitHub 2FA + protección de main
-Resume file: .paul/MILESTONES.md
+Stopped at: Milestone v0.2 created, ready to plan
+Next action: /paul:plan para Fase 5 (Seguridad)
+Resume file: .paul/ROADMAP.md
 
 ---
 *STATE.md — Updated after every significant action*

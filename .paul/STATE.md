@@ -5,16 +5,16 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.2 Seguridad y robustez — Fase 7 (UK Days: año fiscal dinámico + límite)
+**Current focus:** v0.2 Seguridad y robustez — Fase 7, plan 07-01 (año fiscal dinámico)
 
 ## Current Position
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 7 of 8 (UK Days año y límite) — Not started
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-05 — Fase 6 completa (06-02: e2e propios + gate pre-commit/pre-push, 14/14); transición a Fase 7
+Phase: 7 of 8 (UK Days año y límite) — Planning
+Plan: 07-01 created, awaiting approval
+Status: PLAN created, ready for APPLY
+Last activity: 2026-10-06 — Creado .paul/phases/07-ukdays-anio-y-limite/07-01-PLAN.md (dialéctica Fable + revisión adversaria: aprobado con cambios, incorporados)
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
@@ -25,7 +25,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop 06-02 cerrado — Fase 6 completa, ready to plan Fase 7]
+  ✓        ○        ○     [Plan 07-01 creado, esperando aprobación]
 ```
 
 ## Accumulated Context
@@ -56,6 +56,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - E2E WebKit en Linux no tiene TLS → https:// vía Node (ctx.route + route.fetch); la CSP se sigue aplicando
 - 06-01: tests en tests/ (harness/, fixtures/ anonimizadas, golden/); rutas SOLO desde tests/lib.mjs; `node tests/run-all.mjs` = barrera (✗ con exit≠0, SKIP, FAIL/✗ o 0 checks); golden de caracterización → cambios legítimos con `node tests/harness/harness-csv.mjs --update-golden` y revisar diff; lista importer PilotLog = 115 cabeceras; fixture 01 (18/09/2026) debe caer dentro de UK_DAYS_START/END (re-desplazar en Fase 7); BASELINES fa78eeb/6cb4a5a
 - 06-02: `npm ci` (playwright-core 1.63.0) + `node tests/run-all.mjs tests/harness tests/e2e` = 14/14; e2e usan serveRepo/loadPlaywright/watchdog/FIXED_NOW de lib.mjs; reloj fijo solo sin Firebase; pre-commit = harness (bloquea), pre-push = harness + e2e (e2e-csp 1 reintento; escape solo `EASYLOG_PUSH_SKIP_NET=1 git push`); nunca --no-verify; push desde Bash de Claude con timeout ≥ 5 min
+- 07 (dialéctica Fable 2026-10-06, confianza alta): año fiscal DERIVADO de la fecha (taxYearOf/viewTY, sin estado persistido); UK_DAYS_FLOOR=2026-04-06 (no se fabrica evidencia anterior); año congelado a end+30 días (backfill solo lectura; pegar = confirm → manual, cancelar = no guardar); chip ‹ año › + banner 06/04–05/05; Excel por año visible; split 07-01 (año) / 07-02 (límite por año = settings.ukLimit[label] + máximo posible + sin "bonus")
 - _runways = mapa propio (localStorage + campo Firestore `runways` con guard _runwaysSaving); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -87,7 +88,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - [ ] Revisar uno a uno los 47 días previos (25 man + 22 R1) de 2026/27
 - [x] ¿Añadir el año a las fechas de "Sin decidir"? → SÍ, en toda la app (dateISOToDisplay → dd/mm/aa), 2026-10-05
 - (pendiente personal del usuario — detalle en memoria local)
-- [ ] ¿Push de los commits de Fase 6 (06-01 + 06-02; solo tests/, docs, package.json, hooks — no cambia la app)? El push ya pasa por el gate nuevo (~50 s)
+- [x] ¿Push de los commits de Fase 6? → SÍ, hecho 2026-10-06 (3c93a22..193e7ce, gate pre-push 13/13 + e2e-csp OK)
 - [ ] ¿Tolerar en e2e-csp el beacon `connect-src https://apis.google.com/js/gen_204` (telemetría de gapi, intermitente)? Hoy lo amortigua el reintento del pre-push
 - [ ] ¿Sacar del repo público el código de piloto/nombre (hoy fijos en index.html para T/O-LDG y CREWLIST; también en PROJECT.md, harness y AUDIT)? → requiere configuración en la app + quizá otra purga de historial (G8 Fase 5)
 
@@ -103,15 +104,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: ver git log — Fase 6 cerrada (local, sin push); prod sigue en v2026.10.05-120346
+Last commit: 193e7ce — Fase 6 subida a origin 2026-10-06; prod sigue en v2026.10.05-120346 (index.html sin cambios)
 Branch: main
 
 ## Session Continuity
 
-Last session: 2026-10-05
-Stopped at: Fase 6 completa (06-01 + 06-02 UNIFY, transición con G7/G8)
-Next action: /paul:plan 7 (UK Days: año fiscal dinámico + límite configurable); antes, decidir push de Fase 6
-Resume file: .paul/HANDOFF-2026-10-05-fase6-completa.md
+Last session: 2026-10-06
+Stopped at: Plan 07-01 creado (dialéctica + revisión Fable incorporadas)
+Next action: Revisar y aprobar el plan, luego /paul:apply .paul/phases/07-ukdays-anio-y-limite/07-01-PLAN.md
+Resume file: .paul/phases/07-ukdays-anio-y-limite/07-01-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

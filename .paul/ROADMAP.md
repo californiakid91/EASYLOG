@@ -16,7 +16,7 @@ Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 |-------|------|-------|--------|-----------|
 | 5 | Seguridad: XSS aeropuerto, SRI/CSP, reglas Firestore en repo | 2/2 | ✅ Complete | 2026-10-05 |
 | 6 | Barrera de tests: runner único + fixtures anonimizadas + gate | 2/2 | ✅ Complete | 2026-10-05 |
-| 7 | UK Days: año fiscal dinámico + límite configurable + máximo posible | TBD | Not started | - |
+| 7 | UK Days: año fiscal dinámico + límite configurable + máximo posible | 0/2 | Planning | - |
 | 8 | Sin pérdidas silenciosas: avisos de escritura bloqueada + estado tras confirm() | TBD | Not started | - |
 
 ### Phase 5: Seguridad
@@ -36,7 +36,9 @@ Status: ✅ Complete 2026-10-05
 
 ### Phase 7: UK Days año y límite
 Focus: F-03-001 (año fiscal derivado de la fecha / selector, antes del 06/04/2027), límite configurable (valor a confirmar por el usuario), "máximo posible" con pendientes, etiqueta sin "bonus" (F-DA-008/D-010), F-03-006 (año explícito en comando manual).
-Plans: TBD
+Plans:
+- [ ] 07-01: año fiscal derivado + FLOOR + congelación + chip ‹ año › + banner abril + Excel/comando por año + tests sin año real (dialéctica Fable)
+- [ ] 07-02: límite configurable por año + "máximo posible" + textos sin "bonus" (tras respuesta del asesor)
 
 ### Phase 8: Sin pérdidas silenciosas
 Focus: F-02-006 + F-RG-003 (escritura bloqueada tapada por "ok"), F-02-001 (estado obsoleto tras confirm()), F-02-004/005/007 (fallos de localStorage/nube solo en consola), F-RG-004 (textos que prometen importar). Política de sync (LWW vs merge por día) se decide en el plan.

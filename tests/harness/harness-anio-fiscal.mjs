@@ -128,6 +128,17 @@ check('(vii) mensaje "Excel 2026-27 descargado."', st.at(-1) === 'ok: Excel 2026
 xl.file = null; view(null); run('downloadTaxExcel()');
 check('(vii) 2027-28 visible con huecos pasados → bloqueado solo por los de 2027-28', xl.file === null && /No se descarga el Excel 2027-28: 14 días sin decidir/.test(st.at(-1)), st.at(-1));
 
+// ── G6: el botón OFF pintado antes del 06/04 sigue marcando SU hueco aunque el año visible cambie solo
+reset(); now('2027-04-05T12:00:00Z');
+run(`(() => { for (let iso = '2026-04-06'; iso <= '2027-03-31'; iso = addDaysISO(iso, 1)) _dayMap[iso] = 'off'; })()`);
+const offBtn = (body().match(/ukMarkBlockOff\('([\d-]+)'\)/) || [])[1];
+check('G6: OFF pintado el 05/04 apunta al hueco 01/04/2027', offBtn === '2027-04-01', offBtn);
+now('2027-04-09T12:00:00Z'); run(`ukMarkBlockOff('${offBtn}')`);
+// el 09/04 el hueco de 2026-27 ya incluye el 05/04 (pasado): se marca entero, pero nada de 2027-28
+check('G6: pulsado el 09/04 (visible ya 2027-28) → marca 01–05/04/2027 y no toca 06–08/04', ['01', '02', '03', '04', '05'].every(d => run(`_dayMap['2027-04-${d}']`) === 'off') && ['06', '07', '08'].every(d => run(`_dayMap['2027-04-${d}']`) === undefined));
+run(`ukMarkBlockOff('<img>')`); run(`ukMarkBlockOff('2027-01-01')`);
+check('G6: primer día inválido o sin hueco → no hace nada', run(`_dayMap['2027-01-01']`) === 'off' && Object.keys(run('_dayMap')).length === 365, String(Object.keys(run('_dayMap')).length));
+
 // ── Banner solo en la gracia (06/04–05/05) y el chip no escribe nada
 reset(); now('2027-05-05T12:00:00Z');
 check('banner el 05/05/2027', body().includes('ty-banner'));

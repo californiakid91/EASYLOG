@@ -734,7 +734,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.06-165600';
+const APP_VERSION = '2026.10.06-170132';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -2068,7 +2068,7 @@ function pendingUKDays(now = ukNow(), ty = viewTY(now)) {
   return ukPastDays(now, ty).map(iso => ({ iso, ...ukDayStatus(iso) })).filter(x => x.state === 'pending');
 }
 // Huecos: días pendientes consecutivos sin email ni calendario (los únicos que el botón OFF puede tocar).
-// ukMarkBlockOff(i) usa el índice del MISMO año que pintó renderUKDays (los dos con el visible por defecto).
+// ukMarkBlockOff identifica el hueco por su primer día (no por posición): estable aunque el año visible cambie solo el 06/04.
 function pendingUKBlocks(now = ukNow(), ty = viewTY(now)) {
   const blocks = [];
   let cur = null, prev = null;
@@ -2195,7 +2195,7 @@ function renderUKDays() {
       <div class="day-item">
         <span class="day-route">${b.days.length > 7 ? ukRangeLabel(b.days) : b.days.map(iso => `<a href="#" style="color:var(--text)" onclick="openDayModal('${iso}');return false;">${dateISOToDisplay(iso)}</a>`).join(' ')}</span>
         <span class="day-count">${b.days.length} día${b.days.length !== 1 ? 's' : ''}</span>
-        <button class="btn btn-ghost btn-sm" onclick="ukMarkBlockOff(${i})">OFF</button>
+        <button class="btn btn-ghost btn-sm" onclick="ukMarkBlockOff('${b.days[0]}')">OFF</button>
       </div>`).join('');
     const otherRows = pending.filter(x => x.kind !== 'gap').map(x => `
       <div class="day-item">
@@ -2272,8 +2272,10 @@ function renderUKDays() {
 }
 
 // Botón OFF de un hueco: marca todos sus días como OFF en el calendario (una sola escritura). Nunca toca días con email.
-function ukMarkBlockOff(i) {
-  const b = pendingUKBlocks()[i];
+// `first` = primer día del hueco tal como se pintó; se recalcula en SU año fiscal (si ya no existe, no se hace nada)
+function ukMarkBlockOff(first) {
+  if (!ISO_RE.test(String(first))) return;
+  const b = pendingUKBlocks(ukNow(), taxYearOf(first)).find(x => x.days[0] === first);
   if (!b) return;
   if (getMode() === 'cloud' && !cloud.hydrated) { alert('Aún no hay conexión con la nube: no se ha guardado. Repítelo cuando ponga "Sincronizado ✓".'); return; }
   const days = b.days.filter(iso => !ukHasEmail(iso) && !_dayMap[iso]);

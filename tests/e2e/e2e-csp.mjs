@@ -3,7 +3,7 @@
 // Línea base = el mismo recorrido con la meta CSP quitada del HTML servido → los pageerror deben ser los mismos.
 // Reloj: recorrido local con FIXED_NOW; recorrido nube con reloj real (Firestore/Auth se cuelgan con Date fijo).
 import fs from 'node:fs';
-import { INDEX_PATH, FIXED_NOW, readFixture, serveRepo, loadPlaywright, watchdog } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW, FIXTURE_DATE, BASE_TY, seedCalendar, readFixture, serveRepo, loadPlaywright, watchdog } from '../lib.mjs';
 watchdog();
 const HTML = fs.readFileSync(INDEX_PATH, 'utf8');
 const NOCSP = HTML.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\n/, '');
@@ -18,8 +18,8 @@ const URL0 = srv.url;
 let fails = 0; const ok = (n, c, d = '') => { console.log(`${c ? 'PASS' : 'FAIL'}  ${n}${d ? '  — ' + d : ''}`); if (!c) fails++; };
 const browser = await webkit.launch();
 
-// Calendario OFF del 06/04 al 04/10 (= ayer según FIXED_NOW; salvo el día de la fixture 01) para que el Excel no quede bloqueado por pendientes
-const cal = {}; for (let t = Date.UTC(2026, 3, 6); t <= Date.UTC(2026, 9, 4); t += 86400000) { const iso = new Date(t).toISOString().slice(0, 10); if (iso !== '2026-09-18') cal[iso] = 'off'; }
+// Calendario OFF desde el inicio de BASE_TY hasta ayer según FIXED_NOW (salvo el día de la fixture 01) para que el Excel no quede bloqueado por pendientes
+const cal = seedCalendar(BASE_TY.start, new Date(Date.parse(FIXED_NOW) - 86400000).toISOString().slice(0, 10), [FIXTURE_DATE]);
 
 async function newPage(mode) {
   const ctx = await browser.newContext({ ...devices['iPhone 13'], acceptDownloads: true, timezoneId: 'Europe/London' });

@@ -1,6 +1,6 @@
 // Prueba de addUKDayManual / pickUKDayDate sobre el <script> real de index.html (modo local, DOM falso)
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url';
-import { INDEX_PATH } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW } from '../lib.mjs';
 const html = fs.readFileSync(INDEX_PATH, 'utf8');
 const SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const els = new Map();
@@ -8,7 +8,7 @@ const mk = () => new Proxy({ value: '', dataset: {}, style: {} }, { get: (t, k) 
 const ls = new Map([['easylog_mode', 'local']]); const st = []; let answer = true;
 const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) || els.set(id, mk()), els.get(id)), querySelector: () => mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener() {} },
   localStorage: { getItem: k => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) },
-  window: {}, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, confirm: () => answer, prompt: () => null, alert: m => st.push('alert: ' + m),
+  window: { _ukNowOverride: FIXED_NOW }, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, confirm: () => answer, prompt: () => null, alert: m => st.push('alert: ' + m),
   setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, __st: st });
 vm.runInContext(SCRIPT, ctx); vm.runInContext('showStatus = (t, m) => __st.push(t + ": " + m); _ukdays = {};', ctx);
 const run = c => vm.runInContext(c, ctx); let fails = 0;

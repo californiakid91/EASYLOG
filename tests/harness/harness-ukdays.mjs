@@ -1,6 +1,6 @@
 // Pruebas de UK Days (fase 3, plan 01) sobre el <script> real de index.html (modo local, DOM falso)
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url';
-import { INDEX_PATH, readFixture } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW, readFixture } from '../lib.mjs';
 const html = fs.readFileSync(INDEX_PATH, 'utf8');
 const SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const els = new Map();
@@ -8,7 +8,7 @@ const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', t
 const ls = new Map([['easylog_mode', 'local']]); const st = []; const confirms = []; let answer = true;
 const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) || els.set(id, mk()), els.get(id)), querySelector: () => mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener() {} },
   localStorage: { getItem: k => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) },
-  window: {}, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, confirm: m => (confirms.push(m), answer), prompt: () => null, alert: m => st.push('alert: ' + m),
+  window: { _ukNowOverride: FIXED_NOW }, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, confirm: m => (confirms.push(m), answer), prompt: () => null, alert: m => st.push('alert: ' + m),
   setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, __st: st });
 vm.runInContext(SCRIPT, ctx);
 vm.runInContext('showStatus = (t, m) => __st.push(t + ": " + m); var __persists = 0; const __p = persist; persist = function () { __persists++; return __p(); };', ctx);
@@ -92,7 +92,7 @@ check('comando: "1 abril" → 2027-04-01; "6 abril" → 2026-04-06', run(`'2027-
 reset(); paste('añade uk days 6 y 7 abril'); 
 check('comando: "7 abril" → 2026-04-07 (no 2027-04-07)', run(`'2026-04-07' in _ukdays && !('2027-04-07' in _ukdays)`), Object.keys(run('_ukdays')).join(','));
 check('sin restos de 2027-04-07 / "7 abr 2027" en index.html', !/2027-04-07|7 abr 2027/.test(fs.readFileSync(INDEX_PATH, 'utf8')));
-check('downloadTaxExcel usa UK_DAYS_START/END', /TAX_START = UK_DAYS_START;[\s\S]{0,40}TAX_END\s+= UK_DAYS_END;/.test(fs.readFileSync(INDEX_PATH, 'utf8')));
+check('downloadTaxExcel usa el año fiscal visible (viewTY)', /const ty = viewTY\(\);[\s\S]{0,900}TAX_START = ty\.start;[\s\S]{0,40}TAX_END\s+= ty\.end;/.test(fs.readFileSync(INDEX_PATH, 'utf8')));
 
 // ── AC-5: días en Excel sin historial
 const histHTML = () => ctx.document.getElementById('history').innerHTML;

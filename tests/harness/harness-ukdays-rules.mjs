@@ -1,12 +1,12 @@
 // Pruebas de las reglas reales de UK Days (fase 3, plan 02) sobre el <script> real de index.html (modo local, DOM falso)
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url';
-import { INDEX_PATH } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW } from '../lib.mjs';
 const html = fs.readFileSync(INDEX_PATH, 'utf8');
 const SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const els = new Map();
 const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', textContent: '' }, { get: (t, k) => k in t ? t[k] : k === 'classList' ? { add() {}, remove() {}, toggle() {}, contains() { return false; } } : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mk(), set: (t, k, v) => (t[k] = v, true) });
 const ls = new Map([['easylog_mode', 'local']]); const st = []; const confirms = []; let answer = true;
-const win = { location: {} };
+const win = { location: {}, _ukNowOverride: FIXED_NOW }; // reloj fijo: independiente del año real
 const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) || els.set(id, mk()), els.get(id)), querySelector: () => mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener() {} },
   localStorage: { getItem: k => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) },
   window: win, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, Blob: class { constructor(p) { this.p = p; } }, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }, confirm: m => (confirms.push(m), answer), prompt: () => null, alert: m => st.push('alert: ' + m),
@@ -139,8 +139,9 @@ check('huecos = [12–15/11], [19/11]; el 17/11 (email incompleto) no entra', JS
 now('2026-10-24T23:30:00Z'); // 00:30 BST del 25 → ayer Londres = 24/10
 check('"ayer" se calcula en hora de Londres (23:30Z 24/10 BST → ayer = 24/10)', run('londonYesterdayISO()') === '2026-10-24', run('londonYesterdayISO()'));
 now('2027-06-01T12:00:00Z');
-check('después del periodo, los días pasados acaban en 05/04/2027', run('ukPastDays().at(-1)') === '2027-04-05');
-delete win._ukNowOverride;
+check('después del periodo, los días pasados de 2026-27 acaban en 05/04/2027', run(`ukPastDays(ukNow(), taxYearByLabel('2026-27')).at(-1)`) === '2027-04-05');
+check('… y el año visible ya es 2027-28 (derivado de hoy)', run('viewTY().label') === '2027-28' && run('ukPastDays().at(-1)') === '2027-05-31', run('viewTY().label'));
+now(FIXED_NOW);
 
 // Calzos a las 00:00 justas = en UK al final del día (FA 2013 Sch 45 para 22) → UK Day; 00:01 → R3
 reset(); paste(email('2026/04/06', [{ cp: 'STN - DUB', off: '20:00', on: '21:10' }, { cp: 'DUB - STN', off: '21:50', on: '23:00' }]));
@@ -216,7 +217,7 @@ check('backup: UK con procedencia, No UK con motivo y resumen "N confirmados · 
 // Nube sin hidratar: no se calculan pendientes
 reset(); ls.set('easylog_mode', 'cloud'); run('cloud.hydrated = false; renderUKDays()');
 check('nube sin hidratar → "Cargando…" sin bloque de pendientes', /Cargando/.test(body()) && !/sin decidir/.test(body()));
-ls.set('easylog_mode', 'local'); delete win._ukNowOverride;
+ls.set('easylog_mode', 'local'); now(FIXED_NOW);
 
 console.log(fails ? `\n${fails} FALLO(S)` : '\nTODO OK');
 process.exit(fails ? 1 : 0);

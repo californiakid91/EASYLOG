@@ -11,8 +11,8 @@ export const TMP = os.tmpdir();
 export const NET_TESTS = ['e2e-csp.mjs'];
 
 // Fixtures anonimizadas (versionadas). Si falta una, es un FALLO, nunca un SKIP.
-// OJO: la fecha de la fixture 01 (2026/09/18) tiene que caer dentro de UK_DAYS_START/END de index.html;
-// cuando el año fiscal cambie (Fase 7) hay que volver a desplazarla (múltiplos de 7 días, en BST).
+// Desde la fase 7 el año fiscal se deriva de la fecha: los tests fijan su «ahora» (FIXED_NOW) dentro de BASE_TY,
+// así que la fixture 01 ya no hay que desplazarla cada año. `run-all --now=<ISO>` comprueba que nada depende del año real.
 export function readFixture(prefix) {
   const f = fs.existsSync(FIXTURES_DIR) && fs.readdirSync(FIXTURES_DIR).find(x => x.startsWith(prefix) && x.endsWith('.txt'));
   if (!f) throw new Error(`Falta la fixture ${prefix}* en ${FIXTURES_DIR}`);
@@ -29,11 +29,22 @@ export function indexAt(sha) {
   catch { throw new Error(`Falta el commit base ${sha} (¿clon superficial o historial reescrito?). Trae el historial completo o actualiza BASELINES en tests/lib.mjs.`); }
 }
 
-// ── e2e ──
-// «Ahora» fijo del navegador en los e2e sin Firebase (page/ctx.clock.setFixedTime): dentro de UK_DAYS_START/END,
-// posterior a la fixture 01 (18/09/2026); ayer en Londres = 2026-10-04 → el calendario sembrado cubre todos los días pasados
-// y el Excel no se bloquea. OJO Fase 7 (año fiscal dinámico): moverla junto con la fixture 01.
+// ── Reloj de los tests ──
+// Fecha literal del email de la fixture 01 y su año fiscal (misma regla que taxYearOf de index.html: 06/04 abre año).
+export const FIXTURE_DATE = '2026-09-18';
+export const BASE_TY = { start: '2026-04-06', end: '2027-04-05', label: '2026-27' };
+// «Ahora» fijo: dentro de BASE_TY y posterior a FIXTURE_DATE; ayer en Londres = 2026-10-04.
+// Lo usan los harness (window._ukNowOverride) y los e2e sin Firebase (ctx.clock.setFixedTime).
 export const FIXED_NOW = '2026-10-05T12:00:00+01:00';
+// Calendario 'off' de fromISO a toISO (ambos incluidos), salvo las fechas de `except` (siembra de e2e-csp)
+export function seedCalendar(fromISO, toISO, except = []) {
+  const cal = {};
+  for (let t = Date.parse(fromISO + 'T00:00:00Z'); t <= Date.parse(toISO + 'T00:00:00Z'); t += 86400000) {
+    const iso = new Date(t).toISOString().slice(0, 10);
+    if (!except.includes(iso)) cal[iso] = 'off';
+  }
+  return cal;
+}
 
 // playwright-core del repo (npm ci) + navegador ya instalado; error claro en vez de descargar nada.
 // Import dinámico: los harness importan lib.mjs y no deben depender de node_modules.

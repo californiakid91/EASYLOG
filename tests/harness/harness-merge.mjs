@@ -8,7 +8,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
-import { INDEX_PATH } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW } from '../lib.mjs';
 const INDEX = process.argv[2] || INDEX_PATH;
 const html = fs.readFileSync(INDEX, 'utf8');
 let SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
@@ -68,7 +68,7 @@ const statuses = [];
 const ctx = vm.createContext({
   document: { getElementById: byId, querySelector: s => (s.includes('role') ? role : makeEl()), querySelectorAll: () => [], body: makeEl(), createElement: () => makeEl(), addEventListener() {} },
   localStorage: { getItem: k => (ls.has(k) ? ls.get(k) : null), setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) },
-  window: {}, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl,
+  window: { _ukNowOverride: FIXED_NOW }, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl,
   confirm: () => true, prompt: () => null, alert() {},
   setTimeout: (fn, ms) => (ms === 0 ? Promise.resolve().then(fn) : 0), // los timers de 2-3 s no vencen durante el test
   clearTimeout() {}, setInterval: () => 0,

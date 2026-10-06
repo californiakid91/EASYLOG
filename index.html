@@ -61,6 +61,11 @@
     --red:      #cf222e;
   }
   .uk-progress { margin-bottom: 1.25rem; }
+  .ty-chip { display:inline-flex; align-items:center; margin-left:auto; border:1px solid var(--border); border-radius:10px; }
+  .ty-chip button { min-width:44px; min-height:44px; background:none; border:none; color:var(--accent); font-size:1.2rem; cursor:pointer; }
+  .ty-chip button:disabled { color:var(--muted); opacity:.35; cursor:default; }
+  .ty-chip span { font-weight:700; font-size:.9rem; padding:0 .25rem; font-variant-numeric:tabular-nums; }
+  .ty-banner { display:flex; align-items:center; gap:.5rem; width:100%; margin-bottom:1rem; padding:.65rem .8rem; border-radius:10px; border:1px solid var(--amber); background:rgba(210,153,34,.12); color:var(--text); font-size:.85rem; text-align:left; cursor:pointer; }
   .uk-progress-label {
     display: flex; justify-content: space-between; align-items: baseline;
     margin-bottom: .45rem; font-size: .85rem; font-weight: 600; color: var(--text);
@@ -600,6 +605,7 @@
     <div style="display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap;">
       <button class="btn btn-blue btn-sm" onclick="openUKDateModal()">+ Añadir fecha</button>
       <button class="btn btn-ghost btn-sm" onclick="emailUKDaysBackup()">📧 Backup</button>
+      <span class="ty-chip" id="ukdays-ty"></span>
     </div>
     <div id="ukdays-body"></div>
   </div>
@@ -648,7 +654,7 @@
     <div class="card-title">Exportar</div>
     <div class="global-actions">
       <button class="btn btn-green" onclick="downloadAllCSV()" id="btn-dl-all">⬇ Descargar CSV PilotLog</button>
-      <button class="btn btn-blue" onclick="downloadTaxExcel()">⬇ Descargar Excel Tax Year</button>
+      <button class="btn btn-blue" onclick="downloadTaxExcel()" id="btn-dl-excel">⬇ Descargar Excel Tax Year</button>
       <a class="btn btn-blue" href="https://my.crewlounge.center/pilotlog-import-wizard" target="_blank"
          style="text-decoration:none;">Abrir Import Wizard ↗</a>
       <span class="spacer"></span>
@@ -695,7 +701,7 @@
     <div class="day-modal-box" onclick="event.stopPropagation()">
       <div class="day-modal-handle"></div>
       <div class="day-modal-date">Añadir UK Day</div>
-      <input type="date" id="ukday-date" min="2026-04-06" max="2027-04-05"
+      <input type="date" id="ukday-date"
              style="width:100%; font-size:16px; padding:.75rem; margin-bottom:1rem; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); box-sizing:border-box;">
       <button class="btn btn-blue" style="width:100%; margin-bottom:.5rem;" onclick="confirmUKDateModal()">Añadir</button>
       <button class="day-modal-cancel" onclick="closeUKDateModal()">Cancelar</button>
@@ -728,7 +734,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.05-120346';
+const APP_VERSION = '2026.10.06-165600';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -1466,9 +1472,12 @@ function tryParseUKDaysCommand(text) {
   }
   if (!month) return null;
 
-  // Año según el periodo UK Days (6 abr 2026 – 5 abr 2027): ene-mar y 1-5 abr → 2027; resto → 2026
+  // Año: el explícito de 4 dígitos ("abril 2027 3 5") o, si no, el que toca dentro del año fiscal visible
+  // (6 abr–dic → año de inicio; ene–5 abr → año de fin)
+  const explicitYear = t.match(/\b(20\d{2})\b/);
+  const y0 = Number(viewTY().start.slice(0, 4));
 
-  // Extract day numbers (1-2 digits surrounded by word boundaries)
+  // Extract day numbers (1-2 digits surrounded by word boundaries; el año de 4 dígitos no entra)
   const days = [...t.matchAll(/\b(\d{1,2})\b/g)]
     .map(m => Number(m[1]))
     .filter(n => n >= 1 && n <= 31);
@@ -1476,8 +1485,8 @@ function tryParseUKDaysCommand(text) {
   if (!days.length) return null;
 
   const dates = days
-    .map(d => `${(month <= 3 || (month === 4 && d <= 5)) ? 2027 : 2026}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`)
-    .filter(iso => iso >= UK_DAYS_START && iso <= UK_DAYS_END);
+    .map(d => `${explicitYear ? Number(explicitYear[1]) : (month <= 3 || (month === 4 && d <= 5)) ? y0 + 1 : y0}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`)
+    .filter(iso => ukInScope(iso));
 
   return dates.length ? { dates } : null;
 }
@@ -1491,6 +1500,8 @@ function addDay() {
   if (ukCmd) {
     const added = [], skipped = [];
     const updated = { ..._ukdays };
+    const frozen = ukCmd.dates.filter(iso => ukFrozenDay(iso) && ukEntryState(_ukdays[iso]) !== 'uk');
+    if (frozen.length && !confirm(ukFrozenConfirmText(frozen))) { showStatus('warn', 'Cancelado. No se ha guardado nada.'); return; }
     ukCmd.dates.forEach(iso => {
       if (ukEntryState(_ukdays[iso]) === 'uk') { skipped.push(dateISOToDisplay(iso)); return; }
       updated[iso] = ukManualEntry(iso);
@@ -1561,18 +1572,31 @@ function addDay() {
     if (!ok) { showStatus('warn', 'Cancelado. No se ha guardado nada.'); return; }
   }
 
+  // Año congelado (evidencia ya cerrada): si la regla crearía o cambiaría su UK Day, se pregunta ANTES de guardar nada.
+  // Aceptar → entrada manual (ya no se recalcula); cancelar → no se guarda nada (si no, el día quedaría pendiente para siempre).
+  const ukFrozen = ukFrozenDay(iso) && applyUKDay({ ..._ukdays }, iso, flights);
+  if (ukFrozen && !confirm(ukFrozenConfirmText([iso]))) { showStatus('warn', 'Cancelado. No se ha guardado nada.'); return; }
+
   hist[iso] = {
     addedAt: new Date().toISOString(),
     role: dayRole,
     flights,
   };
   _excelData[iso] = { role: dayRole, flights };
-  // UK Day: se (re)calcula al pegar o re-pegar el día (las entradas manuales no se tocan). Una sola escritura con el historial.
-  if (iso >= UK_DAYS_START && iso <= UK_DAYS_END) {
+  // UK Day: se (re)calcula al pegar o re-pegar el día, sea del año que sea (las entradas manuales no se tocan). Una sola escritura con el historial.
+  let ukNote = '';
+  if (ukInScope(iso)) {
     const updated = { ..._ukdays };
     if (applyUKDay(updated, iso, flights)) {
+      if (ukFrozen) updated[iso] = { ...updated[iso], manual: true, source: 'manual', reason: `año cerrado, pegado el ${dateISOToDisplay(londonTodayISO())}: ${updated[iso].reason}` };
       setUKDays(updated);
     }
+    const ty = taxYearOf(iso);
+    if (ty.label !== viewTY().label) ukNote = ` Guardado en Tax Year ${ty.label} (no es el visible).`;
+  } else {
+    ukNote = iso < UK_DAYS_FLOOR
+      ? ` UK Day no registrado: anterior al primer año gestionado (${taxYearOf(UK_DAYS_FLOOR).label}).`
+      : ` UK Day no registrado: fuera del periodo UK Days (${ukScopeText()}).`;
   }
   saveHistory(hist);
 
@@ -1580,7 +1604,14 @@ function addDay() {
   renderHistory();
   const warnMsg = warnings.length ? ` (${warnings.length} aviso${warnings.length !== 1 ? 's' : ''})` : '';
   const skipMsg = askUnknownAirports(flights);
-  showStatus('ok', `${flights.length} vuelo${flights.length !== 1 ? 's' : ''} añadidos al ${dateISOToDisplay(iso)}${warnMsg}${skipMsg}.${roleNote}`);
+  showStatus('ok', `${flights.length} vuelo${flights.length !== 1 ? 's' : ''} añadidos al ${dateISOToDisplay(iso)}${warnMsg}${skipMsg}.${roleNote}${ukNote}`);
+}
+
+// Confirmación para escribir en un año fiscal congelado (la entrada queda manual)
+function ukFrozenConfirmText(isos) {
+  const labels = [...new Set(isos.map(iso => taxYearOf(iso).label))].join(', ');
+  return `El año fiscal ${labels} ya está cerrado (evidencia HMRC).\n\n` +
+    `¿Registrar ${isos.map(dateISOToDisplay).join(', ')} igualmente? Quedará como entrada manual.`;
 }
 
 // Pide lat/lon de los aeropuertos sin coordenadas; devuelve el sufijo del mensaje con los que quedan sin coords
@@ -1877,8 +1908,25 @@ const UK_AP = new Set([
 // Para residencia (UK Day) Jersey/Guernsey no cuentan (Crown Dependencies)
 const UK_RES = new Set([...UK_AP, 'LDY', 'PIK'].filter(a => a !== 'JER' && a !== 'GCI'));
 
-const UK_DAYS_START = '2026-04-06';
-const UK_DAYS_END   = '2027-04-05'; // tax year 6 abr – 5 abr
+// Año fiscal UK (6 abr – 5 abr) derivado de la fecha (fase 7): nada se guarda; el año visible vive solo en memoria.
+// Primer año que gestiona la app: los anteriores se declararon fuera de ella → nunca se fabrica evidencia de ellos.
+const UK_DAYS_FLOOR = '2026-04-06';
+function taxYearOf(iso) {
+  const y = Number(iso.slice(0, 4)) - (iso.slice(5) < '04-06' ? 1 : 0);
+  return { start: `${y}-04-06`, end: `${y + 1}-04-05`, label: `${y}-${String((y + 1) % 100).padStart(2, '0')}` };
+}
+function taxYearByLabel(label) { return taxYearOf(`${String(label).slice(0, 4)}-04-06`); }
+let _tyViewLabel = null; // año elegido en el chip ‹ › (null = el de hoy)
+function viewTY(now = ukNow()) { return _tyViewLabel ? taxYearByLabel(_tyViewLabel) : taxYearOf(londonTodayISO(now)); }
+// Año congelado: pasados 30 días de su fin (desde el 6 de mayo siguiente) sus UK Days ya no se recalculan solos
+function ukYearFrozen(ty, now = ukNow()) { return londonTodayISO(now) > addDaysISO(ty.end, 30); }
+// Fechas para las que se calcula UK Day: desde el FLOOR hasta el fin del año fiscal de hoy
+function ukInScope(iso, now = ukNow()) { return iso >= UK_DAYS_FLOOR && iso <= taxYearOf(londonTodayISO(now)).end; }
+function ukFrozenDay(iso) { return ukInScope(iso) && ukYearFrozen(taxYearOf(iso)); }
+const MONTHS_ES_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function isoToLongES(iso) { return `${Number(iso.slice(8, 10))} ${MONTHS_ES_SHORT[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`; }
+function tyRangeText(ty) { return `${isoToLongES(ty.start)} – ${isoToLongES(ty.end)}`; }
+function ukScopeText() { return `${isoToLongES(UK_DAYS_FLOOR)} – ${isoToLongES(taxYearOf(londonTodayISO()).end)}`; }
 
 function lastSundayOf(year, month0) {
   const lastDay = new Date(Date.UTC(year, month0 + 1, 0));
@@ -1952,12 +2000,13 @@ function applyUKDay(uk, iso, flights) {
 function ukFlightsOf(iso) { return loadHistory()[iso]?.flights || _excelData[iso]?.flights; }
 
 // Crea entradas para días con email y sin entrada, y recalcula las que ya creó la regla (source 'rule:*') por si la regla cambió.
-// No toca las manuales ni las antiguas sin source (sin migración en caliente).
+// No toca las manuales ni las antiguas sin source (sin migración en caliente), ni nada de un año congelado.
 function backfillUKDays() {
   const updated = { ..._ukdays };
   let changed = false;
   new Set([...isoKeys(loadHistory(), 'Historial'), ...isoKeys(_excelData, 'Excel')]).forEach(iso => {
-    if (iso < UK_DAYS_START || iso > UK_DAYS_END) return;
+    // Fuera de alcance, o año congelado: solo lectura (en un año cerrado solo escribe el usuario, con confirmación)
+    if (!ukInScope(iso) || ukYearFrozen(taxYearOf(iso))) return;
     const e = updated[iso];
     if (e && (e.manual || !e.source)) return;
     const fl = ukFlightsOf(iso);
@@ -1974,6 +2023,9 @@ function londonYesterdayISO(now = ukNow()) {
   const local = new Date(now.getTime() + ukOffsetAt(now) * 60000);
   return new Date(local.getTime() - 86400000).toISOString().slice(0, 10);
 }
+function londonTodayISO(now = ukNow()) {
+  return new Date(now.getTime() + ukOffsetAt(now) * 60000).toISOString().slice(0, 10);
+}
 function ukHasEmail(iso) {
   return !!(loadHistory()[iso]?.flights?.length || _excelData[iso]?.flights?.length);
 }
@@ -1989,7 +2041,7 @@ function ukIsLegacyOutside(e) {
 function calLabel(cal) { return { off: 'OFF', stby: 'SBY', duty: 'DUTY', sim: 'SIM', sd: 'SD' }[cal] || String(cal || '').toUpperCase(); }
 
 function ukDayStatus(iso) {
-  if (iso < UK_DAYS_START || iso > UK_DAYS_END) return { state: 'none' };
+  if (!ukInScope(iso)) return { state: 'none' };
   const e = _ukdays[iso];
   if (e?.manual) return { state: ukEntryState(e), source: 'manual', reason: e.reason || 'añadido a mano' };
   const cal = _dayMap[iso];
@@ -2004,22 +2056,23 @@ function ukDayStatus(iso) {
   return { state: 'pending', kind: 'gap', reason: 'sin datos' };
 }
 
-// Días pasados (hasta ayer en Londres) del periodo
-function ukPastDays(now = ukNow()) {
-  const endISO = [londonYesterdayISO(now), UK_DAYS_END].sort()[0];
+// Días pasados (hasta ayer en Londres) del año fiscal `ty` (por defecto, el visible)
+function ukPastDays(now = ukNow(), ty = viewTY(now)) {
+  const endISO = [londonYesterdayISO(now), ty.end].sort()[0];
   const out = [];
-  for (let d = new Date(UK_DAYS_START + 'T00:00:00Z'); d.toISOString().slice(0, 10) <= endISO; d = new Date(d.getTime() + 86400000))
+  for (let d = new Date(ty.start + 'T00:00:00Z'); d.toISOString().slice(0, 10) <= endISO; d = new Date(d.getTime() + 86400000))
     out.push(d.toISOString().slice(0, 10));
   return out;
 }
-function pendingUKDays(now = ukNow()) {
-  return ukPastDays(now).map(iso => ({ iso, ...ukDayStatus(iso) })).filter(x => x.state === 'pending');
+function pendingUKDays(now = ukNow(), ty = viewTY(now)) {
+  return ukPastDays(now, ty).map(iso => ({ iso, ...ukDayStatus(iso) })).filter(x => x.state === 'pending');
 }
-// Huecos: días pendientes consecutivos sin email ni calendario (los únicos que el botón OFF puede tocar)
-function pendingUKBlocks(now = ukNow()) {
+// Huecos: días pendientes consecutivos sin email ni calendario (los únicos que el botón OFF puede tocar).
+// ukMarkBlockOff(i) usa el índice del MISMO año que pintó renderUKDays (los dos con el visible por defecto).
+function pendingUKBlocks(now = ukNow(), ty = viewTY(now)) {
   const blocks = [];
   let cur = null, prev = null;
-  pendingUKDays(now).filter(x => x.kind === 'gap').forEach(({ iso }) => {
+  pendingUKDays(now, ty).filter(x => x.kind === 'gap').forEach(({ iso }) => {
     if (cur && prev === addDaysISO(iso, -1)) cur.days.push(iso);
     else { cur = { days: [iso] }; blocks.push(cur); }
     prev = iso;
@@ -2028,18 +2081,18 @@ function pendingUKBlocks(now = ukNow()) {
 }
 function addDaysISO(iso, n) { return new Date(new Date(iso + 'T00:00:00Z').getTime() + n * 86400000).toISOString().slice(0, 10); }
 
-// Resumen del periodo: UK confirmados (email, manual o calendario), "No UK" guardados y pendientes pasados
-function ukSummary(now = ukNow()) {
+// Resumen del año fiscal `ty`: UK confirmados (email, manual o calendario), "No UK" guardados y pendientes pasados
+function ukSummary(now = ukNow(), ty = viewTY(now)) {
   const ukList = [];
-  for (let iso = UK_DAYS_START; iso <= UK_DAYS_END; iso = addDaysISO(iso, 1)) {
+  for (let iso = ty.start; iso <= ty.end; iso = addDaysISO(iso, 1)) {
     const st = ukDayStatus(iso);
     if (st.state === 'uk') ukList.push({ iso, ...st });
   }
   const noList = isoKeys(_ukdays, 'UK Days').sort()
-    .filter(iso => iso >= UK_DAYS_START && iso <= UK_DAYS_END && ukDayStatus(iso).state === 'no')
+    .filter(iso => iso >= ty.start && iso <= ty.end && ukDayStatus(iso).state === 'no')
     .map(iso => ({ iso, ...ukDayStatus(iso) }));
-  const pending = pendingUKDays(now);
-  return { ukList, noList, pending, blocks: pendingUKBlocks(now) };
+  const pending = pendingUKDays(now, ty);
+  return { ukList, noList, pending, blocks: pendingUKBlocks(now, ty) };
 }
 function ukSourceLabel(src) {
   if (!src || typeof src !== 'string') return '';
@@ -2052,10 +2105,46 @@ function ukRangeLabel(days) {
   return days.length === 1 ? a : `${a}–${b}`;
 }
 
+// Años elegibles en el chip ‹ ›: desde el del FLOOR hasta el de hoy (ukInScope no calcula más allá)
+function tyLabels() {
+  const out = [];
+  for (let ty = taxYearOf(UK_DAYS_FLOOR), last = taxYearOf(londonTodayISO()).label; ; ty = taxYearOf(addDaysISO(ty.end, 1))) {
+    out.push(ty.label);
+    if (ty.label >= last) break;
+  }
+  return out;
+}
+function renderTYChip() {
+  const el = document.getElementById('ukdays-ty');
+  const labels = tyLabels(), cur = viewTY().label, i = labels.indexOf(cur);
+  if (el) el.innerHTML = `<button aria-label="Año fiscal anterior" onclick="ukShiftTY(-1)" ${i <= 0 ? 'disabled' : ''}>‹</button>` +
+    `<span>${esc(cur)}</span><button aria-label="Año fiscal siguiente" onclick="ukShiftTY(1)" ${i < 0 || i >= labels.length - 1 ? 'disabled' : ''}>›</button>`;
+  const btn = document.getElementById('btn-dl-excel');
+  if (btn) btn.textContent = `⬇ Descargar Excel Tax Year ${cur}`;
+}
+// Cambia el año visible (solo memoria: no escribe en la nube ni en localStorage)
+function ukShiftTY(d) {
+  const labels = tyLabels(), i = labels.indexOf(viewTY().label), next = labels[i + d];
+  if (i < 0 || !next) return;
+  _tyViewLabel = next === taxYearOf(londonTodayISO()).label ? null : next;
+  renderUKDays();
+}
+function ukShowTY(label) { _tyViewLabel = label === taxYearOf(londonTodayISO()).label ? null : label; renderUKDays(); }
+// Del 06/04 al 05/05 (antes de congelarse), viendo el año en curso: recordar cerrar el anterior (pendientes + Excel)
+function tyCloseBannerHTML() {
+  const today = londonTodayISO(), cur = taxYearOf(today);
+  if (viewTY().label !== cur.label || today > addDaysISO(cur.start, 29)) return '';
+  const prev = taxYearOf(addDaysISO(cur.start, -1));
+  if (prev.end < UK_DAYS_FLOOR) return '';
+  const n = pendingUKDays(ukNow(), prev).length;
+  return `<button class="ty-banner" id="ty-banner" onclick="ukShowTY('${prev.label}')">📅 Cierra ${prev.label} · ${n ? `${n} pendiente${n !== 1 ? 's' : ''} · Excel` : 'descarga su Excel'} ›</button>`;
+}
+
 function renderUKDays() {
   const host = document.getElementById('ukdays-body');
   if (!host) return;
   const countEl = document.getElementById('ukdays-count');
+  renderTYChip();
   // Modo nube antes del primer snapshot del servidor: no enseñar "0 / 91" como si se hubieran perdido los datos
   if (getMode() === 'cloud' && !cloud.hydrated) {
     const offline = cloud.loadError || navigator.onLine === false;
@@ -2063,8 +2152,10 @@ function renderUKDays() {
     host.innerHTML = `<div class="empty">${offline ? 'Sin conexión — UK Days no cargados' : 'Cargando…'}</div>`;
     return;
   }
-  const { ukList, noList, pending, blocks } = ukSummary();
+  const ty = viewTY();
+  const { ukList, noList, pending, blocks } = ukSummary(ukNow(), ty);
   const P = pending.length;
+  const tyTag = ty.label === taxYearOf(londonTodayISO()).label ? '' : ukYearFrozen(ty) ? ' · cerrado' : ' · año anterior';
   if (countEl) countEl.textContent = `${ukList.length} / 91${P ? ` · ${P} pend.` : ''}`;
 
   // La alarma del bonus usa solo los UK confirmados (N); los pendientes son cobertura, no riesgo
@@ -2091,7 +2182,7 @@ function renderUKDays() {
         <div class="uk-progress-fill ${cls}" style="width:${pct.toFixed(2)}%"></div>
       </div>
       <div class="uk-progress-footer">
-        <span>6 abr 2026 – 5 abr 2027</span>
+        <span>${tyRangeText(ty)}${tyTag}</span>
         <span>${left} día${left !== 1 ? 's' : ''} restante${left !== 1 ? 's' : ''}</span>
       </div>
       <div class="uk-status ${cls}">${statusText}</div>
@@ -2176,7 +2267,7 @@ function renderUKDays() {
 
   const monthsEl = document.getElementById('ukdays-months');
   const prevOpen  = monthsEl ? monthsEl.style.display !== 'none' : false;
-  host.innerHTML  = progressHTML + pendingHTML +
+  host.innerHTML  = tyCloseBannerHTML() + progressHTML + pendingHTML +
     `<div id="ukdays-months" style="display:${prevOpen ? 'block' : 'none'}">${monthsHTML}</div>`;
 }
 
@@ -2216,7 +2307,10 @@ function toggleUKDays() {
 
 // Ventana "+ Añadir fecha": la fecha solo se añade al pulsar "Añadir"
 function openUKDateModal() {
-  document.getElementById('ukday-date').value = '';
+  const input = document.getElementById('ukday-date');
+  input.value = '';
+  input.min = UK_DAYS_FLOOR;
+  input.max = taxYearOf(londonTodayISO()).end;
   document.getElementById('ukdate-modal').classList.remove('hidden');
 }
 function closeUKDateModal() {
@@ -2226,7 +2320,7 @@ function confirmUKDateModal() {
   const iso = document.getElementById('ukday-date').value;
   // Avisos con alert: la línea de estado está lejos (en "Añadir día") y no se vería desde UK Days
   if (!iso) { alert('Elige una fecha primero.'); return; }
-  if (iso < UK_DAYS_START || iso > UK_DAYS_END) { alert(`${dateISOToDisplay(iso)} está fuera del periodo UK Days (6 abr 2026 – 5 abr 2027).`); return; }
+  if (!ukInScope(iso)) { alert(`${dateISOToDisplay(iso)} está fuera del periodo UK Days (${ukScopeText()}).`); return; }
   if (ukEntryState(_ukdays[iso]) === 'uk') { alert(`${dateISOToDisplay(iso)} ya está registrado como UK Day.`); return; }
   closeUKDateModal();
   addUKDayManual(iso);
@@ -2240,24 +2334,26 @@ function ukManualEntry(iso) {
 // Añade un UK Day manual en la fecha elegida
 function addUKDayManual(iso) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
-  if (iso < UK_DAYS_START || iso > UK_DAYS_END) {
-    showStatus('warn', `${dateISOToDisplay(iso)} está fuera del rango UK Days (6 abr 2026 – 5 abr 2027).`);
+  if (!ukInScope(iso)) {
+    showStatus('warn', `${dateISOToDisplay(iso)} está fuera del periodo UK Days (${ukScopeText()}).`);
     return;
   }
   if (ukEntryState(_ukdays[iso]) === 'uk') {
     showStatus('warn', `${dateISOToDisplay(iso)} ya está registrado como UK Day.`);
     return;
   }
+  if (ukFrozenDay(iso) && !confirm(ukFrozenConfirmText([iso]))) { showStatus('warn', 'Cancelado. No se ha guardado nada.'); return; }
   saveUKDays({ ..._ukdays, [iso]: ukManualEntry(iso) });
   renderUKDays();
   showStatus('ok', `${dateISOToDisplay(iso)} añadido como UK Day.`);
 }
 
 function emailUKDaysBackup() {
-  const { ukList, noList, pending } = ukSummary();
-  if (!ukList.length && !noList.length) { showStatus('warn', 'No hay UK Days registrados aún.'); return; }
+  const ty = viewTY();
+  const { ukList, noList, pending } = ukSummary(ukNow(), ty);
+  if (!ukList.length && !noList.length) { showStatus('warn', `No hay UK Days registrados en ${ty.label}.`); return; }
 
-  const lines = ['UK DAYS BACKUP — EasyLog', `Generado: ${new Date().toLocaleDateString('es-ES')}`,
+  const lines = [`UK DAYS BACKUP — EasyLog · Tax Year ${ty.label} (${tyRangeText(ty)})`, `Generado: ${new Date().toLocaleDateString('es-ES')}`,
     'Procedencia: R1 = email (on-block en UK antes de 00:00 Londres) · cal = calendario · man = a mano', ''];
   const byMonth = {};
   ukList.forEach(x => { (byMonth[monthKey(x.iso)] = byMonth[monthKey(x.iso)] || []).push(x); });
@@ -2277,7 +2373,7 @@ function emailUKDaysBackup() {
   }
   lines.push(`Total: ${ukList.length} confirmados · ${pending.length} pendientes`);
 
-  const subject = encodeURIComponent('EasyLog — UK Days Backup');
+  const subject = encodeURIComponent(`EasyLog — UK Days Backup ${ty.label}`);
   const body    = encodeURIComponent(lines.join('\n'));
   window.location.href = `mailto:rivegabur@gmail.com?subject=${subject}&body=${body}`;
 }
@@ -2313,6 +2409,7 @@ function removeUKDay(iso) {
     const what = ukEntryState(e) === 'uk' ? 'UK Day' : 'registro "No UK"';
     if (!confirm(`¿Eliminar el ${what} del ${dateISOToDisplay(iso)}?${back}`)) return;
     delete updated[iso];
+    // Excepción deliberada en años congelados: es una acción explícita del usuario (con confirm) → vuelve a la regla del email
     const fl = ukFlightsOf(iso);
     if (fl?.length) applyUKDay(updated, iso, fl);
   }
@@ -2843,18 +2940,19 @@ function excelRowsForDay(iso) {
 
 function downloadTaxExcel() {
   // Con días pasados sin decidir no se descarga: el Excel es un dato fiscal (decisión del usuario 03.2)
-  const pend = pendingUKDays();
+  const ty = viewTY();
+  const pend = pendingUKDays(ukNow(), ty);
   if (pend.length) {
-    const gaps = pendingUKBlocks().map(b => ukRangeLabel(b.days));
+    const gaps = pendingUKBlocks(ukNow(), ty).map(b => ukRangeLabel(b.days));
     const rest = pend.filter(x => x.kind !== 'gap').map(x => dateISOToDisplay(x.iso));
     const parts = [];
     if (gaps.length) parts.push(`huecos ${gaps.slice(0, 6).join(', ')}${gaps.length > 6 ? '…' : ''}`);
     if (rest.length) parts.push(`por decidir ${rest.slice(0, 6).join(', ')}${rest.length > 6 ? '…' : ''}`);
-    showStatus('err', `No se descarga: ${pend.length} día${pend.length !== 1 ? 's' : ''} sin decidir (${parts.join(' · ')}). Decídelos en UK Days.`);
+    showStatus('err', `No se descarga el Excel ${ty.label}: ${pend.length} día${pend.length !== 1 ? 's' : ''} sin decidir (${parts.join(' · ')}). Decídelos en UK Days.`);
     return;
   }
-  const TAX_START = UK_DAYS_START;
-  const TAX_END   = UK_DAYS_END;
+  const TAX_START = ty.start;
+  const TAX_END   = ty.end;
   const MONTHS_EN = ['January','February','March','April','May','June',
                      'July','August','September','October','November','December'];
 
@@ -2866,7 +2964,7 @@ function downloadTaxExcel() {
   const allRows = [
     HEADER,
     [],
-    ['NAME','Ricardo Vega Burgueño','','',`Tax Year ${UK_DAYS_START.slice(0, 4)}-${UK_DAYS_END.slice(0, 4)}`],
+    ['NAME','Ricardo Vega Burgueño','','',`Tax Year ${ty.start.slice(0, 4)}-${ty.end.slice(0, 4)}`],
     ['','','','','','','UK DUTY TIME','','','','','','','NON UK DUTY TIME'],
     HEADER
   ];
@@ -2910,10 +3008,10 @@ function downloadTaxExcel() {
   }
 
   const wb = XLSX.utils.book_new();
-  const yy = `${UK_DAYS_START.slice(2, 4)}-${UK_DAYS_END.slice(2, 4)}`;
+  const yy = `${ty.start.slice(2, 4)}-${ty.end.slice(2, 4)}`;
   XLSX.utils.book_append_sheet(wb, ws, `TAX ${yy}`);
   XLSX.writeFile(wb, `TAX YEAR ${yy}.xlsx`);
-  showStatus('ok', 'Excel descargado.');
+  showStatus('ok', `Excel ${ty.label} descargado.`);
 }
 
 // ─── Calendar ────────────────────────────────────────────────────────────────

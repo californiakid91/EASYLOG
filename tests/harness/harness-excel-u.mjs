@@ -108,7 +108,7 @@ reset(); now('2026-04-12T12:00:00Z');
 cal('2026-04-06', 'off'); cal('2026-04-07', 'off'); cal('2026-04-08', 'duty');
 run('downloadTaxExcel()');
 check('pendientes pasados → no se descarga (writeFile no llamado)', xl.file === null);
-check('aviso con total, huecos por rango y días por decidir', /No se descarga: 4 días sin decidir/.test(st.at(-1)) && /huecos 09\/04\/26–11\/04\/26/.test(st.at(-1)) && /por decidir 08\/04\/26/.test(st.at(-1)), st.at(-1));
+check('aviso con total, huecos por rango y días por decidir', /No se descarga el Excel 2026-27: 4 días sin decidir/.test(st.at(-1)) && /huecos 09\/04\/26–11\/04\/26/.test(st.at(-1)) && /por decidir 08\/04\/26/.test(st.at(-1)), st.at(-1));
 for (const d of ['2026-04-09', '2026-04-10', '2026-04-11']) cal(d, 'off');
 run(`ukDecidePending('2026-04-08', 'uk')`);
 run('downloadTaxExcel()');

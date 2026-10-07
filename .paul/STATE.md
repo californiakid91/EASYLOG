@@ -114,7 +114,7 @@ Branch: main
 Last session: 2026-10-07
 Stopped at: Loop 07-01 cerrado (UNIFY + SUMMARY)
 Next action: si el asesor ya respondió → /paul:plan 7 (07-02 límite); si no → /paul:plan 8 (sin pérdidas silenciosas) y 07-02 después
-Resume file: .paul/phases/07-ukdays-anio-y-limite/07-01-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-07-07-01-completo.md
 
 ---
 *STATE.md — Updated after every significant action*

@@ -5,27 +5,27 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.2 Seguridad y robustez — Fase 7, plan 07-01 (año fiscal dinámico)
+**Current focus:** v0.2 Seguridad y robustez — Fase 7: 07-01 ✓; 07-02 (límite) espera al asesor
 
 ## Current Position
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 7 of 8 (UK Days año y límite) — Planning
-Plan: 07-01 created, awaiting approval
-Status: PLAN created, ready for APPLY
-Last activity: 2026-10-06 — Creado .paul/phases/07-ukdays-anio-y-limite/07-01-PLAN.md (dialéctica Fable + revisión adversaria: aprobado con cambios, incorporados)
+Phase: 7 of 8 (UK Days año y límite) — In progress (1/2 planes)
+Plan: 07-01 completo (UNIFY); 07-02 sin planificar (bloqueado por respuesta del asesor)
+Status: Loop cerrado — ready for next PLAN
+Last activity: 2026-10-07 — UNIFY 07-01 (SUMMARY); prod v2026.10.06-170132
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
-- v0.2 Seguridad y robustez: [█████░░░░░] 50% (Fase 5 ✓, Fase 6 ✓)
+- v0.2 Seguridad y robustez: [██████░░░░] 62% (Fase 5 ✓, Fase 6 ✓, Fase 7 1/2)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 07-01 creado, esperando aprobación]
+  ✓        ✓        ✓     [Loop 07-01 cerrado — siguiente: 07-02 (tras el asesor) o Fase 8]
 ```
 
 ## Accumulated Context
@@ -57,6 +57,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 06-01: tests en tests/ (harness/, fixtures/ anonimizadas, golden/); rutas SOLO desde tests/lib.mjs; `node tests/run-all.mjs` = barrera (✗ con exit≠0, SKIP, FAIL/✗ o 0 checks); golden de caracterización → cambios legítimos con `node tests/harness/harness-csv.mjs --update-golden` y revisar diff; lista importer PilotLog = 115 cabeceras; fixture 01 (18/09/2026) debe caer dentro de UK_DAYS_START/END (re-desplazar en Fase 7); BASELINES fa78eeb/6cb4a5a
 - 06-02: `npm ci` (playwright-core 1.63.0) + `node tests/run-all.mjs tests/harness tests/e2e` = 14/14; e2e usan serveRepo/loadPlaywright/watchdog/FIXED_NOW de lib.mjs; reloj fijo solo sin Firebase; pre-commit = harness (bloquea), pre-push = harness + e2e (e2e-csp 1 reintento; escape solo `EASYLOG_PUSH_SKIP_NET=1 git push`); nunca --no-verify; push desde Bash de Claude con timeout ≥ 5 min
 - 07 (dialéctica Fable 2026-10-06, confianza alta): año fiscal DERIVADO de la fecha (taxYearOf/viewTY, sin estado persistido); UK_DAYS_FLOOR=2026-04-06 (no se fabrica evidencia anterior); año congelado a end+30 días (backfill solo lectura; pegar = confirm → manual, cancelar = no guardar); chip ‹ año › + banner 06/04–05/05; Excel por año visible; split 07-01 (año) / 07-02 (límite por año = settings.ukLimit[label] + máximo posible + sin "bonus")
+- 07-01 (aplicado): funciones de periodo reciben `ty` (por defecto viewTY()), nunca constantes de año; harness fijan window._ukNowOverride = FIXED_NOW; `node tests/run-all.mjs --now=<ISO> tests/harness` debe dar verde en cualquier año; botones OFF identifican el hueco por su primer día; chip ‹ año › en la fila de botones de UK Days
 - _runways = mapa propio (localStorage + campo Firestore `runways` con guard _runwaysSaving); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -78,7 +79,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | semgrep: urllib dinámico en gen-airports.py (script local, URL base fija; riesgo nulo) | 04 G8 | XS | — |
 | API key del navegador con apiTargets amplios por defecto → limitar a firestore/identitytoolkit/securetoken (consola GCP, opcional) | 05-02 | XS | — |
 | Helpers duplicados entre harness (load/check/extract) → harness-lib | 06-01 (D6/F-06-006) | M | — |
-| Fase 7: al hacer dinámico el año fiscal, mover FIXED_NOW (tests/lib.mjs), fixture 01 y calendario sembrado de e2e-csp | 06-02 | XS | Fase 7 |
+| Año congelado con email completo y sin entrada muestra "email incompleto: re-pégalo" (re-pegar idéntico no lo arregla; se decide con UK/No UK) — mensaje engañoso, no alcanzable en la práctica | 07-01 G6 | XS | 07-02 |
+| rule:* de años congelados no se recalculan aunque se corrija un bug de la regla → requiere migración explícita revisada | 07-01 dialéctica | S | si cambia la regla |
 | GitHub: ticket de purga de caché de commits (abierto 2026-10-05) → comprobar que los SHA antiguos dan 404 | 05 post | XS | cuando responda GitHub |
 
 ### Preguntas pendientes al usuario — de UNA en UNA
@@ -97,22 +99,22 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Doc Firestore medido: 127 KiB (12%) y ~1.9k entradas de índice (5%); excelData ≈2 KiB/día → ~2,5 años de margen → ya no es HIGH
 - Rama main protegida (sin force-push ni borrado); 2FA GitHub ACTIVADO (TOTP, confirmado por el usuario 2026-10-05)
 - Límite UK Days: criterio fiscal del usuario documentado SOLO en la memoria local de Claude (reference_srt_aircrew) — nunca en el repo (público)
-- [ ] Límite de la app (MAX) pendiente de confirmación fiscal del usuario → Fase 7 lo hace configurable
+- [ ] Límite de la app (MAX) pendiente de confirmación fiscal del usuario → 07-02 lo hace configurable por año (bloqueado por esa respuesta)
 
 ### Blockers/Concerns
 - Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: 193e7ce — Fase 6 subida a origin 2026-10-06; prod sigue en v2026.10.05-120346 (index.html sin cambios)
+Last commit: dadd17e — 07-01 subido 2026-10-06; prod = v2026.10.06-170132 (verificado byte a byte)
 Branch: main
 
 ## Session Continuity
 
-Last session: 2026-10-06
-Stopped at: Plan 07-01 creado (dialéctica + revisión Fable incorporadas)
-Next action: Revisar y aprobar el plan, luego /paul:apply .paul/phases/07-ukdays-anio-y-limite/07-01-PLAN.md
-Resume file: .paul/phases/07-ukdays-anio-y-limite/07-01-PLAN.md
+Last session: 2026-10-07
+Stopped at: Loop 07-01 cerrado (UNIFY + SUMMARY)
+Next action: si el asesor ya respondió → /paul:plan 7 (07-02 límite); si no → /paul:plan 8 (sin pérdidas silenciosas) y 07-02 después
+Resume file: .paul/phases/07-ukdays-anio-y-limite/07-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

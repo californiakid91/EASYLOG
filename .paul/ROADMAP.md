@@ -8,7 +8,7 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 
 **v0.2 Seguridad y robustez** (v0.2.0)
 Status: 🚧 In Progress
-Phases: 2 of 4 complete
+Phases: 2 of 4 complete (Fase 7: 1/2)
 Theme: Cerrar los hallazgos de la auditoría Aegis (2026-10-05) sin cambiar el flujo de uso: que nadie pueda inyectar código, que nada se pierda en silencio, que UK Days siga bien el año que viene y que los tests frenen regresiones.
 Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 
@@ -16,7 +16,7 @@ Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 |-------|------|-------|--------|-----------|
 | 5 | Seguridad: XSS aeropuerto, SRI/CSP, reglas Firestore en repo | 2/2 | ✅ Complete | 2026-10-05 |
 | 6 | Barrera de tests: runner único + fixtures anonimizadas + gate | 2/2 | ✅ Complete | 2026-10-05 |
-| 7 | UK Days: año fiscal dinámico + límite configurable + máximo posible | 0/2 | Planning | - |
+| 7 | UK Days: año fiscal dinámico + límite configurable + máximo posible | 1/2 | In progress | - |
 | 8 | Sin pérdidas silenciosas: avisos de escritura bloqueada + estado tras confirm() | TBD | Not started | - |
 
 ### Phase 5: Seguridad
@@ -37,7 +37,7 @@ Status: ✅ Complete 2026-10-05
 ### Phase 7: UK Days año y límite
 Focus: F-03-001 (año fiscal derivado de la fecha / selector, antes del 06/04/2027), límite configurable (valor a confirmar por el usuario), "máximo posible" con pendientes, etiqueta sin "bonus" (F-DA-008/D-010), F-03-006 (año explícito en comando manual).
 Plans:
-- [ ] 07-01: año fiscal derivado + FLOOR + congelación + chip ‹ año › + banner abril + Excel/comando por año + tests sin año real (dialéctica Fable)
+- [x] 07-01 (prod v2026.10.06-170132): año fiscal derivado + FLOOR + congelación + chip ‹ año › + banner abril + Excel/comando por año + tests sin año real (dialéctica Fable)
 - [ ] 07-02: límite configurable por año + "máximo posible" + textos sin "bonus" (tras respuesta del asesor)
 
 ### Phase 8: Sin pérdidas silenciosas

@@ -100,7 +100,7 @@ check('escritura offline bloqueada (nube no sustituida)', writes.length === 0 &&
 fire(); await tick();
 check('primer snapshot aplica ukdays de la nube aunque _ukdaysSaving=true', JSON.stringify(Object.keys(run('_ukdays')).sort()) === JSON.stringify(['2026-09-18', '2026-09-19']), JSON.stringify(Object.keys(run('_ukdays'))));
 check('primer snapshot aplica dayMap de la nube', JSON.stringify(run('_dayMap')) === JSON.stringify(cloudDoc.dayMap));
-check('aviso visible al usuario tras escritura bloqueada', statuses.some(s => s.startsWith('warn:') && s.includes('NO se ha guardado')), statuses.join(' | '));
+check('aviso visible al usuario tras escritura bloqueada', statuses.some(s => s.startsWith('warn:') && s.includes('no se ha guardado nada')), statuses.join(' | '));
 check('nube intacta tras hidratar (nada pisado)', Object.keys(cloudDoc.ukdays).length === 2 && writes.length === 0, `writes=${writes.length}`);
 
 // (d) borrar UK Day tras hidratar

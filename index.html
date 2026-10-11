@@ -551,7 +551,7 @@
     <div class="auth-card welcome-card">
       <div class="logo" style="font-size:1.6rem; margin-bottom:.35rem;">Easy<span style="color:var(--accent)">Log</span></div>
       <h2>¿Cómo quieres usar la app?</h2>
-      <div class="sub">Puedes cambiar de modo en cualquier momento.</div>
+      <div class="sub">Puedes cambiar de modo más adelante, pero tus datos no pasan solos de un modo al otro.</div>
       <button class="mode-opt" id="mode-local">
         <div class="ttl">📱 Solo en este dispositivo</div>
         <div class="desc">Sin login. Tus vuelos se guardan únicamente en este navegador.</div>
@@ -734,7 +734,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.06-170132';
+const APP_VERSION = '2026.10.11-083932';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -1332,71 +1332,103 @@ function resolveAirport(iata) {
   return _airports[k] || AIRPORTS[k] || (db ? { lat: db.lat, lon: db.lon } : null);
 }
 
-function saveHistory(h) { _cache = h; persist(); }
-function saveAirports(a) { _airports = a; persist(); }
+// Los save* devuelven persist(): true = guardado (local) o enviado (nube); false = NO se ha guardado (ya avisado)
+function saveHistory(h) { _cache = h; return persist(); }
+function saveAirports(a) { _airports = a; return persist(); }
 // Cambia _ukdays sin escribir (para agrupar con otra escritura); el flag evita que onSnapshot lo pise mientras se guarda
 function setUKDays(u)    { _ukdays = u; _ukdaysSaving = true; setTimeout(() => { _ukdaysSaving = false; }, 3000); }
-function saveUKDays(u)   { setUKDays(u); persist(); }
-function saveRunways(w)  { _runways = w; _runwaysSaving = true; setTimeout(() => { _runwaysSaving = false; }, 3000); persist(); }
+function saveUKDays(u)   { setUKDays(u); return persist(); }
+function saveRunways(w)  { _runways = w; _runwaysSaving = true; setTimeout(() => { _runwaysSaving = false; }, 3000); return persist(); }
 
 function persist() {
   const mode = getMode();
   if (mode === 'cloud') {
+    // Red de seguridad: los mutadores ya llaman a requireHydrated() antes de tocar nada
+    if (!cloud.user || !cloud.db || !cloud.hydrated) return blockedCloudWrite();
     persistCloud();
+    return true; // enviado: si falla, persistCloud lo avisa (el error sustituye al «OK»)
   } else {
+    // Sin rollback: si falla, lo cambiado queda en pantalla pero se perderá al recargar (el aviso lo dice)
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(_cache));
-      localStorage.setItem(AIRPORTS_KEY, JSON.stringify(_airports));
-      localStorage.setItem(UK_DAYS_KEY, JSON.stringify(_ukdays));
-      localStorage.setItem(EXCEL_KEY, JSON.stringify(_excelData));
-      localStorage.setItem(RUNWAYS_KEY, JSON.stringify(_runways));
-    } catch (e) { console.warn('Local save failed:', e); }
+      const lost = []; // mapas con cambios que NO se pueden guardar porque su copia local es ilegible (no se pisa)
+      [[STORAGE_KEY, _cache], [AIRPORTS_KEY, _airports], [UK_DAYS_KEY, _ukdays], [EXCEL_KEY, _excelData], [RUNWAYS_KEY, _runways]]
+        .forEach(([k, v]) => {
+          if (!_localCorrupt.has(k)) localStorage.setItem(k, JSON.stringify(v));
+          else if (v && Object.keys(v).length) lost.push(LOCAL_KEY_NAMES[k] || k); // se cargó vacío: si ya no lo está, hay cambios sin guardar
+        });
+      if (lost.length) {
+        showStatus('err', `No se ha guardado ${lost.join(', ')}: su copia en este dispositivo está dañada y no se sobrescribe. El cambio se perderá al recargar.`);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.warn('Local save failed:', e);
+      showStatus('err', 'No se ha podido guardar en este dispositivo: el cambio se perderá al recargar. Libera espacio y repítelo.');
+      return false;
+    }
   }
 }
 
+// Claves locales con JSON ilegible: se cargan vacías y NUNCA se sobrescriben solas (así el texto original se puede recuperar)
+const _localCorrupt = new Set();
+const LOCAL_KEY_NAMES = { [STORAGE_KEY]: 'la lista de días', [EXCEL_KEY]: 'el Excel Tax Year', [AIRPORTS_KEY]: 'los aeropuertos', [UK_DAYS_KEY]: 'los UK Days', [RUNWAYS_KEY]: 'las pistas' };
 function hydrateLocal() {
-  try {
-    const h = localStorage.getItem(STORAGE_KEY);
-    _cache = h ? JSON.parse(h) : {};
-    const x = localStorage.getItem(EXCEL_KEY);
-    _excelData = x ? JSON.parse(x) : {};
-    const a = localStorage.getItem(AIRPORTS_KEY);
-    _airports = a ? JSON.parse(a) : {};
-    const u = localStorage.getItem(UK_DAYS_KEY);
-    _ukdays = u ? JSON.parse(u) : {};
-    const w = localStorage.getItem(RUNWAYS_KEY);
-    _runways = w ? JSON.parse(w) : {};
-  } catch (e) {
-    console.warn('Local hydrate failed:', e);
-    _cache = {}; _excelData = {}; _airports = {}; _ukdays = {}; _runways = {};
+  const read = (k) => {
+    try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : {}; }
+    catch (e) { console.warn('Local hydrate failed:', k, e); _localCorrupt.add(k); return {}; }
+  };
+  _cache = read(STORAGE_KEY);
+  _excelData = read(EXCEL_KEY);
+  _airports = read(AIRPORTS_KEY);
+  _ukdays = read(UK_DAYS_KEY);
+  _runways = read(RUNWAYS_KEY);
+  if (_localCorrupt.size) {
+    const names = [..._localCorrupt].map(k => LOCAL_KEY_NAMES[k] || k).join(', ');
+    showStatus('warn', `No se pudo leer: ${names}. El resto de tus datos está cargado; ese dato no se sobrescribe.`);
   }
 }
 
 async function persistCloud() {
-  if (!cloud.user || !cloud.db) return;
   // No escribir antes del primer snapshot: mergeFields reemplaza campos enteros y un estado local parcial pisaría la nube
-  if (!cloud.hydrated) { blockedCloudWrite(); return; }
+  if (!cloud.user || !cloud.db || !cloud.hydrated) return blockedCloudWrite();
+  // Lo que se envía se captura AHORA: un snapshot que llegue durante el await sustituiría _cache… y se perdería este cambio
+  const payload = { history: _cache, excelData: _excelData, airports: _airports, ukdays: _ukdays, runways: _runways, updatedAt: Date.now() };
+  const uid = cloud.user.uid;
   setSync('syncing', 'Guardando…');
   _cloudWrites++;
   try {
     const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
     // mergeFields reemplaza cada campo entero (así los borrados llegan a la nube; merge:true conservaba las claves borradas).
     // dayMap no está en la lista → queda intacto; se guarda por separado en saveDayMap()
-    await setDoc(doc(cloud.db, 'users', cloud.user.uid), {
-      history: _cache, excelData: _excelData, airports: _airports, ukdays: _ukdays, runways: _runways, updatedAt: Date.now()
-    }, { mergeFields: ['history', 'excelData', 'airports', 'ukdays', 'runways', 'updatedAt'] });
+    await setDoc(doc(cloud.db, 'users', uid), payload, { mergeFields: ['history', 'excelData', 'airports', 'ukdays', 'runways', 'updatedAt'] });
     setSync('ok', 'Sincronizado ✓');
   } catch (e) {
     console.error('Cloud save failed:', e);
     setSync('err', 'Error al sincronizar');
+    showStatus('err', `No se ha guardado en la nube (${cloudErrText(e)}). Repite el cambio.`);
   } finally { _cloudWrites--; }
 }
 
-// Escritura a la nube bloqueada porque aún no se han cargado los datos reales de la nube
-function blockedCloudWrite() {
+// Motivo corto y legible de un error de Firestore para los avisos
+function cloudErrText(e) {
+  const code = String(e?.code || '').replace(/^firestore\//, '');
+  const known = { 'permission-denied': 'permiso denegado', 'unavailable': 'sin conexión', 'resource-exhausted': 'límite de la nube alcanzado', 'invalid-argument': 'datos no válidos', 'unauthenticated': 'sesión caducada' };
+  return known[code] || code || String(e?.message || 'error desconocido').slice(0, 80);
+}
+const NOT_HYDRATED_MSG = 'Aún no hay conexión con la nube: no se ha guardado nada. Repítelo cuando ponga "Sincronizado ✓".';
+// Escritura a la nube bloqueada porque aún no se han cargado los datos reales de la nube. Devuelve false (= no guardado).
+function blockedCloudWrite(useAlert) {
   cloud.pendingWrite = true;
   setSync('err', 'Sin conexión con la nube');
-  showStatus('warn', 'Aún no hay conexión con la nube: este cambio NO se ha guardado. Repítelo cuando ponga "Sincronizado ✓".');
+  if (useAlert) alert(NOT_HYDRATED_MSG); else showStatus('warn', NOT_HYDRATED_MSG);
+  return false;
+}
+// Guarda de todo mutador: en modo Nube sin el primer snapshot del servidor no se toca nada (ni estado, ni el cuadro de
+// pegar, ni se pregunta con confirm). opts.alert: el aviso va por alert porque la línea de estado no se ve desde ahí
+// (modales, tarjeta UK Days). Devuelve true si se puede seguir.
+function requireHydrated(opts = {}) {
+  if (getMode() === 'cloud' && !cloud.hydrated) return blockedCloudWrite(!!opts.alert);
+  return true;
 }
 
 function setSync(state, msg) {
@@ -1498,6 +1530,7 @@ function addDay() {
   // ── Comando manual UK Days ──
   const ukCmd = tryParseUKDaysCommand(text);
   if (ukCmd) {
+    if (!requireHydrated()) return;
     const added = [], skipped = [];
     const updated = { ..._ukdays };
     const frozen = ukCmd.dates.filter(iso => ukFrozenDay(iso) && ukEntryState(_ukdays[iso]) !== 'uk');
@@ -1507,7 +1540,7 @@ function addDay() {
       updated[iso] = ukManualEntry(iso);
       added.push(dateISOToDisplay(iso));
     });
-    if (added.length) saveUKDays(updated);
+    if (added.length && !saveUKDays(updated)) { renderUKDays(); return; } // no guardado: el aviso ya está y el texto se queda
     renderUKDays();
     document.getElementById('input').value = '';
     showStatus(added.length ? 'ok' : 'warn',
@@ -1530,6 +1563,8 @@ function addDay() {
     showStatus('err', `El paste contiene ${dates.length} días. Pega solo uno a la vez.`);
     return;
   }
+  // A partir de aquí se pregunta y se escribe: sin la nube cargada no se toca nada (el texto se queda en el cuadro)
+  if (!requireHydrated()) return;
 
   const iso = dateRawToISO(dates[0]);
   const hist = loadHistory();
@@ -1548,13 +1583,13 @@ function addDay() {
       if (hist[iso]) {
         // Idéntico y en la lista: no se toca nada (salvo reparar el Excel si le falta el día)
         const fixExcel = !_excelData[iso] || flightsKey(_excelData[iso].flights) !== flightsKey(hist[iso].flights);
-        if (fixExcel) { _excelData[iso] = { role: prevRole, flights: hist[iso].flights }; saveHistory(hist); }
+        if (fixExcel) { _excelData[iso] = { role: prevRole, flights: hist[iso].flights }; if (!saveHistory(hist)) return; }
         msg = `El ${day} ya está en la lista (sin cambios).${fixExcel ? ' Añadido al Excel.' : ''}`;
         if (!fixExcel) type = 'warn';
       } else {
         // Idéntico y solo en el Excel (se quitó de la lista tras exportar): vuelve a la lista
         hist[iso] = { addedAt: new Date().toISOString(), role: prevRole, flights: prev.flights };
-        saveHistory(hist);
+        if (!saveHistory(hist)) { renderHistory(); return; }
         msg = `El ${day} vuelve a la lista (ya estaba en el Excel).`;
       }
       document.getElementById('input').value = '';
@@ -1598,7 +1633,7 @@ function addDay() {
       ? ` UK Day no registrado: anterior al primer año gestionado (${taxYearOf(UK_DAYS_FLOOR).label}).`
       : ` UK Day no registrado: fuera del periodo UK Days (${ukScopeText()}).`;
   }
-  saveHistory(hist);
+  if (!saveHistory(hist)) { renderHistory(); return; } // no guardado (aviso ya mostrado): el texto se queda en el cuadro
 
   document.getElementById('input').value = '';
   renderHistory();
@@ -1689,23 +1724,25 @@ function flightsDiff(oldF, newF) {
 function removeDay(iso) {
   const hist = loadHistory();
   if (!hist[iso]) return;
+  if (!requireHydrated()) return;
   const n = hist[iso].flights.length;
   if (!confirm(`¿Quitar el ${dateISOToDisplay(iso)} (${n} vuelo${n !== 1 ? 's' : ''}) de la lista?\n\nSigue en el Excel Tax Year y en UK Days.`)) return;
   delete hist[iso];
-  saveHistory(hist);
+  const saved = saveHistory(hist);
   renderHistory();
-  showStatus('ok', `Día ${dateISOToDisplay(iso)} quitado de la lista.`);
+  if (saved) showStatus('ok', `Día ${dateISOToDisplay(iso)} quitado de la lista.`);
 }
 
 function clearHistory() {
   const hist = loadHistory();
   const days = Object.keys(hist).length;
   if (!days) { showStatus('warn', 'El historial ya está vacío.'); return; }
+  if (!requireHydrated()) return;
   const total = Object.values(hist).reduce((s, d) => s + d.flights.length, 0);
   if (!confirm(`¿Borrar TODO el historial? (${days} días, ${total} vuelos)\n\nEsta acción no se puede deshacer.`)) return;
-  saveHistory({});
+  const saved = saveHistory({});
   renderHistory();
-  showStatus('ok', 'Historial borrado.');
+  if (saved) showStatus('ok', 'Historial borrado.');
 }
 
 function flightsForMonth(mk) {
@@ -1784,14 +1821,15 @@ function exportSnapshot(mk, n) {
 }
 function clearExported() {
   if (!_lastExport) return;
+  if (!requireHydrated()) return;
   const { mk, days } = _lastExport;
   const hist = loadHistory();
   // Solo los días exportados y sin cambios desde entonces (un día pegado o re-pegado después no se toca)
   Object.entries(days).forEach(([iso, at]) => { if (hist[iso] && hist[iso].addedAt === at) delete hist[iso]; });
   _lastExport = null;
-  saveHistory(hist);
+  const saved = saveHistory(hist);
   renderHistory();
-  showStatus('ok', `${mk ? monthLabel(mk) : 'Lista'} vaciada. El Excel y los UK Days se conservan.`);
+  if (saved) showStatus('ok', `${mk ? monthLabel(mk) : 'Lista'} vaciada. El Excel y los UK Days se conservan.`);
 }
 function exportedBarHTML() {
   if (!_lastExport) return '';
@@ -1823,8 +1861,9 @@ function addAirport() {
   if (!/^[A-Z]{3}$/.test(iata)) { showStatus('err', 'IATA inválido (3 letras).'); return; }
   if (!isFinite(lat) || lat < -90 || lat > 90)   { showStatus('err', 'Lat fuera de rango (-90 a 90).'); return; }
   if (!isFinite(lon) || lon < -180 || lon > 180) { showStatus('err', 'Lon fuera de rango (-180 a 180).'); return; }
+  if (!requireHydrated()) return;
   const a = { ..._airports, [iata]: { lat, lon } };
-  saveAirports(a);
+  if (!saveAirports(a)) { renderAirports(); return; }
   document.getElementById('ap-iata').value = '';
   document.getElementById('ap-lat').value  = '';
   document.getElementById('ap-lon').value  = '';
@@ -1833,6 +1872,7 @@ function addAirport() {
 }
 
 function removeAirport(iata) {
+  if (!requireHydrated()) return;
   if (!confirm(`¿Borrar ${iata}?`)) return;
   const a = { ..._airports };
   delete a[iata];
@@ -1842,7 +1882,9 @@ function removeAirport(iata) {
 // Borra por posición en la lista ordenada (para claves que no pueden ir dentro de un onclick)
 function removeAirportAt(i) {
   const k = Object.keys(_airports).sort()[i];
-  if (k === undefined || !confirm('¿Borrar esta entrada inválida?')) return;
+  if (k === undefined) return;
+  if (!requireHydrated()) return;
+  if (!confirm('¿Borrar esta entrada inválida?')) return;
   const a = { ..._airports };
   delete a[k];
   saveAirports(a);
@@ -2277,7 +2319,7 @@ function ukMarkBlockOff(first) {
   if (!ISO_RE.test(String(first))) return;
   const b = pendingUKBlocks(ukNow(), taxYearOf(first)).find(x => x.days[0] === first);
   if (!b) return;
-  if (getMode() === 'cloud' && !cloud.hydrated) { alert('Aún no hay conexión con la nube: no se ha guardado. Repítelo cuando ponga "Sincronizado ✓".'); return; }
+  if (!requireHydrated({ alert: true })) return;
   const days = b.days.filter(iso => !ukHasEmail(iso) && !_dayMap[iso]);
   if (!days.length) return;
   days.forEach(iso => { _dayMap[iso] = 'off'; });
@@ -2291,7 +2333,7 @@ function ukMarkBlockOff(first) {
 function ukDecidePending(iso, state) {
   const st = ukDayStatus(iso);
   if (st.state !== 'pending') return;
-  if (getMode() === 'cloud' && !cloud.hydrated) { alert('Aún no hay conexión con la nube: no se ha guardado. Repítelo cuando ponga "Sincronizado ✓".'); return; }
+  if (!requireHydrated({ alert: true })) return;
   const prev = _ukdays[iso];
   const reason = `decidido a mano (${state === 'uk' ? 'dormí en UK' : 'dormí fuera de UK'}): ${st.reason}`;
   saveUKDays({ ..._ukdays, [iso]: { state, route: prev?.route || '—', onBlock: prev?.onBlock || '--:--', tz: prev?.tz || (ukOffsetMin(iso) ? 'BST' : 'GMT'), manual: true, source: 'manual', reason, at: new Date().toISOString() } });
@@ -2324,6 +2366,7 @@ function confirmUKDateModal() {
   if (!iso) { alert('Elige una fecha primero.'); return; }
   if (!ukInScope(iso)) { alert(`${dateISOToDisplay(iso)} está fuera del periodo UK Days (${ukScopeText()}).`); return; }
   if (ukEntryState(_ukdays[iso]) === 'uk') { alert(`${dateISOToDisplay(iso)} ya está registrado como UK Day.`); return; }
+  if (!requireHydrated({ alert: true })) return; // el modal sigue abierto con la fecha elegida
   closeUKDateModal();
   addUKDayManual(iso);
 }
@@ -2344,10 +2387,11 @@ function addUKDayManual(iso) {
     showStatus('warn', `${dateISOToDisplay(iso)} ya está registrado como UK Day.`);
     return;
   }
+  if (!requireHydrated({ alert: true })) return;
   if (ukFrozenDay(iso) && !confirm(ukFrozenConfirmText([iso]))) { showStatus('warn', 'Cancelado. No se ha guardado nada.'); return; }
-  saveUKDays({ ..._ukdays, [iso]: ukManualEntry(iso) });
+  const saved = saveUKDays({ ..._ukdays, [iso]: ukManualEntry(iso) });
   renderUKDays();
-  showStatus('ok', `${dateISOToDisplay(iso)} añadido como UK Day.`);
+  if (saved) showStatus('ok', `${dateISOToDisplay(iso)} añadido como UK Day.`);
 }
 
 function emailUKDaysBackup() {
@@ -2397,11 +2441,13 @@ function removeUKDay(iso) {
     // UK que viene del calendario (SBY/SIM/SD): "No UK" manual; el calendario no se toca (lo usa el Excel)
     const st = ukDayStatus(iso);
     if (st.state !== 'uk') return;
+    if (!requireHydrated({ alert: true })) return;
     if (!confirm(`¿Marcar ${dateISOToDisplay(iso)} como NO UK Day (dormiste fuera de UK)?\n\nEl calendario sigue igual; quedará guardado como decisión tuya.`)) return;
     saveUKDays({ ..._ukdays, [iso]: { state: 'no', route: '—', onBlock: '--:--', tz: ukOffsetMin(iso) ? 'BST' : 'GMT', manual: true, source: 'manual', reason: `marcado por el usuario: dormí fuera de UK (${calLabel((st.source || '').slice(4))} en calendario)`, at: new Date().toISOString() } });
     renderUKDays();
     return;
   }
+  if (!requireHydrated({ alert: true })) return;
   const updated = { ..._ukdays };
   if (!e.manual && ukEntryState(e) === 'uk') {
     if (!confirm(`¿Marcar ${dateISOToDisplay(iso)} como NO UK Day (dormiste fuera de UK)?\n\nQuedará guardado como decisión tuya y no se recalculará.`)) return;
@@ -2586,6 +2632,7 @@ function confirmRwyModal() {
   const sel = _rwySel; if (!sel) return;
   const bad = syncRwyOthers();
   if (bad) { showStatus('warn', `«${bad}» no es una pista válida (dos cifras y L/R/C opcional, p. ej. 09 o 27R). No se ha guardado nada.`); return; }
+  if (!requireHydrated({ alert: true })) return; // el modal sigue abierto con lo elegido
   const w = { ..._runways }, now = Date.now();
   let n = 0;
   sel.rows.forEach(r => {
@@ -2595,7 +2642,7 @@ function confirmRwyModal() {
     if (r.val.arr) { e.arr = r.val.arr; n++; }
     if (e.dep || e.arr) w[r.key] = e; else delete w[r.key];
   });
-  saveRunways(w);
+  if (!saveRunways(w)) return; // fallo local: el aviso ya está; el modal sigue abierto
   closeRwyModal();
   renderHistory();
   showStatus('ok', `Pistas guardadas (${n}/${sel.rows.length * 2}) del ${dateISOToDisplay(sel.iso)}.`);
@@ -2630,11 +2677,12 @@ function excelOnlyHTML(hist) {
 // Borra un día solo del Excel. No toca UK Days: sobreviven al borrado del historial a propósito.
 function removeExcelOnlyDay(iso) {
   if (!_excelData[iso]) return;
+  if (!requireHydrated()) return;
   if (!confirm(`¿Borrar el ${dateISOToDisplay(iso)} del Excel Tax Year? (No afecta a UK Days.)`)) return;
   delete _excelData[iso];
-  persist();
+  const saved = persist();
   renderHistory();
-  showStatus('ok', `${dateISOToDisplay(iso)} borrado del Excel.`);
+  if (saved) showStatus('ok', `${dateISOToDisplay(iso)} borrado del Excel.`);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -2751,7 +2799,7 @@ async function applyCloudMode() {
         backfillUKDays();
         if (firstSnapshot && cloud.pendingWrite) {
           cloud.pendingWrite = false;
-          showStatus('warn', 'Se cargaron los datos de la nube. Repite el último cambio si no aparece.');
+          showStatus('warn', 'Nube cargada: ya puedes guardar (tu texto sigue en el cuadro).');
         }
         renderHistory();
         renderAirports();
@@ -2789,7 +2837,7 @@ function switchMode() {
   const current = getMode();
   const other = current === 'cloud' ? 'local' : 'cloud';
   const msg = other === 'cloud'
-    ? 'Cambiar a modo Nube. Tus datos actuales se quedan en este navegador; si quieres subirlos, expórtalos antes y vuelve a importarlos manualmente.\n\n¿Continuar?'
+    ? 'Cambiar a modo Nube. Tus datos de este navegador NO se suben: se quedan aquí y en la nube verás solo lo que ya tuvieras. Los vuelos se recuperan volviendo a pegar sus emails (o desde PilotLog y tu Excel).\n\n¿Continuar?'
     : 'Cambiar a modo Local. Verás solo los datos guardados en este navegador (no los de la nube).\n\n¿Continuar?';
   if (!confirm(msg)) return;
   _lastExport = null;
@@ -3030,22 +3078,47 @@ let _calSel   = null;
 // _dayMap se declara arriba (estado global): UK Days lo lee durante el arranque
 
 function loadDayMap() {
-  try { _dayMap = JSON.parse(localStorage.getItem(CAL_KEY) || '{}'); } catch { _dayMap = {}; }
+  try { _dayMap = JSON.parse(localStorage.getItem(CAL_KEY) || '{}'); }
+  catch (e) {
+    console.warn('loadDayMap failed:', e);
+    _dayMap = {};
+    // En modo Nube la copia local es solo un espejo (el snapshot la reescribe); en Local es el dato: no se pisa
+    if (getMode() === 'local') { _localCorrupt.add(CAL_KEY); showStatus('warn', 'No se pudo leer: el calendario. El resto de tus datos está cargado; ese dato no se sobrescribe.'); }
+  }
 }
+// Devuelve true si se guardó (local) o se envió (nube). Un fallo del espejo local no impide la escritura en la nube.
 function saveDayMap() {
-  localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap));
+  let ok = true;
+  if (getMode() === 'local' && _localCorrupt.has(CAL_KEY)) {
+    showStatus('err', 'No se ha guardado el calendario: su copia en este dispositivo está dañada y no se sobrescribe. El cambio se perderá al recargar.');
+    return false;
+  }
+  try { localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap)); }
+  catch (e) {
+    console.warn('saveDayMap local failed:', e);
+    ok = getMode() === 'cloud'; // en nube la copia local es solo un espejo
+    showStatus('err', getMode() === 'cloud'
+      ? 'No se ha podido guardar la copia del calendario en este dispositivo (se intenta en la nube).'
+      : 'No se ha podido guardar el calendario en este dispositivo: el cambio se perderá al recargar. Libera espacio y repítelo.');
+  }
   if (getMode() === 'cloud') {
-    if (!cloud.hydrated) { blockedCloudWrite(); return; }
+    if (!cloud.user || !cloud.db || !cloud.hydrated) return blockedCloudWrite();
+    const dayMap = _dayMap, uid = cloud.user.uid; // capturado antes del await (ver persistCloud)
     _dayMapSaving = true;
     _cloudWrites++;
     (async () => {
       try {
         const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
-        await setDoc(doc(cloud.db, 'users', cloud.user.uid), { dayMap: _dayMap }, { mergeFields: ['dayMap'] });
-      } catch (e) { console.warn('saveDayMap cloud failed:', e); }
+        await setDoc(doc(cloud.db, 'users', uid), { dayMap }, { mergeFields: ['dayMap'] });
+      } catch (e) {
+        console.warn('saveDayMap cloud failed:', e);
+        setSync('err', 'Error al sincronizar');
+        showStatus('err', `No se ha guardado el calendario en la nube (${cloudErrText(e)}). Repite el cambio.`);
+      }
       finally { _cloudWrites--; setTimeout(() => { _dayMapSaving = false; }, 2000); }
     })();
   }
+  return ok;
 }
 
 function renderCalendar() {
@@ -3115,6 +3188,7 @@ function closeDayModal() {
 
 function setDayStatus(status) {
   if (!_calSel) return;
+  if (!requireHydrated({ alert: true })) return; // el modal del día sigue abierto
   if (_dayMap[_calSel] === status) delete _dayMap[_calSel];
   else _dayMap[_calSel] = status;
   saveDayMap();

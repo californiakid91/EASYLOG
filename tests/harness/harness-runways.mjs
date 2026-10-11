@@ -225,7 +225,10 @@ const okResp = text => Promise.resolve({ ok: true, text: () => Promise.resolve(t
   E.run('hydrateLocal()');
   check('recargar (hydrateLocal) conserva', E.J(`_runways['2026-10-06|FR100|STN-ALC'].dep`) === '22');
   E.ls.set('easylog_runways_v1', '{roto'); E.run('hydrateLocal()');
-  check('JSON roto → todo reseteado sin romper', JSON.stringify(E.J('_runways')) === '{}' && JSON.stringify(E.J('_excelData')) === '{}');
+  // 08-01 (F-02-004): solo la clave rota queda vacía; las demás se cargan y la rota no se sobrescribe
+  check('JSON roto → solo esa clave vacía, el resto cargado', JSON.stringify(E.J('_runways')) === '{}' && Object.keys(E.J('_excelData')).length > 0);
+  E.run(`saveHistory(_cache)`);
+  check('JSON roto → no se sobrescribe al guardar', E.ls.get('easylog_runways_v1') === '{roto');
 }
 
 // ══ AC-5: CSV

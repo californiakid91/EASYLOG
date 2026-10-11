@@ -5,16 +5,16 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.2 Seguridad y robustez — Fase 8: 08-01 ✓; siguiente 08-02 (sync, dialéctica Fable); 07-02 espera al asesor
+**Current focus:** v0.2 Seguridad y robustez — Fase 8: 08-02 planificado (sync opción A, dialéctica Fable); 07-02 espera al asesor
 
 ## Current Position
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 8 of 8 (Sin pérdidas silenciosas) — In progress (1/2 planes; Fase 7: 1/2, 07-02 bloqueado por el asesor)
-Plan: 08-01 completo (UNIFY); 08-02 sin planificar (política de sync: dialéctica Fable antes)
-Status: Loop cerrado — ready for next PLAN
-Last activity: 2026-10-11 — UNIFY 08-01 (SUMMARY); prod v2026.10.11-083932
+Phase: 8 of 8 (Sin pérdidas silenciosas) — Planning 08-02 (Fase 7: 1/2, 07-02 bloqueado por el asesor)
+Plan: 08-02 created, awaiting approval (revisión adversaria Fable: aprobado con cambios, incorporados)
+Status: PLAN created, ready for APPLY
+Last activity: 2026-10-11 — Dialéctica sync (A: endurecer LWW) + creado 08-02-PLAN.md
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
@@ -25,7 +25,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop 08-01 cerrado — siguiente: 08-02 (dialéctica sync) o 07-02 (tras el asesor)]
+  ✓        ○        ○     [Plan 08-02 creado, pendiente de aprobación]
 ```
 
 ## Accumulated Context
@@ -59,6 +59,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 07 (dialéctica Fable 2026-10-06, confianza alta): año fiscal DERIVADO de la fecha (taxYearOf/viewTY, sin estado persistido); UK_DAYS_FLOOR=2026-04-06 (no se fabrica evidencia anterior); año congelado a end+30 días (backfill solo lectura; pegar = confirm → manual, cancelar = no guardar); chip ‹ año › + banner 06/04–05/05; Excel por año visible; split 07-01 (año) / 07-02 (límite por año = settings.ukLimit[label] + máximo posible + sin "bonus")
 - 07-01 (aplicado): funciones de periodo reciben `ty` (por defecto viewTY()), nunca constantes de año; harness fijan window._ukNowOverride = FIXED_NOW; `node tests/run-all.mjs --now=<ISO> tests/harness` debe dar verde en cualquier año; botones OFF identifican el hueco por su primer día; chip ‹ año › en la fila de botones de UK Days
 - 08-01 (aplicado): todo mutador empieza con `if (!requireHydrated(...)) return;` (alert en modales/tarjeta UK, #status en el resto) y solo muestra OK / vacía el cuadro si save*() devolvió true; lo que va a Firestore se captura antes de cualquier await; copia local dañada (_localCorrupt) nunca se sobrescribe sola; OK de nube = enviado (el error async lo sustituye)
+- 08-02 (dialéctica Fable 2026-10-11, confianza alta): sync = A — LWW por mapa endurecido (sin guardas por temporizador; regla de snapshot por _cloudWrites/hasPendingWrites; vigilante sin tocar _cloudWrites; rearme del listener; revalidación stale al volver). B (merge por día) y C (transacciones) diferidas: solo si se usa en varios dispositivos a la vez. Usuario: casi nunca offline, no edita en 2 dispositivos a la vez
 - _runways = mapa propio (localStorage + campo Firestore `runways` con guard _runwaysSaving); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -116,9 +117,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-11
-Stopped at: Loop 08-01 cerrado (UNIFY + SUMMARY)
-Next action: /dialectic sobre la política de sync (LWW por mapa vs merge por día) → /paul:plan 8 (08-02); si el asesor responde → /paul:plan 7 (07-02)
-Resume file: .paul/HANDOFF-2026-10-11-08-01-completo.md
+Stopped at: Plan 08-02 creado
+Next action: aprobar y /paul:apply .paul/phases/08-sin-perdidas-silenciosas/08-02-PLAN.md
+Resume file: .paul/phases/08-sin-perdidas-silenciosas/08-02-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

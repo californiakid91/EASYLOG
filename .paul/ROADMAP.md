@@ -44,7 +44,7 @@ Plans:
 Focus: F-02-006 + F-RG-003 (escritura bloqueada tapada por "ok"), F-02-001 (estado obsoleto tras confirm()), F-02-004/005/007 (fallos de localStorage/nube solo en consola), F-RG-004 (textos que prometen importar). Política de sync (LWW vs merge por día) se decide en el plan.
 Plans:
 - [x] 08-01 (prod v2026.10.11-083932): guarda de hidratación en todos los mutadores + OK solo si se guardó + payload antes del await + errores de guardado visibles + copia local dañada protegida + textos honestos
-- [ ] 08-02: política de sincronización entre dispositivos (dialéctica Fable antes de planificar)
+- [ ] 08-02 (planificado): sync endurecida — opción A de la dialéctica (sin temporizadores, vigilante de escrituras, rearme del listener, revalidación al volver)
 
 ## Version Overview
 

@@ -5,16 +5,16 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.2 Seguridad y robustez — Fase 7: 07-01 ✓; 07-02 (límite) espera al asesor
+**Current focus:** v0.2 Seguridad y robustez — Fase 8: 08-01 planificado (07-02 sigue esperando al asesor)
 
 ## Current Position
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 7 of 8 (UK Days año y límite) — In progress (1/2 planes)
-Plan: 07-01 completo (UNIFY); 07-02 sin planificar (bloqueado por respuesta del asesor)
-Status: Loop cerrado — ready for next PLAN
-Last activity: 2026-10-07 — UNIFY 07-01 (SUMMARY); prod v2026.10.06-170132
+Phase: 8 of 8 (Sin pérdidas silenciosas) — Planning (Fase 7: 1/2, 07-02 bloqueado por el asesor)
+Plan: 08-01 created, awaiting approval (revisión adversaria Fable: aprobado con cambios, incorporados); 08-02 = política de sync (dialéctica Fable antes)
+Status: PLAN created, ready for APPLY
+Last activity: 2026-10-10 — Created .paul/phases/08-sin-perdidas-silenciosas/08-01-PLAN.md
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
@@ -25,7 +25,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop 07-01 cerrado — siguiente: 07-02 (tras el asesor) o Fase 8]
+  ✓        ○        ○     [Plan 08-01 created, awaiting approval]
 ```
 
 ## Accumulated Context
@@ -63,7 +63,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 ### Deferred Issues
 | Issue | Origin | Effort | Revisit |
 |-------|--------|--------|---------|
-| PilotLog: fichero de cambios 2025 APLICADO por el usuario (2026-10-04); falta re-exportar CSV de PilotLog para re-verificar. Resto de años (2023, 2024, 2026) cuando el usuario reciba el roster plan completo desde que empezó a volar (ya pedido) | 2026-10-04 | S | — |
+| PilotLog histórico 2023-05→2026-09 comparado con el plan ROCS completo (2026-10-08/10): checklist privada en curso por el usuario; al terminar, re-exportar CSV de PilotLog y re-verificar (scripts fuera del repo) | 2026-10-08 | S | cuando avise el usuario |
 | Histórico ya importado en PilotLog: sin NIGHT y posibles fechas post-medianoche → informe sobre export de PilotLog (no reimportar meses) | Phase 2 | S | antes de Fase 3 |
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
 | Barra «Hay una versión nueva» (fija abajo) tapa el final del botón de exportar mientras está visible → padding-bottom al body cuando se muestra | 03.1 checkpoint | XS | — |
@@ -81,6 +81,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Helpers duplicados entre harness (load/check/extract) → harness-lib | 06-01 (D6/F-06-006) | M | — |
 | Año congelado con email completo y sin entrada muestra "email incompleto: re-pégalo" (re-pegar idéntico no lo arregla; se decide con UK/No UK) — mensaje engañoso, no alcanzable en la práctica | 07-01 G6 | XS | 07-02 |
 | rule:* de años congelados no se recalculan aunque se corrija un bug de la regla → requiere migración explícita revisada | 07-01 dialéctica | S | si cambia la regla |
+| Detectar vuelos de SAFETY PILOT al pegar (VEGRIC 3er FO, sin PF) → proponer funciones 0:00, Pilot 3 SELF y remarks «SAFETY PILOT» (criterio del usuario) | 2026-10-10 sesión PilotLog | S | fase propia tras 08 |
 | GitHub: ticket de purga de caché de commits (abierto 2026-10-05) → comprobar que los SHA antiguos dan 404 | 05 post | XS | cuando responda GitHub |
 
 ### Preguntas pendientes al usuario — de UNA en UNA
@@ -111,10 +112,10 @@ Branch: main
 
 ## Session Continuity
 
-Last session: 2026-10-07
-Stopped at: Loop 07-01 cerrado (UNIFY + SUMMARY)
-Next action: si el asesor ya respondió → /paul:plan 7 (07-02 límite); si no → /paul:plan 8 (sin pérdidas silenciosas) y 07-02 después
-Resume file: .paul/HANDOFF-2026-10-07-07-01-completo.md
+Last session: 2026-10-10
+Stopped at: Plan 08-01 created (usuario eligió dividir Fase 8: 08-01 arreglos claros / 08-02 sync con dialéctica)
+Next action: Review and approve plan, then run /paul:apply .paul/phases/08-sin-perdidas-silenciosas/08-01-PLAN.md
+Resume file: .paul/phases/08-sin-perdidas-silenciosas/08-01-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

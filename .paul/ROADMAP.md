@@ -17,7 +17,7 @@ Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 | 5 | Seguridad: XSS aeropuerto, SRI/CSP, reglas Firestore en repo | 2/2 | ✅ Complete | 2026-10-05 |
 | 6 | Barrera de tests: runner único + fixtures anonimizadas + gate | 2/2 | ✅ Complete | 2026-10-05 |
 | 7 | UK Days: año fiscal dinámico + límite configurable + máximo posible | 1/2 | In progress | - |
-| 8 | Sin pérdidas silenciosas: avisos de escritura bloqueada + estado tras confirm() | TBD | Not started | - |
+| 8 | Sin pérdidas silenciosas: avisos de escritura bloqueada + estado tras confirm() | 0/2 | Planning | - |
 
 ### Phase 5: Seguridad
 Plans:
@@ -42,7 +42,9 @@ Plans:
 
 ### Phase 8: Sin pérdidas silenciosas
 Focus: F-02-006 + F-RG-003 (escritura bloqueada tapada por "ok"), F-02-001 (estado obsoleto tras confirm()), F-02-004/005/007 (fallos de localStorage/nube solo en consola), F-RG-004 (textos que prometen importar). Política de sync (LWW vs merge por día) se decide en el plan.
-Plans: TBD
+Plans:
+- [ ] 08-01: guarda de hidratación en todos los mutadores + OK solo si se guardó + errores de guardado visibles + hydrateLocal clave a clave + textos honestos
+- [ ] 08-02: política de sincronización entre dispositivos (dialéctica Fable antes de planificar)
 
 ## Version Overview
 

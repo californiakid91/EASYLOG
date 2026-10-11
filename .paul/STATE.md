@@ -5,27 +5,27 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.2 Seguridad y robustez — Fase 8: 08-02 planificado (sync opción A, dialéctica Fable); 07-02 espera al asesor
+**Current focus:** v0.2 Seguridad y robustez — Fase 8 ✓ (08-01 + 08-02); queda 07-02 (espera al asesor)
 
 ## Current Position
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 8 of 8 (Sin pérdidas silenciosas) — Planning 08-02 (Fase 7: 1/2, 07-02 bloqueado por el asesor)
-Plan: 08-02 created, awaiting approval (revisión adversaria Fable: aprobado con cambios, incorporados)
-Status: PLAN created, ready for APPLY
-Last activity: 2026-10-11 — Dialéctica sync (A: endurecer LWW) + creado 08-02-PLAN.md
+Phase: 8 of 8 (Sin pérdidas silenciosas) — ✅ Complete (Fase 7: 1/2, 07-02 bloqueado por el asesor)
+Plan: 08-02 completo (UNIFY); siguiente 07-02 cuando responda el asesor
+Status: Loop cerrado — Fase 8 completa; ready for next PLAN (07-02 bloqueado)
+Last activity: 2026-10-11 — UNIFY 08-02 + transición Fase 8 (G7 CRG 0.40, G8 security-review); prod v2026.10.11-093029
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
-- v0.2 Seguridad y robustez: [███████░░░] 75% (Fase 5 ✓, Fase 6 ✓, Fase 7 1/2, Fase 8 1/2)
+- v0.2 Seguridad y robustez: [█████████░] 88% (Fase 5 ✓, Fase 6 ✓, Fase 7 1/2, Fase 8 ✓)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 08-02 creado, pendiente de aprobación]
+  ✓        ✓        ✓     [Loop 08-02 cerrado — Fase 8 completa; siguiente: 07-02 (tras el asesor)]
 ```
 
 ## Accumulated Context
@@ -38,7 +38,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - iOS standalone: abrir desde el icono recarga la página; desde el selector de apps no siempre emite visibilitychange → la app comprueba también en focus y cada 5 min
 - Noche = regla EASA (licencia IAA del usuario): sol < −6° (crepúsculo civil), NO sunset+30 (UK CAA). sunAltitude NOAA validado vs PyEphem ≤10 s
 - PILOTLOG_DATE = fecha UTC de off-block (sectores post-medianoche → día siguiente)
-- Escrituras a nube con mergeFields + guard hidratación (ignora fromCache); last-write-wins por campo aceptado
+- Escrituras a nube con mergeFields + guard hidratación (ignora fromCache); last-write-wins por campo aceptado (endurecido en 08-02)
 - UK Day: computeUKDay tri-estado (último sector cronológico vía sectorUTC; sin On Block → no tocar); manual:true nunca se recalcula
 - Calzos a las 00:00 justas = UK Day (FA 2013 Sch 45 para 22, midnight test); solo después de 00:00 es No UK
 - UK Days 03-02 (dialéctica + Fable): regla cerrada R1/R2/R3 exigiendo aterrizar en UK (sustituye "sin exigir aeropuerto UK"); estados uk/no con source/reason; calendario _dayMap como declaración de días sin email; P = pendientes pasados, alarma solo con N
@@ -59,8 +59,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 07 (dialéctica Fable 2026-10-06, confianza alta): año fiscal DERIVADO de la fecha (taxYearOf/viewTY, sin estado persistido); UK_DAYS_FLOOR=2026-04-06 (no se fabrica evidencia anterior); año congelado a end+30 días (backfill solo lectura; pegar = confirm → manual, cancelar = no guardar); chip ‹ año › + banner 06/04–05/05; Excel por año visible; split 07-01 (año) / 07-02 (límite por año = settings.ukLimit[label] + máximo posible + sin "bonus")
 - 07-01 (aplicado): funciones de periodo reciben `ty` (por defecto viewTY()), nunca constantes de año; harness fijan window._ukNowOverride = FIXED_NOW; `node tests/run-all.mjs --now=<ISO> tests/harness` debe dar verde en cualquier año; botones OFF identifican el hueco por su primer día; chip ‹ año › en la fila de botones de UK Days
 - 08-01 (aplicado): todo mutador empieza con `if (!requireHydrated(...)) return;` (alert en modales/tarjeta UK, #status en el resto) y solo muestra OK / vacía el cuadro si save*() devolvió true; lo que va a Firestore se captura antes de cualquier await; copia local dañada (_localCorrupt) nunca se sobrescribe sola; OK de nube = enviado (el error async lo sustituye)
-- 08-02 (dialéctica Fable 2026-10-11, confianza alta): sync = A — LWW por mapa endurecido (sin guardas por temporizador; regla de snapshot por _cloudWrites/hasPendingWrites; vigilante sin tocar _cloudWrites; rearme del listener; revalidación stale al volver). B (merge por día) y C (transacciones) diferidas: solo si se usa en varios dispositivos a la vez. Usuario: casi nunca offline, no edita en 2 dispositivos a la vez
-- _runways = mapa propio (localStorage + campo Firestore `runways` con guard _runwaysSaving); clave duty|vuelo|DEP-ARR(#n)
+- 08-02 (aplicado; dialéctica Fable, confianza alta): sync = A — LWW por mapa endurecido. Regla D2: con _cloudWrites>0 se descarta el snapshot sin hasPendingWrites (skipped → relectura); _cloudWrites solo baja al resolver/rechazar setDoc (NUNCA por timeout); «Sincronizado ✓» solo con 0 en vuelo y sin stale; setDoc síncrono con cloud.fs; listener con rearme (subscribeCloud/onCloudListenerError); vuelta >60 s sin señal → stale (checkResume en requireHydrated + eventos + tick 15 s), no se escribe hasta releer (revalidateCloud). Tests con reloj: harness-sync (advance/jump) + e2e-sync (Firebase falso por page.route). B/C diferidas: solo si se usa en varios dispositivos a la vez
+- _runways = mapa propio (localStorage + campo Firestore `runways`); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
 | Issue | Origin | Effort | Revisit |
@@ -84,7 +84,10 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Año congelado con email completo y sin entrada muestra "email incompleto: re-pégalo" (re-pegar idéntico no lo arregla; se decide con UK/No UK) — mensaje engañoso, no alcanzable en la práctica | 07-01 G6 | XS | 07-02 |
 | rule:* de años congelados no se recalculan aunque se corrija un bug de la regla → requiere migración explícita revisada | 07-01 dialéctica | S | si cambia la regla |
 | Detectar vuelos de SAFETY PILOT al pegar (VEGRIC 3er FO, sin PF) → proponer funciones 0:00, Pilot 3 SELF y remarks «SAFETY PILOT» (criterio del usuario) | 2026-10-10 sesión PilotLog | S | fase propia tras 08 |
-| setDoc offline sin timeout («Guardando…» eterno) / persistentLocalCache (F-02-012); listener muerto tras error con hydrated=true (F-02-008) | 08-01 | S | 08-02 |
+| Sync: dos dispositivos editando casi a la vez → gana el último por mapa (F-02-001 mitigado, no cerrado); merge por día (opción B) si cambia el uso | 08-02 dialéctica | M | si usa 2 dispositivos a la vez |
+| 08-02 no verificado en iPhone real + Firebase real (e2e simulado); vigilar «Comprobando…» que no termina o «Sin confirmar» con buena cobertura | 08-02 checkpoint | XS | si el usuario lo ve |
+| G8 08: `_cloudWrites` de una sesión anterior (escritura sin confirmar) no se resetea en logout/switchMode → la sesión nueva descarta snapshots hasta que resuelva (solo disponibilidad, no cruza datos) → epoch de sesión | 08 G8 | XS | — |
+| G8 08: validación mínima de forma en applyCloudData (objetos, claves ISO, CAL_STATES) antes de asignar y del espejo CAL_KEY (defensa en profundidad) | 08 G8 | XS | — |
 | Copia local dañada: no se puede «dar por perdida» desde la app (_localCorrupt no se limpia) | 08-01 G6 | XS | — |
 | GitHub: ticket de purga de caché de commits (abierto 2026-10-05) → comprobar que los SHA antiguos dan 404 | 05 post | XS | cuando responda GitHub |
 
@@ -111,15 +114,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: 0eee43f — 08-01 subido 2026-10-11; prod = v2026.10.11-083932 (verificado byte a byte)
+Last commit: (commit de fase 08) — prod = v2026.10.11-093029 (verificado byte a byte)
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-11
-Stopped at: Plan 08-02 creado
-Next action: aprobar y /paul:apply .paul/phases/08-sin-perdidas-silenciosas/08-02-PLAN.md
-Resume file: .paul/phases/08-sin-perdidas-silenciosas/08-02-PLAN.md
+Stopped at: Fase 8 completa (UNIFY 08-02 + transición)
+Next action: preguntar al usuario por el asesor → /paul:plan 7 (07-02); si no, fase propia SAFETY PILOT (diferido) vía /paul:add-phase
+Resume file: .paul/phases/08-sin-perdidas-silenciosas/08-02-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

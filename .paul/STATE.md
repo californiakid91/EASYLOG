@@ -118,7 +118,7 @@ Branch: main
 Last session: 2026-10-11
 Stopped at: Loop 08-01 cerrado (UNIFY + SUMMARY)
 Next action: /dialectic sobre la política de sync (LWW por mapa vs merge por día) → /paul:plan 8 (08-02); si el asesor responde → /paul:plan 7 (07-02)
-Resume file: .paul/phases/08-sin-perdidas-silenciosas/08-01-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-11-08-01-completo.md
 
 ---
 *STATE.md — Updated after every significant action*

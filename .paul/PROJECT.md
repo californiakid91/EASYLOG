@@ -14,8 +14,8 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 |-----------|-------|
 | Type | Application |
 | Version | 0.1.0 (v0.1 Datos fiables, cerrado 2026-10-05) |
-| Status | Production — v0.1.0 cerrado; v0.2 en curso: Fases 5 y 6 completas, Fase 7 1/2 (año fiscal dinámico) |
-| Last Updated | 2026-10-07 (07-01) |
+| Status | Production — v0.1.0 cerrado; v0.2 en curso: Fases 5 y 6 completas, Fase 7 1/2, Fase 8 1/2 (sin pérdidas silenciosas) |
+| Last Updated | 2026-10-11 (08-01) |
 
 **Production URLs:**
 - https://californiakid91.github.io/EASYLOG/ — app (deploy automático al push a `main`)
@@ -52,6 +52,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - [x] SheetJS servido desde el propio repo (hash fijado) + meta CSP de control de salida con aviso visible de bloqueos — Phase 5 (05-02)
 - [x] Reglas de Firestore versionadas = producción (per-uid) + comprobador repo↔prod de solo lectura; API key restringida por referrer verificada — Phase 5 (05-02)
 - [x] Barrera de tests: `node tests/run-all.mjs` (12 harness, fixtures anonimizadas versionadas, golden de CSV y cabeceras del importer) — Phase 6 (06-01)
+- [x] Sin pérdidas silenciosas: sin nube cargada nada cambia ni se vacía el cuadro y se avisa donde se actúa; OK solo si se guardó; fallos de guardado visibles; copia local dañada nunca se pisa — Phase 8 (08-01)
 - [x] e2e propios (playwright-core fijado, `npm ci`) + gate git: commit bloqueado si fallan los harness; push (= deploy) bloqueado si fallan harness o e2e — Phase 6 (06-02)
 
 ### Active (In Progress)
@@ -63,7 +64,8 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
   - [x] XSS por código de aeropuerto + SRI/CSP para CDNs — Phase 5
   - [x] Reglas de Firestore versionadas en el repo (per-uid) + restricciones de la apiKey — Phase 5
   - [x] Año fiscal derivado de la fecha + selector ‹ año › + años cerrados protegidos — Phase 7 (07-01)
-  - [ ] Avisos "ok" que tapan escrituras bloqueadas; estado obsoleto tras confirm()
+  - [x] Avisos "ok" que tapan escrituras bloqueadas; errores de guardado visibles; copia local dañada protegida — Phase 8 (08-01)
+  - [ ] Política de sincronización entre dispositivos (LWW vs merge por día) — Phase 8 (08-02)
   - [x] Barrera de tests (runner único + fixtures anonimizadas versionadas + gate pre-commit/pre-push) — Phase 6
 - [x] Propietario (sin código): GitHub 2FA activado + protección de rama main; historial git purgado (2026-10-05, ticket de caché a GitHub abierto)
 
@@ -124,6 +126,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Tests en tests/ con golden absoluto en fichero (no git HEAD); cambios legítimos con --update-golden | Un fallo commiteado no puede pasar a ser «lo correcto» (F-06-003) | 2026-10-05 | Active |
 | Gate git: pre-commit = harness; pre-push = harness + e2e; e2e-csp (terceros) con reintento y escape EASYLOG_PUSH_SKIP_NET=1; nunca --no-verify | Push = deploy; no bloquear un arreglo urgente por Google caído (flake gen_204 demostrado, Fable) | 2026-10-05 | Active |
 | e2e con reloj fijo (FIXED_NOW) solo sin Firebase | Resultado independiente del día; Firestore/Auth se cuelgan con Date fijo (Fable) | 2026-10-05 | Active |
+| Mutadores: guarda requireHydrated al inicio + OK solo si se guardó; payload de Firestore capturado antes de await; copia local dañada nunca se sobrescribe sola | Aegis F-02-006/F-RG-003/F-02-004 + revisión Fable (carrera real del await; backfill pisaba la clave dañada) | 2026-10-11 | Active |
 | Año fiscal derivado de la fecha, sin estado; FLOOR 06/04/2026; año congelado a +30 días (solo el usuario escribe, con confirm) | Dialéctica Fable: un flag "closed" en Firestore añade carreras y migración; la evidencia declarada no se recalcula sola | 2026-10-06 | Active |
 
 ## Success Metrics

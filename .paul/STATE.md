@@ -5,27 +5,27 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.2 Seguridad y robustez — Fase 8: 08-01 planificado (07-02 sigue esperando al asesor)
+**Current focus:** v0.2 Seguridad y robustez — Fase 8: 08-01 ✓; siguiente 08-02 (sync, dialéctica Fable); 07-02 espera al asesor
 
 ## Current Position
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 8 of 8 (Sin pérdidas silenciosas) — Planning (Fase 7: 1/2, 07-02 bloqueado por el asesor)
-Plan: 08-01 created, awaiting approval (revisión adversaria Fable: aprobado con cambios, incorporados); 08-02 = política de sync (dialéctica Fable antes)
-Status: PLAN created, ready for APPLY
-Last activity: 2026-10-10 — Created .paul/phases/08-sin-perdidas-silenciosas/08-01-PLAN.md
+Phase: 8 of 8 (Sin pérdidas silenciosas) — In progress (1/2 planes; Fase 7: 1/2, 07-02 bloqueado por el asesor)
+Plan: 08-01 completo (UNIFY); 08-02 sin planificar (política de sync: dialéctica Fable antes)
+Status: Loop cerrado — ready for next PLAN
+Last activity: 2026-10-11 — UNIFY 08-01 (SUMMARY); prod v2026.10.11-083932
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
-- v0.2 Seguridad y robustez: [██████░░░░] 62% (Fase 5 ✓, Fase 6 ✓, Fase 7 1/2)
+- v0.2 Seguridad y robustez: [███████░░░] 75% (Fase 5 ✓, Fase 6 ✓, Fase 7 1/2, Fase 8 1/2)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 08-01 created, awaiting approval]
+  ✓        ✓        ✓     [Loop 08-01 cerrado — siguiente: 08-02 (dialéctica sync) o 07-02 (tras el asesor)]
 ```
 
 ## Accumulated Context
@@ -58,6 +58,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 06-02: `npm ci` (playwright-core 1.63.0) + `node tests/run-all.mjs tests/harness tests/e2e` = 14/14; e2e usan serveRepo/loadPlaywright/watchdog/FIXED_NOW de lib.mjs; reloj fijo solo sin Firebase; pre-commit = harness (bloquea), pre-push = harness + e2e (e2e-csp 1 reintento; escape solo `EASYLOG_PUSH_SKIP_NET=1 git push`); nunca --no-verify; push desde Bash de Claude con timeout ≥ 5 min
 - 07 (dialéctica Fable 2026-10-06, confianza alta): año fiscal DERIVADO de la fecha (taxYearOf/viewTY, sin estado persistido); UK_DAYS_FLOOR=2026-04-06 (no se fabrica evidencia anterior); año congelado a end+30 días (backfill solo lectura; pegar = confirm → manual, cancelar = no guardar); chip ‹ año › + banner 06/04–05/05; Excel por año visible; split 07-01 (año) / 07-02 (límite por año = settings.ukLimit[label] + máximo posible + sin "bonus")
 - 07-01 (aplicado): funciones de periodo reciben `ty` (por defecto viewTY()), nunca constantes de año; harness fijan window._ukNowOverride = FIXED_NOW; `node tests/run-all.mjs --now=<ISO> tests/harness` debe dar verde en cualquier año; botones OFF identifican el hueco por su primer día; chip ‹ año › en la fila de botones de UK Days
+- 08-01 (aplicado): todo mutador empieza con `if (!requireHydrated(...)) return;` (alert en modales/tarjeta UK, #status en el resto) y solo muestra OK / vacía el cuadro si save*() devolvió true; lo que va a Firestore se captura antes de cualquier await; copia local dañada (_localCorrupt) nunca se sobrescribe sola; OK de nube = enviado (el error async lo sustituye)
 - _runways = mapa propio (localStorage + campo Firestore `runways` con guard _runwaysSaving); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -82,6 +83,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Año congelado con email completo y sin entrada muestra "email incompleto: re-pégalo" (re-pegar idéntico no lo arregla; se decide con UK/No UK) — mensaje engañoso, no alcanzable en la práctica | 07-01 G6 | XS | 07-02 |
 | rule:* de años congelados no se recalculan aunque se corrija un bug de la regla → requiere migración explícita revisada | 07-01 dialéctica | S | si cambia la regla |
 | Detectar vuelos de SAFETY PILOT al pegar (VEGRIC 3er FO, sin PF) → proponer funciones 0:00, Pilot 3 SELF y remarks «SAFETY PILOT» (criterio del usuario) | 2026-10-10 sesión PilotLog | S | fase propia tras 08 |
+| setDoc offline sin timeout («Guardando…» eterno) / persistentLocalCache (F-02-012); listener muerto tras error con hydrated=true (F-02-008) | 08-01 | S | 08-02 |
+| Copia local dañada: no se puede «dar por perdida» desde la app (_localCorrupt no se limpia) | 08-01 G6 | XS | — |
 | GitHub: ticket de purga de caché de commits (abierto 2026-10-05) → comprobar que los SHA antiguos dan 404 | 05 post | XS | cuando responda GitHub |
 
 ### Preguntas pendientes al usuario — de UNA en UNA
@@ -107,15 +110,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: dadd17e — 07-01 subido 2026-10-06; prod = v2026.10.06-170132 (verificado byte a byte)
+Last commit: 0eee43f — 08-01 subido 2026-10-11; prod = v2026.10.11-083932 (verificado byte a byte)
 Branch: main
 
 ## Session Continuity
 
-Last session: 2026-10-10
-Stopped at: Plan 08-01 created (usuario eligió dividir Fase 8: 08-01 arreglos claros / 08-02 sync con dialéctica)
-Next action: Review and approve plan, then run /paul:apply .paul/phases/08-sin-perdidas-silenciosas/08-01-PLAN.md
-Resume file: .paul/phases/08-sin-perdidas-silenciosas/08-01-PLAN.md
+Last session: 2026-10-11
+Stopped at: Loop 08-01 cerrado (UNIFY + SUMMARY)
+Next action: /dialectic sobre la política de sync (LWW por mapa vs merge por día) → /paul:plan 8 (08-02); si el asesor responde → /paul:plan 7 (07-02)
+Resume file: .paul/phases/08-sin-perdidas-silenciosas/08-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

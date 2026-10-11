@@ -8,7 +8,7 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 
 **v0.2 Seguridad y robustez** (v0.2.0)
 Status: 🚧 In Progress
-Phases: 2 of 4 complete (Fase 7: 1/2)
+Phases: 2 of 4 complete (Fase 7: 1/2, Fase 8: 1/2)
 Theme: Cerrar los hallazgos de la auditoría Aegis (2026-10-05) sin cambiar el flujo de uso: que nadie pueda inyectar código, que nada se pierda en silencio, que UK Days siga bien el año que viene y que los tests frenen regresiones.
 Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 
@@ -17,7 +17,7 @@ Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 | 5 | Seguridad: XSS aeropuerto, SRI/CSP, reglas Firestore en repo | 2/2 | ✅ Complete | 2026-10-05 |
 | 6 | Barrera de tests: runner único + fixtures anonimizadas + gate | 2/2 | ✅ Complete | 2026-10-05 |
 | 7 | UK Days: año fiscal dinámico + límite configurable + máximo posible | 1/2 | In progress | - |
-| 8 | Sin pérdidas silenciosas: avisos de escritura bloqueada + estado tras confirm() | 0/2 | Planning | - |
+| 8 | Sin pérdidas silenciosas: avisos de escritura bloqueada + estado tras confirm() | 1/2 | In progress | - |
 
 ### Phase 5: Seguridad
 Plans:
@@ -43,7 +43,7 @@ Plans:
 ### Phase 8: Sin pérdidas silenciosas
 Focus: F-02-006 + F-RG-003 (escritura bloqueada tapada por "ok"), F-02-001 (estado obsoleto tras confirm()), F-02-004/005/007 (fallos de localStorage/nube solo en consola), F-RG-004 (textos que prometen importar). Política de sync (LWW vs merge por día) se decide en el plan.
 Plans:
-- [ ] 08-01: guarda de hidratación en todos los mutadores + OK solo si se guardó + errores de guardado visibles + hydrateLocal clave a clave + textos honestos
+- [x] 08-01 (prod v2026.10.11-083932): guarda de hidratación en todos los mutadores + OK solo si se guardó + payload antes del await + errores de guardado visibles + copia local dañada protegida + textos honestos
 - [ ] 08-02: política de sincronización entre dispositivos (dialéctica Fable antes de planificar)
 
 ## Version Overview
@@ -74,4 +74,4 @@ Detalle completo: .paul/milestones/v0.1.0-ROADMAP.md
 </details>
 
 ---
-*Roadmap created: 2026-10-03 · Updated: 2026-10-05 (Fase 6 completa)*
+*Roadmap created: 2026-10-03 · Updated: 2026-10-11 (08-01 completo)*

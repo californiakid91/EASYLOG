@@ -114,7 +114,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: (commit de fase 08) — prod = v2026.10.11-093029 (verificado byte a byte)
+Last commit: f241e82 (fase 08) — prod = v2026.10.11-093029 (verificado byte a byte)
 Branch: main
 
 ## Session Continuity

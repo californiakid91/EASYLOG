@@ -122,7 +122,7 @@ Branch: main
 Last session: 2026-10-11
 Stopped at: Fase 8 completa (UNIFY 08-02 + transición)
 Next action: preguntar al usuario por el asesor → /paul:plan 7 (07-02); si no, fase propia SAFETY PILOT (diferido) vía /paul:add-phase
-Resume file: .paul/phases/08-sin-perdidas-silenciosas/08-02-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-11-fase-8-completa.md
 
 ---
 *STATE.md — Updated after every significant action*

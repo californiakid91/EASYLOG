@@ -154,6 +154,13 @@ const MAPS = '({ c: _cache, x: _excelData, u: _ukdays, a: _airports, r: _runways
 // ══ AC-2: el payload de la nube se captura antes del await ══
 {
   const E = await makeEnv(); E.fire(); await tick();
+  // 08-02: con el módulo ya cargado (cloud.fs) setDoc se llama en el mismo tick que el cambio (no hay await donde colarse)
+  const n0 = E.writes.length;
+  E.run(`saveHistory({ '2026-09-28': { addedAt: 'Y', role: 'FO', flights: [] } })`);
+  check('AC-2 (08-02) con cloud.fs, setDoc es síncrono', E.writes.length === n0 + 1, `${n0} → ${E.writes.length}`);
+  await tick();
+  // Ruta de respaldo sin módulo cargado (await import): el payload sigue capturándose antes del await
+  E.run('cloud.fs = null');
   E.beforeImport = () => E.run(`_cache = { '2099-01-01': { role: 'FO', flights: [] } }`); // "snapshot" durante el import del SDK
   E.run(`saveHistory({ '2026-09-29': { addedAt: 'Z', role: 'FO', flights: [] } })`); await tick();
   E.beforeImport = null;
@@ -164,6 +171,7 @@ const MAPS = '({ c: _cache, x: _excelData, u: _ukdays, a: _airports, r: _runways
   E.run(`_dayMap = { '2026-09-30': 'off' }; saveDayMap();`); await tick();
   E.beforeImport = null;
   check('AC-2 saveDayMap envía el calendario capturado', JSON.stringify(E.writes.at(-1)?.data.dayMap) === '{"2026-09-30":"off"}', JSON.stringify(E.writes.at(-1)?.data));
+  check('AC-2 la ruta de respaldo sí pasó por el import (el test no es vacío)', E.run('cloud.fs') === null && E.writes.length === n0 + 3, String(E.writes.length - n0));
 }
 
 // ══ AC-3: fallos visibles ══

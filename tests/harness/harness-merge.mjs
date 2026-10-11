@@ -97,8 +97,10 @@ fire(true); await tick();
 check('snapshot de caché offline NO hidrata', run('cloud.hydrated') === false && Object.keys(run('_ukdays')).includes('2026-10-03'));
 run(`saveHistory({ '2026-10-04': { role: 'FO', flights: [] } })`); await tick();
 check('escritura offline bloqueada (nube no sustituida)', writes.length === 0 && Object.keys(cloudDoc.ukdays).length === 2, `writes=${writes.length}`);
+run('_cloudWrites = 1'); // 08-02: aunque conste una escritura propia en vuelo, el primer snapshot (sin hidratar) manda
 fire(); await tick();
-check('primer snapshot aplica ukdays de la nube aunque _ukdaysSaving=true', JSON.stringify(Object.keys(run('_ukdays')).sort()) === JSON.stringify(['2026-09-18', '2026-09-19']), JSON.stringify(Object.keys(run('_ukdays'))));
+run('_cloudWrites = 0');
+check('primer snapshot aplica ukdays de la nube aunque haya escritura propia en vuelo', JSON.stringify(Object.keys(run('_ukdays')).sort()) === JSON.stringify(['2026-09-18', '2026-09-19']), JSON.stringify(Object.keys(run('_ukdays'))));
 check('primer snapshot aplica dayMap de la nube', JSON.stringify(run('_dayMap')) === JSON.stringify(cloudDoc.dayMap));
 check('aviso visible al usuario tras escritura bloqueada', statuses.some(s => s.startsWith('warn:') && s.includes('no se ha guardado nada')), statuses.join(' | '));
 check('nube intacta tras hidratar (nada pisado)', Object.keys(cloudDoc.ukdays).length === 2 && writes.length === 0, `writes=${writes.length}`);

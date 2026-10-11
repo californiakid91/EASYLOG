@@ -25,6 +25,7 @@ function load(src, { mode = 'local', fetchImpl, cloudDoc } = {}) {
     'firebase-firestore': { getFirestore: () => ({}), doc: () => ({}),
       setDoc: (_r, data, opts) => { env.writes.push({ data: clone(data), opts: clone(opts || {}) });
         for (const f of opts?.mergeFields || []) { if (data[f] === undefined) throw new Error('undefined en ' + f); env.cloudDoc[f] = clone(data[f]); } return Promise.resolve(); },
+      getDocFromServer: async () => ({ exists: () => true, data: () => clone(env.cloudDoc) }),
       onSnapshot: (_r, cb) => { env.snapCb = cb; return () => {}; } },
   };
   let script = src.replace(/await import\('https:\/\/www\.gstatic\.com\/firebasejs\/[^']+\/(firebase-[a-z]+)\.js'\)/g, "await __fakeImport('$1')");
@@ -261,11 +262,14 @@ const okResp = text => Promise.resolve({ ok: true, text: () => Promise.resolve(t
   const C = load(NEW_SRC, { mode: 'cloud', cloudDoc: clone(base) });
   await tick(); C.fire(); await tick();
   check('nube → _runways hidratado del primer snapshot', C.J(`_runways['k|FR1|STN-ALC'].dep`) === '22');
-  C.run(`saveRunways({ ..._runways, 'k|FR2|ALC-STN': { dep: '28', depAp: 'ALC', arrAp: 'STN', at: 2 } })`); await tick();
+  C.run(`saveRunways({ ..._runways, 'k|FR2|ALC-STN': { dep: '28', depAp: 'ALC', arrAp: 'STN', at: 2 } })`);
+  // 08-02 (regla D2): un snapshot viejo (sin hasPendingWrites) que llega con la escritura aún en vuelo no la pisa
+  const sent = C.cloudDoc; C.cloudDoc = clone(base); C.fire(); C.cloudDoc = sent;
+  check('guard: un snapshot viejo mientras se guarda no pisa lo enviado', C.J(`'k|FR2|ALC-STN' in _runways`) === true);
+  await tick();
   const w = C.writes.at(-1);
   check('escritura con runways en mergeFields', w && w.opts.mergeFields.includes('runways') && w.data.runways['k|FR2|ALC-STN'].dep === '28', JSON.stringify(w?.opts));
-  const stale = clone(base); C.cloudDoc = stale; C.fire(); await tick();
-  check('guard: un snapshot viejo mientras se guarda no pisa lo confirmado', C.J(`'k|FR2|ALC-STN' in _runways`) === true);
+  check('guard: tras confirmar, la relectura deja la pista confirmada', C.J(`'k|FR2|ALC-STN' in _runways`) === true);
   const V = load(OLD_SRC, { mode: 'cloud', cloudDoc: clone(base) });
   await tick(); V.fire(); await tick();
   V.run(`saveUKDays({ '2026-10-06': { state: 'uk' } })`); await tick();

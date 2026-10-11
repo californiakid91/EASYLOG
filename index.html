@@ -734,7 +734,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.11-083932';
+const APP_VERSION = '2026.10.11-093029';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -1313,12 +1313,16 @@ let _airports   = {};  // custom airports: { IATA: { lat, lon } }
 let _ukdays     = {};  // UK Days: { iso: { route, onBlock, tz } } — persiste aunque se borre el historial
 let _runways    = {};  // pistas CONFIRMADAS: { rwyKey: { dep?, arr?, depAp, arrAp, at } } — persiste aunque se borre el historial
 // Cloud state (populated only when mode === 'cloud')
-let cloud = { app: null, auth: null, db: null, user: null, unsub: null, hydrated: false, pendingWrite: false, loadError: false };
+// 08-02: fs/authMod = módulos de Firebase ya cargados (escritura síncrona); stale = volvemos de segundo plano y aún no se ha
+// releído la nube (no se escribe); lastAliveAt = última señal de vida (tick o snapshot del servidor);
+// retry*/reval* = reintentos del listener y de la relectura; skipped = se descartó un snapshot con escrituras propias en vuelo
+let cloud = { app: null, auth: null, db: null, user: null, unsub: null, hydrated: false, pendingWrite: false, loadError: false,
+  fs: null, authMod: null, stale: false, lastAliveAt: 0, retryT: null, retryDelay: 0, errShown: false,
+  revalP: null, revalT: null, revalDelay: 0, skipped: false };
 let _dayMap       = {};    // calendario { 'YYYY-MM-DD': 'off'|'stby'|'duty'|'sim'|'sd' } (sd = ground duty / reunión) (lo leen el Excel y UK Days)
-let _dayMapSaving  = false; // evita que onSnapshot sobreescriba _dayMap mientras guardamos
-let _ukdaysSaving  = false; // evita que onSnapshot sobreescriba _ukdays mientras guardamos
-let _runwaysSaving = false; // ídem para _runways
-let _cloudWrites   = 0;     // escrituras a Firestore en vuelo (la auto-actualización no recarga mientras > 0)
+// Escrituras a Firestore enviadas y aún sin confirmar por el servidor. Solo baja cuando setDoc resuelve o rechaza, NUNCA por
+// tiempo: la auto-actualización no recarga mientras > 0 (recargar perdería la escritura en cola) y onSnapshot la usa (regla D2).
+let _cloudWrites   = 0;
 
 function getMode() { return localStorage.getItem(MODE_KEY); } // 'local' | 'cloud' | null
 function setMode(m) { localStorage.setItem(MODE_KEY, m); }
@@ -1335,16 +1339,16 @@ function resolveAirport(iata) {
 // Los save* devuelven persist(): true = guardado (local) o enviado (nube); false = NO se ha guardado (ya avisado)
 function saveHistory(h) { _cache = h; return persist(); }
 function saveAirports(a) { _airports = a; return persist(); }
-// Cambia _ukdays sin escribir (para agrupar con otra escritura); el flag evita que onSnapshot lo pise mientras se guarda
-function setUKDays(u)    { _ukdays = u; _ukdaysSaving = true; setTimeout(() => { _ukdaysSaving = false; }, 3000); }
+// Cambia _ukdays sin escribir, para agrupar con otra escritura en el MISMO tick (setDoc es síncrono: ningún snapshot se cuela)
+function setUKDays(u)    { _ukdays = u; }
 function saveUKDays(u)   { setUKDays(u); return persist(); }
-function saveRunways(w)  { _runways = w; _runwaysSaving = true; setTimeout(() => { _runwaysSaving = false; }, 3000); return persist(); }
+function saveRunways(w)  { _runways = w; return persist(); }
 
 function persist() {
   const mode = getMode();
   if (mode === 'cloud') {
     // Red de seguridad: los mutadores ya llaman a requireHydrated() antes de tocar nada
-    if (!cloud.user || !cloud.db || !cloud.hydrated) return blockedCloudWrite();
+    if (!cloudWriteGate()) return false;
     persistCloud();
     return true; // enviado: si falla, persistCloud lo avisa (el error sustituye al «OK»)
   } else {
@@ -1389,24 +1393,64 @@ function hydrateLocal() {
 }
 
 async function persistCloud() {
-  // No escribir antes del primer snapshot: mergeFields reemplaza campos enteros y un estado local parcial pisaría la nube
-  if (!cloud.user || !cloud.db || !cloud.hydrated) return blockedCloudWrite();
-  // Lo que se envía se captura AHORA: un snapshot que llegue durante el await sustituiría _cache… y se perdería este cambio
+  // No escribir antes del primer snapshot (mergeFields reemplaza campos enteros: un estado local parcial pisaría la nube),
+  // ni al volver de segundo plano sin haber releído la nube (stale)
+  if (!cloudWriteGate()) return false;
+  // Lo que se envía se captura AHORA: un snapshot que llegue durante un await sustituiría _cache… y se perdería este cambio
   const payload = { history: _cache, excelData: _excelData, airports: _airports, ukdays: _ukdays, runways: _runways, updatedAt: Date.now() };
   const uid = cloud.user.uid;
   setSync('syncing', 'Guardando…');
   _cloudWrites++;
+  let ok = false;
   try {
-    const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
+    // Con el módulo ya cargado (cloud.fs) setDoc se llama en el mismo tick que el cambio en memoria
+    const { doc, setDoc } = cloud.fs || await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
     // mergeFields reemplaza cada campo entero (así los borrados llegan a la nube; merge:true conservaba las claves borradas).
     // dayMap no está en la lista → queda intacto; se guarda por separado en saveDayMap()
-    await setDoc(doc(cloud.db, 'users', uid), payload, { mergeFields: ['history', 'excelData', 'airports', 'ukdays', 'runways', 'updatedAt'] });
-    setSync('ok', 'Sincronizado ✓');
+    await watchWrite(setDoc(doc(cloud.db, 'users', uid), payload, { mergeFields: ['history', 'excelData', 'airports', 'ukdays', 'runways', 'updatedAt'] }));
+    ok = true; // «Sincronizado ✓» lo pone cloudWriteDone, solo si no queda nada en vuelo
   } catch (e) {
     console.error('Cloud save failed:', e);
     setSync('err', 'Error al sincronizar');
     showStatus('err', `No se ha guardado en la nube (${cloudErrText(e)}). Repite el cambio.`);
-  } finally { _cloudWrites--; }
+  } finally { cloudWriteDone(ok); }
+}
+
+// ── 08-02: escrituras sin confirmar ──
+// setDoc solo resuelve cuando el servidor confirma; sin red no resuelve nunca (la escritura espera en una cola en memoria
+// que se pierde al recargar). Pasado el plazo se avisa, pero la escritura sigue contando en _cloudWrites.
+const WRITE_WARN_MS = 20000, WRITE_WARN_OFFLINE_MS = 5000;
+let _unconfirmedWarned = false;
+function watchWrite(p) {
+  const ms = (typeof navigator !== 'undefined' && navigator.onLine === false) ? WRITE_WARN_OFFLINE_MS : WRITE_WARN_MS;
+  const t = setTimeout(() => {
+    if (_cloudWrites === 0) return;
+    _unconfirmedWarned = true;
+    setSync('err', 'Sin confirmar');
+    showStatus('err', 'La nube no ha confirmado el guardado (¿sin conexión?). No recargues ni cierres la app hasta que ponga "Sincronizado ✓"; si se pierde, repite el cambio.');
+  }, ms);
+  return p.finally(() => clearTimeout(t));
+}
+// Fin de una escritura (ok = el servidor la confirmó). Con 0 en vuelo: cierra el aviso de «sin confirmar» y, si se descartó
+// algún snapshot mientras tanto (regla D2), relee la nube por si traía cambios de otro dispositivo.
+// «Sincronizado ✓» solo con 0 escrituras en vuelo y sin relectura pendiente: el aviso de «sin confirmar» pide no recargar
+// hasta verlo, así que no puede salir mientras quede otra escritura en cola.
+function cloudWriteDone(ok) {
+  _cloudWrites--;
+  if (_cloudWrites > 0) return;
+  const warned = _unconfirmedWarned;
+  _unconfirmedWarned = false;
+  if (ok && !cloud.stale) {
+    setSync('ok', 'Sincronizado ✓');
+    if (warned) showStatus('ok', 'La nube ya ha confirmado lo que faltaba por guardar ✓');
+  }
+  if (cloud.skipped) { cloud.skipped = false; revalidateCloud(); }
+}
+// Indicador tras aplicar datos de la nube: no dice «Sincronizado ✓» con escrituras propias aún en vuelo
+function cloudIndicator() {
+  if (_unconfirmedWarned) setSync('err', 'Sin confirmar');
+  else if (_cloudWrites > 0) setSync('syncing', 'Guardando…');
+  else setSync('ok', 'Sincronizado ✓');
 }
 
 // Motivo corto y legible de un error de Firestore para los avisos
@@ -1423,12 +1467,28 @@ function blockedCloudWrite(useAlert) {
   if (useAlert) alert(NOT_HYDRATED_MSG); else showStatus('warn', NOT_HYDRATED_MSG);
   return false;
 }
-// Guarda de todo mutador: en modo Nube sin el primer snapshot del servidor no se toca nada (ni estado, ni el cuadro de
-// pegar, ni se pregunta con confirm). opts.alert: el aviso va por alert porque la línea de estado no se ve desde ahí
-// (modales, tarjeta UK Days). Devuelve true si se puede seguir.
-function requireHydrated(opts = {}) {
-  if (getMode() === 'cloud' && !cloud.hydrated) return blockedCloudWrite(!!opts.alert);
+// 08-02: escritura bloqueada mientras se relee la nube al volver de segundo plano. No toca el indicador («Comprobando…»).
+const STALE_MSG = 'Comprobando que no haya cambios de otro dispositivo… Repítelo en un momento.';
+function blockedStaleWrite(useAlert) {
+  cloud.pendingWrite = true;
+  if (useAlert) alert(STALE_MSG); else showStatus('warn', STALE_MSG);
+  return false;
+}
+// ¿Se puede escribir en la nube ahora? Si no, avisa y devuelve false. No detecta la vuelta de segundo plano: eso lo hace
+// requireHydrated() al INICIO del mutador (aquí el estado ya está cambiado y un confirm() largo no es «volver»).
+function cloudWriteGate(useAlert) {
+  if (!cloud.user || !cloud.db || !cloud.hydrated) return blockedCloudWrite(useAlert);
+  if (cloud.stale) return blockedStaleWrite(useAlert);
   return true;
+}
+// Guarda de todo mutador: en modo Nube sin el primer snapshot del servidor (o sin releer la nube al volver) no se toca nada
+// (ni estado, ni el cuadro de pegar, ni se pregunta con confirm). opts.alert: el aviso va por alert porque la línea de
+// estado no se ve desde ahí (modales, tarjeta UK Days). Devuelve true si se puede seguir.
+function requireHydrated(opts = {}) {
+  if (getMode() !== 'cloud') return true;
+  // Vuelta de segundo plano sin esperar al siguiente tick: no reescribir mapas enteros desde una memoria vieja
+  checkResume();
+  return cloudWriteGate(!!opts.alert);
 }
 
 function setSync(state, msg) {
@@ -2749,12 +2809,14 @@ async function applyCloudMode() {
     cloud.app  = initializeApp(FIREBASE_CONFIG);
     cloud.auth = authMod.getAuth(cloud.app);
     cloud.db   = fsMod.getFirestore(cloud.app);
+    cloud.fs = fsMod; cloud.authMod = authMod; // 08-02: escritura síncrona, relectura y cierre de sesión sin más imports
     await authMod.setPersistence(cloud.auth, authMod.browserLocalPersistence);
 
     authMod.onAuthStateChanged(cloud.auth, async (u) => {
       if (!u) {
         cloud.user = null;
         cloud.hydrated = false; cloud.pendingWrite = false; cloud.loadError = false;
+        resetCloudSync();
         if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
         _cache = {}; _runways = {};
         renderHistory();
@@ -2770,47 +2832,7 @@ async function applyCloudMode() {
       document.getElementById('user-chip').classList.remove('hidden');
       updateModeChip();
 
-      // live subscription to user's history doc
-      setSync('syncing', 'Sincronizando…');
-      const ref = fsMod.doc(cloud.db, 'users', u.uid);
-      cloud.unsub = fsMod.onSnapshot(ref, (snap) => {
-        // Sin conexión Firestore entrega una copia de caché (a menudo vacía): no tomarla como la nube real,
-        // porque al guardar con mergeFields se sustituiría el historial de la nube por ese estado parcial
-        if (!cloud.hydrated && snap.metadata.fromCache) {
-          setSync('err', 'Sin conexión con la nube');
-          cloud.loadError = true;
-          renderUKDays();
-          return;
-        }
-        const data = snap.exists() ? snap.data() : {};
-        _cache      = data.history   || {};
-        _excelData  = data.excelData || {};
-        _airports   = data.airports  || {};
-        // El primer snapshot siempre manda: un cambio local previo no debe sustituir los mapas de la nube
-        if (!cloud.hydrated || !_ukdaysSaving) _ukdays = data.ukdays || {};
-        if (!cloud.hydrated || !_runwaysSaving) _runways = data.runways || {};
-        if (!cloud.hydrated || !_dayMapSaving) {
-          _dayMap = data.dayMap || {};
-          try { localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap)); } catch {}
-        }
-        const firstSnapshot = !cloud.hydrated;
-        cloud.hydrated = true;
-        cloud.loadError = false;
-        backfillUKDays();
-        if (firstSnapshot && cloud.pendingWrite) {
-          cloud.pendingWrite = false;
-          showStatus('warn', 'Nube cargada: ya puedes guardar (tu texto sigue en el cuadro).');
-        }
-        renderHistory();
-        renderAirports();
-        renderCalendar();
-        setSync('ok', 'Sincronizado ✓');
-      }, (err) => {
-        console.error('Snapshot error:', err);
-        setSync('err', 'Error al cargar');
-        cloud.loadError = true;
-        renderUKDays();
-      });
+      subscribeCloud(u);
     });
 
     // login button
@@ -2833,6 +2855,150 @@ async function applyCloudMode() {
   }
 }
 
+// ── 08-02: suscripción a la nube, rearme y relectura al volver de segundo plano ──
+// Suscripción en vivo al documento del usuario. Se rearma sola si el listener muere (errCb).
+function subscribeCloud(u) {
+  clearTimeout(cloud.retryT); cloud.retryT = null;
+  if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
+  setSync('syncing', 'Sincronizando…');
+  const fs = cloud.fs;
+  const ref = fs.doc(cloud.db, 'users', u.uid);
+  cloud.unsub = fs.onSnapshot(ref, (snap) => {
+    // Sin conexión Firestore entrega una copia de caché (a menudo vacía): no tomarla como la nube real,
+    // porque al guardar con mergeFields se sustituiría el historial de la nube por ese estado parcial
+    if (!cloud.hydrated && snap.metadata.fromCache) {
+      setSync('err', 'Sin conexión con la nube');
+      cloud.loadError = true;
+      renderUKDays();
+      return;
+    }
+    // Regla D2 (sustituye a las guardas por temporizador): con escrituras propias en vuelo, la vista local del SDK las
+    // superpone a todo lo que llega, así que un snapshot SIN hasPendingWrites solo puede ser uno ya encolado antes de
+    // nuestro setDoc (vista anterior) → se descarta; los que traen hasPendingWrites ya las incluyen y se aplican.
+    // (Sin includeMetadataChanges el SDK no emite el cambio solo de metadatos tras el ack.) Red de seguridad: si se
+    // descartó algo, al quedar 0 escrituras se relee la nube (cloudWriteDone → revalidateCloud).
+    if (cloud.hydrated && _cloudWrites > 0 && !snap.metadata.hasPendingWrites) { cloud.skipped = true; return; }
+    const resume = cloud.hydrated && cloud.stale;
+    if (!snap.metadata.fromCache) {
+      // Datos frescos del servidor: listener sano y nada pendiente de releer (se limpia ANTES de aplicar: el backfill escribe)
+      cloud.stale = false; cloud.lastAliveAt = Date.now(); cloud.retryDelay = 0; cloud.errShown = false;
+    }
+    applyCloudData(snap.exists() ? snap.data() : {}, { resume });
+  }, (err) => onCloudListenerError(u, err));
+}
+// Aplica el documento de la nube a memoria (primer snapshot, snapshots siguientes y relectura al volver)
+// resume: viene de releer la nube al volver de segundo plano (el aviso de «ya puedes» es otro)
+const RESUME_OK_MSG = 'Nube comprobada: ya puedes repetir el cambio.';
+function applyCloudData(data, { resume = false } = {}) {
+  _cache      = data.history   || {};
+  _excelData  = data.excelData || {};
+  _airports   = data.airports  || {};
+  _ukdays     = data.ukdays    || {};
+  _runways    = data.runways   || {};
+  _dayMap     = data.dayMap    || {};
+  try { localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap)); } catch {}
+  cloud.hydrated = true;
+  cloud.loadError = false;
+  backfillUKDays();
+  if (cloud.pendingWrite) {
+    cloud.pendingWrite = false;
+    showStatus('warn', resume ? RESUME_OK_MSG : 'Nube cargada: ya puedes guardar (tu texto sigue en el cuadro).');
+  }
+  renderHistory();
+  renderAirports();
+  renderCalendar();
+  cloudIndicator();
+}
+// El SDK no llama aquí por perder la red (reintenta solo) sino por errores terminales (permiso, sesión…): el listener
+// queda muerto. Se deja de escribir (hydrated=false) y se rearma con backoff; con la sesión caducada, se cierra sesión.
+function onCloudListenerError(u, err) {
+  console.error('Snapshot error:', err);
+  cloud.hydrated = false;
+  cloud.loadError = true;
+  if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
+  setSync('err', 'Error de la nube');
+  if (!cloud.errShown) {
+    cloud.errShown = true;
+    showStatus('warn', `La conexión con la nube se ha cortado (${cloudErrText(err)}). No se guardará nada hasta reconectar; se reintenta solo.`);
+  }
+  renderUKDays();
+  if (String(err?.code || '').replace(/^firestore\//, '') === 'unauthenticated') {
+    try { cloud.authMod?.signOut(cloud.auth); } catch (e) { console.warn('signOut failed:', e); }
+    return;
+  }
+  cloud.retryDelay = Math.min((cloud.retryDelay || 1000) * 2, 60000);
+  clearTimeout(cloud.retryT);
+  cloud.retryT = setTimeout(() => {
+    cloud.retryT = null;
+    if (getMode() === 'cloud' && cloud.user && cloud.user.uid === u.uid) subscribeCloud(cloud.user);
+  }, cloud.retryDelay);
+}
+// Cancela reintentos y relecturas pendientes (cierre de sesión, cambio de modo)
+function resetCloudSync() {
+  clearTimeout(cloud.retryT); cloud.retryT = null; cloud.retryDelay = 0; cloud.errShown = false;
+  clearTimeout(cloud.revalT); cloud.revalT = null; cloud.revalDelay = 0;
+  cloud.stale = false; cloud.skipped = false;
+}
+
+// Uso secuencial (F-02-001): tras editar en otro dispositivo, este puede volver de segundo plano con la memoria vieja y,
+// al guardar, reescribir mapas enteros. Si lleva > 60 s sin señal de vida, no se escribe hasta releer la nube del servidor.
+const RESUME_GAP_MS = 60000, FRESH_TICK_MS = 15000, REVAL_TIMEOUT_MS = 10000;
+function cloudLive() { return getMode() === 'cloud' && !!(cloud.user && cloud.db && cloud.fs && cloud.hydrated); }
+function checkResume() {
+  if (!cloudLive() || cloud.stale) return;
+  if (Date.now() - (cloud.lastAliveAt || 0) > RESUME_GAP_MS) revalidateCloud();
+}
+// Relee el documento del servidor. Mientras tanto (stale) no se escribe; si falla, se reintenta solo con backoff
+// (tras reanudar, la red tarda en volver y el listener reconectado no emite nada si el documento no cambió).
+function revalidateCloud() {
+  if (!cloudLive()) return Promise.resolve();
+  if (cloud.revalP) return cloud.revalP;
+  cloud.stale = true;
+  clearTimeout(cloud.revalT); cloud.revalT = null;
+  setSync('syncing', 'Comprobando la nube…');
+  const fs = cloud.fs;
+  let to;
+  const timeout = new Promise((_, rej) => { to = setTimeout(() => rej(Object.assign(new Error('timeout'), { code: 'deadline-exceeded' })), REVAL_TIMEOUT_MS); });
+  const uid = cloud.user.uid;
+  const read = Promise.resolve().then(() => fs.getDocFromServer(fs.doc(cloud.db, 'users', uid))); // un throw síncrono = fallo de lectura
+  cloud.revalP = Promise.race([read, timeout]).then((snap) => {
+    if (!cloud.stale || !cloudLive()) return; // ya lo resolvió un snapshot del servidor (o se cerró sesión / cambió el modo)
+    // Primero se limpia stale (el backfill de applyCloudData escribe), luego se aplica
+    cloud.stale = false; cloud.lastAliveAt = Date.now(); cloud.revalDelay = 0;
+    if (_cloudWrites === 0) applyCloudData(snap.exists() ? snap.data() : {}, { resume: true });
+    else {
+      // Con escrituras propias en vuelo manda la vista del listener (ya las incluye); esta lectura no las tiene
+      if (cloud.pendingWrite) { cloud.pendingWrite = false; showStatus('warn', RESUME_OK_MSG); }
+      cloudIndicator();
+    }
+  }, (e) => {
+    console.warn('Cloud revalidate failed:', e);
+    if (!cloud.stale || !cloudLive()) return;
+    setSync('err', 'Sin conexión con la nube — reintentando');
+    cloud.revalDelay = Math.min((cloud.revalDelay || 1500) * 2, 30000);
+    clearTimeout(cloud.revalT);
+    cloud.revalT = setTimeout(() => { cloud.revalT = null; if (cloud.stale) revalidateCloud(); }, cloud.revalDelay);
+  }).finally(() => { clearTimeout(to); cloud.revalP = null; });
+  return cloud.revalP;
+}
+// Señales de vuelta a primer plano. iOS standalone no siempre emite visibilitychange/focus al volver desde el selector de
+// apps: el tick de 15 s ve el salto de reloj (y la propia escritura lo comprueba, ver cloudWriteGate)
+function initCloudFreshness() {
+  const onBack = () => { if (document.visibilityState !== 'hidden') checkResume(); };
+  document.addEventListener?.('visibilitychange', onBack);
+  window.addEventListener?.('pageshow', onBack);
+  window.addEventListener?.('focus', onBack);
+  window.addEventListener?.('online', () => {
+    if (cloud.stale) { clearTimeout(cloud.revalT); cloud.revalT = null; revalidateCloud(); }
+  });
+  // Que el tick se ejecute ya es la señal de vida (suspendida, la app no corre): con un salto de reloj > 60 s,
+  // lastAliveAt es viejo → relectura. Oculta pero despierta (pestaña de escritorio), el listener sigue vivo: no relee.
+  setInterval(() => {
+    checkResume();
+    if (!cloud.stale && cloudLive()) cloud.lastAliveAt = Date.now();
+  }, FRESH_TICK_MS);
+}
+
 function switchMode() {
   const current = getMode();
   const other = current === 'cloud' ? 'local' : 'cloud';
@@ -2844,6 +3010,7 @@ function switchMode() {
   // tear down cloud listener if any
   if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
   cloud.hydrated = false; cloud.pendingWrite = false; cloud.loadError = false;
+  resetCloudSync();
   _cache = {}; _runways = {};
   setMode(other);
   if (other === 'local') applyLocalMode();
@@ -3102,20 +3269,21 @@ function saveDayMap() {
       : 'No se ha podido guardar el calendario en este dispositivo: el cambio se perderá al recargar. Libera espacio y repítelo.');
   }
   if (getMode() === 'cloud') {
-    if (!cloud.user || !cloud.db || !cloud.hydrated) return blockedCloudWrite();
-    const dayMap = _dayMap, uid = cloud.user.uid; // capturado antes del await (ver persistCloud)
-    _dayMapSaving = true;
+    if (!cloudWriteGate()) return false;
+    const dayMap = _dayMap, uid = cloud.user.uid; // capturado antes de cualquier await (ver persistCloud)
     _cloudWrites++;
     (async () => {
+      let ok = false;
       try {
-        const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
-        await setDoc(doc(cloud.db, 'users', uid), { dayMap }, { mergeFields: ['dayMap'] });
+        const { doc, setDoc } = cloud.fs || await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
+        await watchWrite(setDoc(doc(cloud.db, 'users', uid), { dayMap }, { mergeFields: ['dayMap'] }));
+        ok = true;
       } catch (e) {
         console.warn('saveDayMap cloud failed:', e);
         setSync('err', 'Error al sincronizar');
         showStatus('err', `No se ha guardado el calendario en la nube (${cloudErrText(e)}). Repite el cambio.`);
       }
-      finally { _cloudWrites--; setTimeout(() => { _dayMapSaving = false; }, 2000); }
+      finally { cloudWriteDone(ok); }
     })();
   }
   return ok;
@@ -3299,6 +3467,7 @@ function initAutoUpdate() {
 window.__cspShow = m => showStatus('err', m);
 (window.__cspQ || []).splice(0).forEach(window.__cspShow);
 try { initAutoUpdate(); } catch (e) { console.warn('auto-update init failed:', e); }
+try { initCloudFreshness(); } catch (e) { console.warn('cloud freshness init failed:', e); }
 
 (function() {
   const slides = Array.from(document.querySelectorAll('.bg-slide'));

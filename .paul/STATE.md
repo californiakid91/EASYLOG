@@ -5,27 +5,27 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.2 Seguridad y robustez — 07-02 planificado (asesor respondió 13/10: límite por año + días excepcionales)
+**Current focus:** v0.2 Seguridad y robustez — todas las fases completas (5, 6, 7, 8); siguiente: cerrar milestone
 
 ## Current Position
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 7 of 8 (UK Days año y límite) — Planning 07-02 (Fase 8 ✅)
-Plan: 07-02 created, awaiting approval (revisión adversaria Fable: aprobado con cambios, incorporados)
-Status: PLAN created, ready for APPLY
-Last activity: 2026-10-13 — respuesta del asesor (detalle solo en memoria local) + creado 07-02-PLAN.md
+Phase: 7 of 8 (UK Days año y límite) — ✅ Complete (Fase 8 ✅) — milestone v0.2: 4/4 fases
+Plan: 07-02 completo (UNIFY)
+Status: Loop cerrado — milestone v0.2 listo para /paul:complete-milestone
+Last activity: 2026-10-13 — UNIFY 07-02 + transición Fase 7 (G7 CRG 0.40, G8 security-review); prod v2026.10.13-142842
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
-- v0.2 Seguridad y robustez: [█████████░] 88% (Fase 5 ✓, Fase 6 ✓, Fase 7 1/2, Fase 8 ✓)
+- v0.2 Seguridad y robustez: [██████████] 100% (Fase 5 ✓, Fase 6 ✓, Fase 7 ✓, Fase 8 ✓)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 07-02 creado, pendiente de aprobación]
+  ✓        ✓        ✓     [Loop 07-02 cerrado — Fase 7 completa; v0.2 con todas sus fases]
 ```
 
 ## Accumulated Context
@@ -60,6 +60,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 07-01 (aplicado): funciones de periodo reciben `ty` (por defecto viewTY()), nunca constantes de año; harness fijan window._ukNowOverride = FIXED_NOW; `node tests/run-all.mjs --now=<ISO> tests/harness` debe dar verde en cualquier año; botones OFF identifican el hueco por su primer día; chip ‹ año › en la fila de botones de UK Days
 - 08-01 (aplicado): todo mutador empieza con `if (!requireHydrated(...)) return;` (alert en modales/tarjeta UK, #status en el resto) y solo muestra OK / vacía el cuadro si save*() devolvió true; lo que va a Firestore se captura antes de cualquier await; copia local dañada (_localCorrupt) nunca se sobrescribe sola; OK de nube = enviado (el error async lo sustituye)
 - 08-02 (aplicado; dialéctica Fable, confianza alta): sync = A — LWW por mapa endurecido. Regla D2: con _cloudWrites>0 se descarta el snapshot sin hasPendingWrites (skipped → relectura); _cloudWrites solo baja al resolver/rechazar setDoc (NUNCA por timeout); «Sincronizado ✓» solo con 0 en vuelo y sin stale; setDoc síncrono con cloud.fs; listener con rearme (subscribeCloud/onCloudListenerError); vuelta >60 s sin señal → stale (checkResume en requireHydrated + eventos + tick 15 s), no se escribe hasta releer (revalidateCloud). Tests con reloj: harness-sync (advance/jump) + e2e-sync (Firebase falso por page.route). B/C diferidas: solo si se usa en varios dispositivos a la vez
+- 07-02 (aplicado): _settings = { ukLimit[label], ukExceptional[iso]: {reason, at} } persistido como mapa más (local SETTINGS_KEY + campo Firestore 'settings' en mergeFields); límite = dato del usuario (default genérico 90, nunca su valor ni su criterio en el repo); comp = UK − min(exc, 60); lectores defensivos (ukLimitSet/ukExcMap), escritores desde ukExcRaw; requireHydrated antes y después de prompt/confirm/modal; claves locales no-objeto = dañadas
 - _runways = mapa propio (localStorage + campo Firestore `runways`); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -81,7 +82,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | semgrep: urllib dinámico en gen-airports.py (script local, URL base fija; riesgo nulo) | 04 G8 | XS | — |
 | API key del navegador con apiTargets amplios por defecto → limitar a firestore/identitytoolkit/securetoken (consola GCP, opcional) | 05-02 | XS | — |
 | Helpers duplicados entre harness (load/check/extract) → harness-lib | 06-01 (D6/F-06-006) | M | — |
-| Año congelado con email completo y sin entrada muestra "email incompleto: re-pégalo" (re-pegar idéntico no lo arregla; se decide con UK/No UK) — mensaje engañoso, no alcanzable en la práctica | 07-01 G6 | XS | 07-02 |
+| Año congelado con email completo y sin entrada muestra "email incompleto: re-pégalo" (re-pegar idéntico no lo arregla; se decide con UK/No UK) — mensaje engañoso, no alcanzable en la práctica | 07-01 G6 | XS | — |
 | rule:* de años congelados no se recalculan aunque se corrija un bug de la regla → requiere migración explícita revisada | 07-01 dialéctica | S | si cambia la regla |
 | Detectar vuelos de SAFETY PILOT al pegar (VEGRIC 3er FO, sin PF) → proponer funciones 0:00, Pilot 3 SELF y remarks «SAFETY PILOT» (criterio del usuario) | 2026-10-10 sesión PilotLog | S | fase propia tras 08 |
 | Sync: dos dispositivos editando casi a la vez → gana el último por mapa (F-02-001 mitigado, no cerrado); merge por día (opción B) si cambia el uso | 08-02 dialéctica | M | si usa 2 dispositivos a la vez |
@@ -120,9 +121,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-13
-Stopped at: Plan 07-02 creado
-Next action: aprobar y /paul:apply .paul/phases/07-ukdays-anio-y-limite/07-02-PLAN.md
-Resume file: .paul/phases/07-ukdays-anio-y-limite/07-02-PLAN.md
+Stopped at: Fase 7 completa (UNIFY 07-02 + transición) — v0.2 con todas sus fases
+Next action: /paul:complete-milestone (v0.2); después, fase propia SAFETY PILOT (diferido)
+Resume file: .paul/phases/07-ukdays-anio-y-limite/07-02-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

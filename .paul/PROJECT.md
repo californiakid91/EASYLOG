@@ -14,8 +14,8 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 |-----------|-------|
 | Type | Application |
 | Version | 0.1.0 (v0.1 Datos fiables, cerrado 2026-10-05) |
-| Status | Production — v0.1.0 cerrado; v0.2 en curso: Fases 5, 6 y 8 completas; Fase 7 1/2 (07-02 espera al asesor) |
-| Last Updated | 2026-10-11 (08-02, Fase 8 completa) |
+| Status | Production — v0.1.0 cerrado; v0.2: las 4 fases completas (5, 6, 7, 8) — pendiente cerrar milestone |
+| Last Updated | 2026-10-13 (07-02, Fase 7 completa) |
 
 **Production URLs:**
 - https://californiakid91.github.io/EASYLOG/ — app (deploy automático al push a `main`)
@@ -27,7 +27,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - Parsear email de vuelo Ryanair → registro de vuelo
 - Exportar CSV PilotLog (formato CrewLounge PILOTLOG)
 - Exportar Excel Tax Year (reglas en `REGLAS_EXCEL_TAX_YEAR.md`)
-- Tracker UK Days (6 abr – 5 abr, límite 91 días)
+- Tracker UK Days (6 abr – 5 abr, límite de días computables configurable por año)
 - Calendario mensual OFF/STBY/DUTY/SIM con sync Firestore
 
 ### Validated (Shipped)
@@ -54,6 +54,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - [x] Barrera de tests: `node tests/run-all.mjs` (12 harness, fixtures anonimizadas versionadas, golden de CSV y cabeceras del importer) — Phase 6 (06-01)
 - [x] Sin pérdidas silenciosas: sin nube cargada nada cambia ni se vacía el cuadro y se avisa donde se actúa; OK solo si se guardó; fallos de guardado visibles; copia local dañada nunca se pisa — Phase 8 (08-01)
 - [x] Sync endurecida: sin guardas por temporizador (regla por escrituras en vuelo), «Sin confirmar · no recargues» si la nube no confirma, listener que se rearma solo, relectura del servidor al volver de segundo plano (no se escribe desde memoria vieja) — Phase 8 (08-02)
+- [x] UK Days computables: límite por año fiscal guardado en los datos del usuario, días por circunstancia excepcional con motivo (no computan, máx. 60/año), «máximo posible» con pendientes, sin «bonus»; backup con excepcionales — Phase 7 (07-02)
 - [x] e2e propios (playwright-core fijado, `npm ci`) + gate git: commit bloqueado si fallan los harness; push (= deploy) bloqueado si fallan harness o e2e — Phase 6 (06-02)
 
 ### Active (In Progress)
@@ -65,6 +66,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
   - [x] XSS por código de aeropuerto + SRI/CSP para CDNs — Phase 5
   - [x] Reglas de Firestore versionadas en el repo (per-uid) + restricciones de la apiKey — Phase 5
   - [x] Año fiscal derivado de la fecha + selector ‹ año › + años cerrados protegidos — Phase 7 (07-01)
+  - [x] Límite configurable por año + días excepcionales + máximo posible + sin «bonus» — Phase 7 (07-02)
   - [x] Avisos "ok" que tapan escrituras bloqueadas; errores de guardado visibles; copia local dañada protegida — Phase 8 (08-01)
   - [x] Política de sincronización entre dispositivos: LWW por mapa endurecido (dialéctica Fable; merge por día diferido) — Phase 8 (08-02)
   - [x] Barrera de tests (runner único + fixtures anonimizadas versionadas + gate pre-commit/pre-push) — Phase 6
@@ -129,6 +131,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | e2e con reloj fijo (FIXED_NOW) solo sin Firebase | Resultado independiente del día; Firestore/Auth se cuelgan con Date fijo (Fable) | 2026-10-05 | Active |
 | Mutadores: guarda requireHydrated al inicio + OK solo si se guardó; payload de Firestore capturado antes de await; copia local dañada nunca se sobrescribe sola | Aegis F-02-006/F-RG-003/F-02-004 + revisión Fable (carrera real del await; backfill pisaba la clave dañada) | 2026-10-11 | Active |
 | Sync = gana el último por mapa, endurecido: con escrituras en vuelo se descarta el snapshot sin hasPendingWrites; _cloudWrites solo baja al confirmar/rechazar (nunca por tiempo); al volver de >60 s sin señal no se escribe hasta releer el servidor | Dialéctica Fable (un usuario, online, un dispositivo cada vez); merge por día añadiría una base que diverge justo cuando algo falla; G6 Fable | 2026-10-11 | Active |
+| UK Days: límite = ajuste del usuario por año (en sus datos, nunca en el código; default genérico 90); computables = UK − excepcionales (máx. 60); la app registra la marca con motivo, no la valida | El criterio fiscal es del usuario y su asesor y cambia por año; el repo es público; Sch 45 para 22(6) | 2026-10-13 | Active |
 | Año fiscal derivado de la fecha, sin estado; FLOOR 06/04/2026; año congelado a +30 días (solo el usuario escribe, con confirm) | Dialéctica Fable: un flag "closed" en Firestore añade carreras y migración; la evidencia declarada no se recalcula sola | 2026-10-06 | Active |
 
 ## Success Metrics
@@ -158,4 +161,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-11 after Phase 8 (Sin pérdidas silenciosas)*
+*Last updated: 2026-10-13 after Phase 7 (UK Days año y límite) — milestone v0.2 con todas sus fases*

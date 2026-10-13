@@ -747,7 +747,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.13-142842';
+const APP_VERSION = '2026.10.13-144210';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -2254,7 +2254,7 @@ function ukShiftTY(d) {
   _tyViewLabel = next === taxYearOf(londonTodayISO()).label ? null : next;
   renderUKDays();
 }
-function ukShowTY(label) { _tyViewLabel = label === taxYearOf(londonTodayISO()).label ? null : label; renderUKDays(); }
+function ukShowTY(label) { if (!TY_LABEL_RE.test(String(label))) return; _tyViewLabel = label === taxYearOf(londonTodayISO()).label ? null : label; renderUKDays(); }
 // Del 06/04 al 05/05 (antes de congelarse), viendo el año en curso: recordar cerrar el anterior (pendientes + Excel)
 function tyCloseBannerHTML() {
   const today = londonTodayISO(), cur = taxYearOf(today);
@@ -3015,7 +3015,7 @@ function applyCloudData(data, { resume = false } = {}) {
   _airports   = data.airports  || {};
   _ukdays     = data.ukdays    || {};
   _runways    = data.runways   || {};
-  _settings   = data.settings  || {};
+  _settings   = data.settings && typeof data.settings === 'object' && !Array.isArray(data.settings) ? data.settings : {};
   _dayMap     = data.dayMap    || {};
   try { localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap)); } catch {}
   cloud.hydrated = true;

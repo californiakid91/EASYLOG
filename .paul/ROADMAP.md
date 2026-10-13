@@ -7,8 +7,8 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 ## Current Milestone
 
 **v0.2 Seguridad y robustez** (v0.2.0)
-Status: 🚧 In Progress
-Phases: 3 of 4 complete (Fase 7: 1/2, 07-02 espera al asesor)
+Status: ✅ Fases completas — pendiente /paul:complete-milestone
+Phases: 4 of 4 complete
 Theme: Cerrar los hallazgos de la auditoría Aegis (2026-10-05) sin cambiar el flujo de uso: que nadie pueda inyectar código, que nada se pierda en silencio, que UK Days siga bien el año que viene y que los tests frenen regresiones.
 Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 
@@ -16,7 +16,7 @@ Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 |-------|------|-------|--------|-----------|
 | 5 | Seguridad: XSS aeropuerto, SRI/CSP, reglas Firestore en repo | 2/2 | ✅ Complete | 2026-10-05 |
 | 6 | Barrera de tests: runner único + fixtures anonimizadas + gate | 2/2 | ✅ Complete | 2026-10-05 |
-| 7 | UK Days: año fiscal dinámico + límite configurable + máximo posible | 1/2 | In progress | - |
+| 7 | UK Days: año fiscal dinámico + límite configurable + máximo posible | 2/2 | ✅ Complete | 2026-10-13 |
 | 8 | Sin pérdidas silenciosas: avisos de escritura bloqueada + estado tras confirm() + sync endurecida | 2/2 | ✅ Complete | 2026-10-11 |
 
 ### Phase 5: Seguridad
@@ -38,7 +38,8 @@ Status: ✅ Complete 2026-10-05
 Focus: F-03-001 (año fiscal derivado de la fecha / selector, antes del 06/04/2027), límite configurable (valor a confirmar por el usuario), "máximo posible" con pendientes, etiqueta sin "bonus" (F-DA-008/D-010), F-03-006 (año explícito en comando manual).
 Plans:
 - [x] 07-01 (prod v2026.10.06-170132): año fiscal derivado + FLOOR + congelación + chip ‹ año › + banner abril + Excel/comando por año + tests sin año real (dialéctica Fable)
-- [ ] 07-02 (planificado): límite configurable por año + días excepcionales (no computables, tope 60) + "máximo posible" + textos sin "bonus"
+- [x] 07-02 (prod v2026.10.13-142842): límite configurable por año + días excepcionales (no computables, tope 60) + "máximo posible" + textos sin "bonus"; harness-uklimit + e2e-uklimit
+Status: ✅ Complete 2026-10-13
 
 ### Phase 8: Sin pérdidas silenciosas
 Focus: F-02-006 + F-RG-003 (escritura bloqueada tapada por "ok"), F-02-001 (estado obsoleto tras confirm()), F-02-004/005/007 (fallos de localStorage/nube solo en consola), F-RG-004 (textos que prometen importar). Política de sync (LWW vs merge por día) se decide en el plan.
@@ -52,7 +53,7 @@ Status: ✅ Complete 2026-10-11
 | Version | Name | Status |
 |---------|------|--------|
 | v0.1.0 | Datos fiables | ✅ Complete 2026-10-05 |
-| v0.2.0 | Seguridad y robustez | 🚧 In Progress |
+| v0.2.0 | Seguridad y robustez | ✅ Fases completas (cerrar milestone) |
 
 ## Completed Milestones
 
@@ -75,4 +76,4 @@ Detalle completo: .paul/milestones/v0.1.0-ROADMAP.md
 </details>
 
 ---
-*Roadmap created: 2026-10-03 · Updated: 2026-10-11 (Fase 8 completa)*
+*Roadmap created: 2026-10-03 · Updated: 2026-10-13 (Fase 7 completa — v0.2 con todas sus fases)*

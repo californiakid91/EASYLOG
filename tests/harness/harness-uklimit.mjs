@@ -185,6 +185,18 @@ const EXC0 = '2026-04-10';
   check('G6#3 settings «null» en local: sin excepción y no se sobrescribe', !threw && E.ls.get('easylog_settings_v1') === 'null' && /la configuración/.test(E.byId('status').textContent), E.byId('status').textContent);
 }
 
+{
+  // G8: settings que no es un objeto en la nube → se ignora (no se «esparce» en el siguiente guardado)
+  const E = await makeEnv({ mode: 'cloud', cloudInit: { dayMap: calendar(10), settings: 'abc' } });
+  E.fire(); await tick();
+  E.promptImpl = () => '80';
+  E.run('editUKLimit()'); await tick();
+  const w = E.writes.at(-1);
+  check('G8 settings no-objeto en la nube: se guarda limpio', !!w && JSON.stringify(w.data.settings) === JSON.stringify({ ukLimit: { [TY]: 80 } }), JSON.stringify(w?.data.settings));
+  E.run(`ukShowTY('<x>')`);
+  check('G8 ukShowTY con etiqueta no válida no cambia el año', E.run('_tyViewLabel') === null);
+}
+
 // ══ AC-2: días excepcionales ══
 const EXC = '2026-04-10';
 const markExc = (E, iso, reason) => { E.run(`toggleUKExceptional('${iso}')`); E.byId('ukexc-reason').value = reason; E.run('confirmUKExcModal()'); };

@@ -38,7 +38,7 @@ Status: ✅ Complete 2026-10-05
 Focus: F-03-001 (año fiscal derivado de la fecha / selector, antes del 06/04/2027), límite configurable (valor a confirmar por el usuario), "máximo posible" con pendientes, etiqueta sin "bonus" (F-DA-008/D-010), F-03-006 (año explícito en comando manual).
 Plans:
 - [x] 07-01 (prod v2026.10.06-170132): año fiscal derivado + FLOOR + congelación + chip ‹ año › + banner abril + Excel/comando por año + tests sin año real (dialéctica Fable)
-- [ ] 07-02: límite configurable por año + "máximo posible" + textos sin "bonus" (tras respuesta del asesor)
+- [ ] 07-02 (planificado): límite configurable por año + días excepcionales (no computables, tope 60) + "máximo posible" + textos sin "bonus"
 
 ### Phase 8: Sin pérdidas silenciosas
 Focus: F-02-006 + F-RG-003 (escritura bloqueada tapada por "ok"), F-02-001 (estado obsoleto tras confirm()), F-02-004/005/007 (fallos de localStorage/nube solo en consola), F-RG-004 (textos que prometen importar). Política de sync (LWW vs merge por día) se decide en el plan.

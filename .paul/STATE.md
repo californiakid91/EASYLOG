@@ -5,16 +5,16 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.2 Seguridad y robustez — Fase 8 ✓ (08-01 + 08-02); queda 07-02 (espera al asesor)
+**Current focus:** v0.2 Seguridad y robustez — 07-02 planificado (asesor respondió 13/10: límite por año + días excepcionales)
 
 ## Current Position
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 8 of 8 (Sin pérdidas silenciosas) — ✅ Complete (Fase 7: 1/2, 07-02 bloqueado por el asesor)
-Plan: 08-02 completo (UNIFY); siguiente 07-02 cuando responda el asesor
-Status: Loop cerrado — Fase 8 completa; ready for next PLAN (07-02 bloqueado)
-Last activity: 2026-10-11 — UNIFY 08-02 + transición Fase 8 (G7 CRG 0.40, G8 security-review); prod v2026.10.11-093029
+Phase: 7 of 8 (UK Days año y límite) — Planning 07-02 (Fase 8 ✅)
+Plan: 07-02 created, awaiting approval (revisión adversaria Fable: aprobado con cambios, incorporados)
+Status: PLAN created, ready for APPLY
+Last activity: 2026-10-13 — respuesta del asesor (detalle solo en memoria local) + creado 07-02-PLAN.md
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
@@ -25,7 +25,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop 08-02 cerrado — Fase 8 completa; siguiente: 07-02 (tras el asesor)]
+  ✓        ○        ○     [Plan 07-02 creado, pendiente de aprobación]
 ```
 
 ## Accumulated Context
@@ -107,7 +107,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Doc Firestore medido: 127 KiB (12%) y ~1.9k entradas de índice (5%); excelData ≈2 KiB/día → ~2,5 años de margen → ya no es HIGH
 - Rama main protegida (sin force-push ni borrado); 2FA GitHub ACTIVADO (TOTP, confirmado por el usuario 2026-10-05)
 - Límite UK Days: criterio fiscal del usuario documentado SOLO en la memoria local de Claude (reference_srt_aircrew) — nunca en el repo (público)
-- [ ] Límite de la app (MAX) pendiente de confirmación fiscal del usuario → 07-02 lo hace configurable por año (bloqueado por esa respuesta)
+- [x] Límite de la app: el asesor respondió 2026-10-13 (detalle SOLO en memoria local). 07-02: límite configurable por año guardado en los datos del usuario + días excepcionales (no computables, tope 60)
 
 ### Blockers/Concerns
 - Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
@@ -119,10 +119,10 @@ Branch: main
 
 ## Session Continuity
 
-Last session: 2026-10-11
-Stopped at: Fase 8 completa (UNIFY 08-02 + transición)
-Next action: preguntar al usuario por el asesor → /paul:plan 7 (07-02); si no, fase propia SAFETY PILOT (diferido) vía /paul:add-phase
-Resume file: .paul/HANDOFF-2026-10-11-fase-8-completa.md
+Last session: 2026-10-13
+Stopped at: Plan 07-02 creado
+Next action: aprobar y /paul:apply .paul/phases/07-ukdays-anio-y-limite/07-02-PLAN.md
+Resume file: .paul/phases/07-ukdays-anio-y-limite/07-02-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

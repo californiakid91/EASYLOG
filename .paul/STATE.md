@@ -123,7 +123,7 @@ Branch: main
 Last session: 2026-10-13
 Stopped at: Fase 7 completa (UNIFY 07-02 + transición) — v0.2 con todas sus fases
 Next action: /paul:complete-milestone (v0.2); después, fase propia SAFETY PILOT (diferido)
-Resume file: .paul/phases/07-ukdays-anio-y-limite/07-02-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-13-fase-7-completa.md
 
 ---
 *STATE.md — Updated after every significant action*

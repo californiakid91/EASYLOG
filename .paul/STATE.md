@@ -14,7 +14,7 @@ Milestone: v0.2 Seguridad y robustez
 Phase: 7 of 8 (UK Days año y límite) — ✅ Complete (Fase 8 ✅) — milestone v0.2: 4/4 fases
 Plan: 07-02 completo (UNIFY)
 Status: Loop cerrado — milestone v0.2 listo para /paul:complete-milestone
-Last activity: 2026-10-13 — UNIFY 07-02 + transición Fase 7 (G7 CRG 0.40, G8 security-review); prod v2026.10.13-142842
+Last activity: 2026-10-13 — UNIFY 07-02 + transición Fase 7 (G7 CRG 0.40, G8 security-review); prod v2026.10.13-144210
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
@@ -115,7 +115,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: f241e82 (fase 08) — prod = v2026.10.11-093029 (verificado byte a byte)
+Last commit: 678a3ff (fase 07) — prod = v2026.10.13-144210 (verificado byte a byte)
 Branch: main
 
 ## Session Continuity

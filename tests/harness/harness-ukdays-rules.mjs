@@ -190,14 +190,14 @@ paste(email('2026/11/16', [{ cp: 'STN - DUB', off: '15:00', on: '16:10' }, { cp:
 paste(email('2026/11/17', [{ cp: 'STN - LIS', off: '18:00', on: '21:00' }]));
 run(`_dayMap['2026-11-18'] = 'off'; _dayMap['2026-11-19'] = 'off';`);
 run('renderUKDays()');
-check('cabecera "1 / 91 · 4 pend." (hueco 12–15/11)', count() === '1 / 91 · 4 pend.', count());
+check('cabecera "1 / 90 · 4 pend." (hueco 12–15/11)', count() === '1 / 90 · 4 pend.', count());
 check('texto neutro "sin decidir", sin clase danger por P', /4 días sin decidir/.test(body()) && /uk-status safe/.test(body()), '');
 check('el R2 aparece en "No UK" con su motivo y botón Forzar UK', /No UK/.test(body()) && /LIS \(fuera de UK\)/.test(body()) && /addUKDayManual\('2026-11-17'\)/.test(body()));
 check('UK listado con procedencia R1', /OB 18:10 GMT · R1/.test(body()));
 check('el botón OFF identifica el hueco por su primer día', /ukMarkBlockOff\('2026-11-12'\)/.test(body()));
 run(`ukMarkBlockOff('2026-11-12')`);
 check('OFF del hueco: 4 días a off con 1 sola llamada a saveDayMap', run('__dm') === 1 && ['12', '13', '14', '15'].every(d => run(`_dayMap['2026-11-${d}']`) === 'off'), `__dm=${run('__dm')}`);
-check('tras OFF, P = 0 y la cabecera sin "pend."', count() === '1 / 91', count());
+check('tras OFF, P = 0 y la cabecera sin "pend."', count() === '1 / 90', count());
 reset(); now('2026-11-20T12:00:00Z');
 paste(email('2026/11/17', [{ cp: 'STN - DUB', off: '15:00', on: '16:10' }, { cp: 'DUB - STN', off: '17:00' }]));
 run(`_dayMap['2026-11-18'] = 'off';`);
@@ -205,7 +205,7 @@ const b0 = JSON.parse(run('JSON.stringify(pendingUKBlocks().map(b => b.days))'))
 run(`(() => { const b = pendingUKBlocks().find(b => b.days.includes('2026-11-16')); if (b) ukMarkBlockOff(b.days[0]); })()`);
 check('el botón OFF nunca escribe en un día con email (17/11 sin On Block)', run(`_dayMap['2026-11-17']`) === undefined && run(`_dayMap['2026-11-16']`) === 'off', JSON.stringify(b0.at(-1)));
 reset(); now('2026-11-20T12:00:00Z'); run(`_dayMap = { '2026-11-02': 'stby' };`); run('renderUKDays()');
-check('stby en el calendario → N = 1 (cal)', count().startsWith('1 / 91') && /calendario · cal/.test(body()), count());
+check('stby en el calendario → N = 1 (cal)', count().startsWith('1 / 90') && /calendario · cal/.test(body()), count());
 reset(); run(`_ukdays = { '2026-09-18': { route: 'STN→HAM', onBlock: '15:20', tz: 'BST' } };`); run('renderUKDays()');
 check('entrada antigua STN→HAM se pinta con "revisar"', /revisar/.test(body()));
 // Backup

@@ -109,13 +109,13 @@ check('sección desaparece cuando no quedan días', !/Días en Excel sin histori
 const ukHTML = () => ctx.document.getElementById('ukdays-body').innerHTML;
 const ukCount = () => ctx.document.getElementById('ukdays-count').textContent;
 reset(); paste(UKD); ls.set('easylog_mode', 'cloud'); run('cloud.hydrated = false; cloud.loadError = false; renderUKDays()');
-check('nube sin hidratar: "Cargando…" y contador "… / 91"', /Cargando…/.test(ukHTML()) && ukCount() === '… / 91', ukCount());
+check('nube sin hidratar: "Cargando…" y contador "… / …"', /Cargando…/.test(ukHTML()) && ukCount() === '… / …', ukCount());
 run('cloud.loadError = true; renderUKDays()');
 check('nube con error de carga: "Sin conexión — UK Days no cargados"', /Sin conexión — UK Days no cargados/.test(ukHTML()));
 run('cloud.hydrated = true; renderUKDays()');
-check('nube hidratada: contenido real (1 / 91)', !/Cargando|Sin conexión/.test(ukHTML()) && ukCount().startsWith('1 / 91'), ukCount()); // 03-02: + "· P pend."
+check('nube hidratada: contenido real (1 / 90, límite por defecto)', !/Cargando|Sin conexión/.test(ukHTML()) && ukCount().startsWith('1 / 90'), ukCount()); // 03-02: + "· P pend."
 ls.set('easylog_mode', 'local'); run('cloud.hydrated = false; renderUKDays()');
-check('modo local: sin "Cargando…" aunque hydrated=false', !/Cargando/.test(ukHTML()) && ukCount().startsWith('1 / 91'));
+check('modo local: sin "Cargando…" aunque hydrated=false', !/Cargando/.test(ukHTML()) && ukCount().startsWith('1 / 90'));
 check('renderCalendar sin cambios (no menciona hydrated)', !/function renderCalendar\(\) \{[\s\S]{0,600}hydrated/.test(html));
 
 console.log(fails ? `\n${fails} FALLO(S)` : '\nTODO OK'); process.exit(fails ? 1 : 0);

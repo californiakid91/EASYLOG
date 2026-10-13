@@ -708,6 +708,19 @@
     </div>
   </div>
 
+  <!-- 07-02: motivo de una circunstancia excepcional (textarea: en iPhone standalone un prompt es frágil para texto que es evidencia) -->
+  <div id="ukexc-modal" class="day-modal hidden" onclick="closeUKExcModal()">
+    <div class="day-modal-box" onclick="event.stopPropagation()">
+      <div class="day-modal-handle"></div>
+      <div class="day-modal-date" id="ukexc-title">Circunstancia excepcional</div>
+      <div style="font-size:.78rem;color:var(--text);margin-bottom:.5rem;">No computa como día en UK (máximo 60 por año). HMRC puede pedir pruebas: guarda la documentación.</div>
+      <textarea id="ukexc-reason" maxlength="200" placeholder="Motivo (obligatorio)"
+                style="width:100%; min-height:5rem; font-size:16px; padding:.75rem; margin-bottom:1rem; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); box-sizing:border-box;"></textarea>
+      <button class="btn btn-blue" style="width:100%; margin-bottom:.5rem;" onclick="confirmUKExcModal()">Guardar</button>
+      <button class="day-modal-cancel" onclick="closeUKExcModal()">Cancelar</button>
+    </div>
+  </div>
+
   <!-- Pistas de un día (fase 4): sugeridas por el viento del METAR; solo lo confirmado va al CSV -->
   <div id="rwy-modal" class="day-modal hidden" onclick="closeRwyModal()">
     <div class="day-modal-box" onclick="event.stopPropagation()">
@@ -734,7 +747,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.11-093029';
+const APP_VERSION = '2026.10.13-142842';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -1304,6 +1317,7 @@ const AIRPORTS_KEY  = 'easylog_airports_v1';
 const UK_DAYS_KEY   = 'easylog_ukdays_v1';
 const EXCEL_KEY     = 'easylog_excel_v1';
 const RUNWAYS_KEY   = 'easylog_runways_v1';
+const SETTINGS_KEY  = 'easylog_settings_v1';
 const MODE_KEY      = 'easylog_mode';
 
 // In-memory state. Always the source of truth for render functions.
@@ -1312,6 +1326,7 @@ let _excelData  = {};  // historial permanente para Excel: { iso: { role, flight
 let _airports   = {};  // custom airports: { IATA: { lat, lon } }
 let _ukdays     = {};  // UK Days: { iso: { route, onBlock, tz } } — persiste aunque se borre el historial
 let _runways    = {};  // pistas CONFIRMADAS: { rwyKey: { dep?, arr?, depAp, arrAp, at } } — persiste aunque se borre el historial
+let _settings   = {};  // 07-02: { ukLimit: { '2026-27': n }, ukExceptional: { iso: { reason, at } } } — ajustes del usuario
 // Cloud state (populated only when mode === 'cloud')
 // 08-02: fs/authMod = módulos de Firebase ya cargados (escritura síncrona); stale = volvemos de segundo plano y aún no se ha
 // releído la nube (no se escribe); lastAliveAt = última señal de vida (tick o snapshot del servidor);
@@ -1343,6 +1358,7 @@ function saveAirports(a) { _airports = a; return persist(); }
 function setUKDays(u)    { _ukdays = u; }
 function saveUKDays(u)   { setUKDays(u); return persist(); }
 function saveRunways(w)  { _runways = w; return persist(); }
+function saveSettings(st) { _settings = st; return persist(); }
 
 function persist() {
   const mode = getMode();
@@ -1355,7 +1371,7 @@ function persist() {
     // Sin rollback: si falla, lo cambiado queda en pantalla pero se perderá al recargar (el aviso lo dice)
     try {
       const lost = []; // mapas con cambios que NO se pueden guardar porque su copia local es ilegible (no se pisa)
-      [[STORAGE_KEY, _cache], [AIRPORTS_KEY, _airports], [UK_DAYS_KEY, _ukdays], [EXCEL_KEY, _excelData], [RUNWAYS_KEY, _runways]]
+      [[STORAGE_KEY, _cache], [AIRPORTS_KEY, _airports], [UK_DAYS_KEY, _ukdays], [EXCEL_KEY, _excelData], [RUNWAYS_KEY, _runways], [SETTINGS_KEY, _settings]]
         .forEach(([k, v]) => {
           if (!_localCorrupt.has(k)) localStorage.setItem(k, JSON.stringify(v));
           else if (v && Object.keys(v).length) lost.push(LOCAL_KEY_NAMES[k] || k); // se cargó vacío: si ya no lo está, hay cambios sin guardar
@@ -1375,10 +1391,16 @@ function persist() {
 
 // Claves locales con JSON ilegible: se cargan vacías y NUNCA se sobrescriben solas (así el texto original se puede recuperar)
 const _localCorrupt = new Set();
-const LOCAL_KEY_NAMES = { [STORAGE_KEY]: 'la lista de días', [EXCEL_KEY]: 'el Excel Tax Year', [AIRPORTS_KEY]: 'los aeropuertos', [UK_DAYS_KEY]: 'los UK Days', [RUNWAYS_KEY]: 'las pistas' };
+const LOCAL_KEY_NAMES = { [STORAGE_KEY]: 'la lista de días', [EXCEL_KEY]: 'el Excel Tax Year', [AIRPORTS_KEY]: 'los aeropuertos', [UK_DAYS_KEY]: 'los UK Days', [RUNWAYS_KEY]: 'las pistas', [SETTINGS_KEY]: 'la configuración' };
 function hydrateLocal() {
   const read = (k) => {
-    try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : {}; }
+    try {
+      const v = localStorage.getItem(k);
+      if (!v) return {};
+      const o = JSON.parse(v);
+      if (o && typeof o === 'object' && !Array.isArray(o)) return o;
+      throw new Error('no es un objeto');  // null, número, texto o lista: se trata como dañado (no se sobrescribe)
+    }
     catch (e) { console.warn('Local hydrate failed:', k, e); _localCorrupt.add(k); return {}; }
   };
   _cache = read(STORAGE_KEY);
@@ -1386,6 +1408,7 @@ function hydrateLocal() {
   _airports = read(AIRPORTS_KEY);
   _ukdays = read(UK_DAYS_KEY);
   _runways = read(RUNWAYS_KEY);
+  _settings = read(SETTINGS_KEY);
   if (_localCorrupt.size) {
     const names = [..._localCorrupt].map(k => LOCAL_KEY_NAMES[k] || k).join(', ');
     showStatus('warn', `No se pudo leer: ${names}. El resto de tus datos está cargado; ese dato no se sobrescribe.`);
@@ -1397,7 +1420,7 @@ async function persistCloud() {
   // ni al volver de segundo plano sin haber releído la nube (stale)
   if (!cloudWriteGate()) return false;
   // Lo que se envía se captura AHORA: un snapshot que llegue durante un await sustituiría _cache… y se perdería este cambio
-  const payload = { history: _cache, excelData: _excelData, airports: _airports, ukdays: _ukdays, runways: _runways, updatedAt: Date.now() };
+  const payload = { history: _cache, excelData: _excelData, airports: _airports, ukdays: _ukdays, runways: _runways, settings: _settings, updatedAt: Date.now() };
   const uid = cloud.user.uid;
   setSync('syncing', 'Guardando…');
   _cloudWrites++;
@@ -1407,7 +1430,7 @@ async function persistCloud() {
     const { doc, setDoc } = cloud.fs || await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
     // mergeFields reemplaza cada campo entero (así los borrados llegan a la nube; merge:true conservaba las claves borradas).
     // dayMap no está en la lista → queda intacto; se guarda por separado en saveDayMap()
-    await watchWrite(setDoc(doc(cloud.db, 'users', uid), payload, { mergeFields: ['history', 'excelData', 'airports', 'ukdays', 'runways', 'updatedAt'] }));
+    await watchWrite(setDoc(doc(cloud.db, 'users', uid), payload, { mergeFields: ['history', 'excelData', 'airports', 'ukdays', 'runways', 'settings', 'updatedAt'] }));
     ok = true; // «Sincronizado ✓» lo pone cloudWriteDone, solo si no queda nada en vuelo
   } catch (e) {
     console.error('Cloud save failed:', e);
@@ -2242,15 +2265,100 @@ function tyCloseBannerHTML() {
   return `<button class="ty-banner" id="ty-banner" onclick="ukShowTY('${prev.label}')">📅 Cierra ${prev.label} · ${n ? `${n} pendiente${n !== 1 ? 's' : ''} · Excel` : 'descarga su Excel'} ›</button>`;
 }
 
+// ── 07-02: límite por año fiscal y días excepcionales ──
+// El límite es el máximo de días computables permitido en el año (lo pone el usuario: depende de su situación de cada año).
+// Por defecto, el borde superior de la banda 46–90 días del Statutory Residence Test.
+const UK_LIMIT_DEFAULT = 90;
+const UK_EXC_MAX = 60;           // FA 2013 Sch 45 para 22(6): máximo de días excepcionales que se pueden ignorar por año
+const TY_LABEL_RE = /^\d{4}-\d{2}$/;
+// Límite configurado para el año (o null). Lectura defensiva: el documento puede venir de cualquier versión.
+function ukLimitSet(label) {
+  const m = _settings && typeof _settings.ukLimit === 'object' && !Array.isArray(_settings.ukLimit) ? _settings.ukLimit : null;
+  const v = m && TY_LABEL_RE.test(String(label)) ? m[label] : undefined;
+  return Number.isInteger(v) && v >= 1 && v <= 366 ? v : null;
+}
+function ukLimitFor(label) { return ukLimitSet(label) ?? UK_LIMIT_DEFAULT; }
+// Marcas de circunstancia excepcional: { iso: { reason, at } } (solo claves ISO válidas y motivo de texto)
+function ukExcMap() {
+  const m = _settings && typeof _settings.ukExceptional === 'object' && !Array.isArray(_settings.ukExceptional) ? _settings.ukExceptional : {};
+  const out = {};
+  isoKeys(m, 'Excepcionales').forEach(iso => { const r = m[iso]?.reason; if (typeof r === 'string' && r.trim()) out[iso] = { reason: r.slice(0, 200), at: typeof m[iso].at === 'string' ? m[iso].at : null }; });
+  return out;
+}
+// Mapa original de marcas (sin filtrar): los escritores parten de aquí para no borrar campos o entradas de otras versiones
+function ukExcRaw() {
+  const m = _settings && typeof _settings.ukExceptional === 'object' && !Array.isArray(_settings.ukExceptional) ? _settings.ukExceptional : {};
+  return { ...m };
+}
+// Días computables del año: UK Days menos los excepcionales (solo los que siguen siendo UK, con el tope de 60)
+function ukComputable(ukList) {
+  const exc = ukExcMap();
+  const excDays = ukList.filter(x => exc[x.iso]).length;
+  const excCounted = Math.min(excDays, UK_EXC_MAX);
+  return { uk: ukList.length, exc: excDays, excCounted, comp: ukList.length - excCounted, excMap: exc };
+}
+// Toca «de N días»: cambia el límite del año visible (configuración, también en años cerrados)
+function editUKLimit() {
+  if (!requireHydrated({ alert: true })) return;
+  const ty = viewTY();
+  const v = prompt(`Límite de días computables para ${ty.label}`, String(ukLimitFor(ty.label)));
+  if (v === null || String(v).trim() === '') return; // cancelar / vacío: nada
+  const n = Number(String(v).trim());
+  if (!Number.isInteger(n) || n < 1 || n > 366) { alert('Escribe un número entero de días entre 1 y 366.'); return; }
+  if (!requireHydrated({ alert: true })) return; // el prompt bloquea el tick: si volvimos de segundo plano, releer antes
+  const prev = _settings.ukLimit && typeof _settings.ukLimit === 'object' && !Array.isArray(_settings.ukLimit) ? _settings.ukLimit : {};
+  const ukLimit = { ...prev, [ty.label]: n };
+  if (!saveSettings({ ..._settings, ukLimit })) { renderUKDays(); return; }
+  renderUKDays();
+  showStatus('ok', `Límite de ${ty.label}: ${n} días computables.`);
+}
+// Botón «Exc» de un UK Day: marcar (pide motivo en la ventana) o quitar la marca (con confirmación)
+let _ukExcSel = null;
+function toggleUKExceptional(iso) {
+  if (!ISO_RE.test(String(iso))) return;
+  if (!requireHydrated({ alert: true })) return;
+  if (ukExcMap()[iso]) {
+    const closed = ukFrozenDay(iso) ? `${dateISOToDisplay(iso)} es de un año cerrado (${taxYearOf(iso).label}). ` : '';
+    if (!confirm(`${closed}¿Quitar la marca de excepcional del ${dateISOToDisplay(iso)}? Volverá a contar como día computable.`)) return;
+    if (!requireHydrated({ alert: true })) return;
+    const ukExceptional = ukExcRaw();
+    delete ukExceptional[iso];
+    if (!saveSettings({ ..._settings, ukExceptional })) { renderUKDays(); return; }
+    renderUKDays();
+    return;
+  }
+  if (ukFrozenDay(iso) && !confirm(`${dateISOToDisplay(iso)} es de un año cerrado (${taxYearOf(iso).label}). ¿Marcarlo igualmente como circunstancia excepcional?`)) return;
+  _ukExcSel = iso;
+  document.getElementById('ukexc-title').textContent = `Circunstancia excepcional · ${dateISOToDisplay(iso)}`;
+  document.getElementById('ukexc-reason').value = '';
+  document.getElementById('ukexc-modal').classList.remove('hidden');
+}
+function closeUKExcModal() {
+  _ukExcSel = null;
+  document.getElementById('ukexc-modal').classList.add('hidden');
+}
+function confirmUKExcModal() {
+  const iso = _ukExcSel;
+  if (!iso) return;
+  const reason = String(document.getElementById('ukexc-reason').value || '').trim().slice(0, 200);
+  if (!reason) { alert('Escribe el motivo: HMRC puede pedir que lo justifiques.'); return; }
+  if (!requireHydrated({ alert: true })) return; // la ventana sigue abierta con el texto
+  const ukExceptional = { ...ukExcRaw(), [iso]: { reason, at: new Date().toISOString() } };
+  const saved = saveSettings({ ..._settings, ukExceptional });
+  closeUKExcModal(); // sin rollback (como el resto): si no se guardó, el aviso ya lo dice
+  if (!saved) { renderUKDays(); return; }
+  renderUKDays();
+}
+
 function renderUKDays() {
   const host = document.getElementById('ukdays-body');
   if (!host) return;
   const countEl = document.getElementById('ukdays-count');
   renderTYChip();
-  // Modo nube antes del primer snapshot del servidor: no enseñar "0 / 91" como si se hubieran perdido los datos
+  // Modo nube antes del primer snapshot del servidor: no enseñar "0 / límite" como si se hubieran perdido los datos
   if (getMode() === 'cloud' && !cloud.hydrated) {
     const offline = cloud.loadError || navigator.onLine === false;
-    if (countEl) countEl.textContent = '… / 91';
+    if (countEl) countEl.textContent = '… / …';
     host.innerHTML = `<div class="empty">${offline ? 'Sin conexión — UK Days no cargados' : 'Cargando…'}</div>`;
     return;
   }
@@ -2258,26 +2366,32 @@ function renderUKDays() {
   const { ukList, noList, pending, blocks } = ukSummary(ukNow(), ty);
   const P = pending.length;
   const tyTag = ty.label === taxYearOf(londonTodayISO()).label ? '' : ukYearFrozen(ty) ? ' · cerrado' : ' · año anterior';
-  if (countEl) countEl.textContent = `${ukList.length} / 91${P ? ` · ${P} pend.` : ''}`;
+  const limit = ukLimitFor(ty.label), limitSet = ukLimitSet(ty.label) !== null;
+  const { uk, exc, excCounted, comp, excMap } = ukComputable(ukList);
+  if (countEl) countEl.textContent = `${comp} / ${limit}${P ? ` · ${P} pend.` : ''}`;
 
-  // La alarma del bonus usa solo los UK confirmados (N); los pendientes son cobertura, no riesgo
-  const MAX = 91;
-  const total = ukList.length;
-  const pct   = Math.min(100, (total / MAX) * 100);
-  const left  = Math.max(0, MAX - total);
-  const cls   = pct < 70 ? 'safe' : pct < 93 ? 'warn' : 'danger';
-  const statusText = total >= MAX
-    ? '❌ Límite alcanzado — bonus perdido'
-    : left <= 7
-      ? `🚨 Solo ${left} día${left !== 1 ? 's' : ''} restante${left !== 1 ? 's' : ''} para el límite`
-      : left <= 20
-        ? `⚠️ ${left} días restantes — bonus en riesgo`
-        : `💰 ${left} días restantes — bonus protegido`;
+  // La alarma usa los días computables confirmados; los pendientes van aparte en «máximo posible»
+  const pct   = Math.min(100, (comp / limit) * 100);
+  const left  = limit - comp;
+  const cls   = comp > limit || left <= 7 ? 'danger' : left <= 20 ? 'warn' : 'safe';
+  const dias  = n => `${n} día${n !== 1 ? 's' : ''}`;
+  const statusText = comp > limit
+    ? `❌ Por encima del límite: ${comp} de ${limit}`
+    : left === 0
+      ? '🚨 En el límite: ningún día UK más este año'
+      : left <= 7
+        ? `🚨 Solo ${dias(left)} de margen`
+        : left <= 20
+          ? `⚠️ ${dias(left)} de margen`
+          : `✅ ${dias(left)} de margen`;
+  const maxPos = comp + P;
+  const maxHTML = P ? `<div class="uk-sub" style="margin-top:.3rem;${maxPos > limit ? 'color:var(--amber);font-weight:600' : ''}">Máximo posible si los ${P} pendientes fueran UK: ${maxPos} de ${limit}</div>` : '';
+  const excHTML = exc ? `<div class="uk-sub" style="margin-top:.3rem">${uk} UK · ${exc} excepcional${exc !== 1 ? 'es' : ''} (no computan)${exc > UK_EXC_MAX ? ` — solo ${UK_EXC_MAX} excepcionales pueden excluirse por año` : ''}</div>` : '';
 
   const progressHTML = `
     <div class="uk-progress">
       <div class="uk-progress-label">
-        <span>${total} <span style="font-weight:400">de</span> ${MAX} días en UK</span>
+        <span>${comp} <a href="#" style="color:inherit;font-weight:400" title="Cambiar el límite de ${ty.label}" onclick="editUKLimit();return false;">de ${limit} días${limitSet ? '' : ' (por defecto)'}</a> computables</span>
         <span class="uk-sub">${pct.toFixed(0)}% del límite</span>
       </div>
       <div class="uk-progress-track">
@@ -2285,9 +2399,9 @@ function renderUKDays() {
       </div>
       <div class="uk-progress-footer">
         <span>${tyRangeText(ty)}${tyTag}</span>
-        <span>${left} día${left !== 1 ? 's' : ''} restante${left !== 1 ? 's' : ''}</span>
+        <span>${left >= 0 ? `${dias(left)} de margen` : `${dias(-left)} por encima`}</span>
       </div>
-      <div class="uk-status ${cls}">${statusText}</div>
+      <div class="uk-status ${cls}">${statusText}</div>${excHTML}${maxHTML}
     </div>`;
 
   // Sin decidir: huecos (botón OFF) y días con email que hay que revisar
@@ -2326,12 +2440,15 @@ function renderUKDays() {
         const ob = e ? `OB ${esc(e.onBlock)} ${esc(e.tz)}` : 'calendario';
         const warn = x.legacyOutside ? ` <span style="color:var(--amber)" title="Acaba fuera de UK: re-pega el email">⚠ revisar</span>` : '';
         const del = `<button class="day-del" title="Marcar como NO UK Day / eliminar" onclick="removeUKDay('${x.iso}')">✕</button>`;
+        const ex = excMap[x.iso];
+        const excBtn = `<button class="btn btn-ghost btn-sm" style="padding:.15rem .4rem;font-size:.7rem${ex ? ';color:var(--amber);border-color:var(--amber)' : ''}" title="${ex ? 'Quitar la marca de circunstancia excepcional' : 'Marcar como circunstancia excepcional (no computa)'}" onclick="toggleUKExceptional('${x.iso}')">Exc</button>`;
+        const excTag = ex ? `<div style="font-size:.72rem;color:var(--amber);font-family:inherit">excepcional · ${esc(ex.reason)}</div>` : '';
         return `
           <div class="day-item">
             <span class="day-date">${dateISOToDisplay(x.iso)}</span>
-            <span class="day-route">${esc(route)}${warn}</span>
+            <span class="day-route">${esc(route)}${warn}${excTag}</span>
             <span class="day-count" style="color:var(--green);">${ob} · ${esc(ukSourceLabel(x.source))}</span>
-            ${del}
+            ${excBtn}${del}
           </div>`;
       }).join('');
       return `
@@ -2351,7 +2468,7 @@ function renderUKDays() {
     const items = noList.map(x => `
       <div class="day-item">
         <span class="day-date">${dateISOToDisplay(x.iso)}</span>
-        <span class="day-route" style="font-family:inherit;font-size:.78rem">${esc(x.reason)}</span>
+        <span class="day-route" style="font-family:inherit;font-size:.78rem">${esc(x.reason)}${excMap[x.iso] ? ' <span style="color:var(--amber)">(marca exc. conservada)</span>' : ''}</span>
         <span class="day-count">${esc(ukSourceLabel(x.source))}</span>
         <button class="btn btn-ghost btn-sm" title="Forzar UK Day" onclick="addUKDayManual('${x.iso}')">UK</button>
         ${_ukdays[x.iso]?.manual ? `<button class="day-del" title="Quitar la marca" onclick="removeUKDay('${x.iso}')">✕</button>` : ''}
@@ -2458,6 +2575,7 @@ function emailUKDaysBackup() {
   const ty = viewTY();
   const { ukList, noList, pending } = ukSummary(ukNow(), ty);
   if (!ukList.length && !noList.length) { showStatus('warn', `No hay UK Days registrados en ${ty.label}.`); return; }
+  const { uk, exc, excCounted, comp, excMap } = ukComputable(ukList);
 
   const lines = [`UK DAYS BACKUP — EasyLog · Tax Year ${ty.label} (${tyRangeText(ty)})`, `Generado: ${new Date().toLocaleDateString('es-ES')}`,
     'Procedencia: R1 = email (on-block en UK antes de 00:00 Londres) · cal = calendario · man = a mano', ''];
@@ -2467,8 +2585,9 @@ function emailUKDaysBackup() {
     lines.push(`── ${monthLabel(mk)} ──`);
     byMonth[mk].forEach(x => {
       const e = _ukdays[x.iso];
-      lines.push(e ? `  ${dateISOToDisplay(x.iso)}  ${e.route}  OB ${e.onBlock} ${e.tz}  [${ukSourceLabel(x.source)}]`
-                   : `  ${dateISOToDisplay(x.iso)}  ${calLabel((x.source || "").slice(4))}  [cal]`);
+      const ex = excMap[x.iso] ? `  [exc] ${excMap[x.iso].reason}` : '';
+      lines.push((e ? `  ${dateISOToDisplay(x.iso)}  ${e.route}  OB ${e.onBlock} ${e.tz}  [${ukSourceLabel(x.source)}]`
+                    : `  ${dateISOToDisplay(x.iso)}  ${calLabel((x.source || "").slice(4))}  [cal]`) + ex);
     });
     lines.push('');
   });
@@ -2477,7 +2596,8 @@ function emailUKDaysBackup() {
     noList.forEach(x => lines.push(`  ${dateISOToDisplay(x.iso)}  ${x.reason || ''}  [${ukSourceLabel(x.source)}]`));
     lines.push('');
   }
-  lines.push(`Total: ${ukList.length} confirmados · ${pending.length} pendientes`);
+  lines.push(`Total: ${uk} confirmados · ${pending.length} pendientes`);
+  lines.push(`Computables: ${comp} (${uk} UK − ${excCounted} excepcionales) · límite ${ukLimitFor(ty.label)}${exc > UK_EXC_MAX ? ` · ${exc} marcados, solo ${UK_EXC_MAX} excluibles` : ''}`);
 
   const subject = encodeURIComponent(`EasyLog — UK Days Backup ${ty.label}`);
   const body    = encodeURIComponent(lines.join('\n'));
@@ -2818,7 +2938,7 @@ async function applyCloudMode() {
         cloud.hydrated = false; cloud.pendingWrite = false; cloud.loadError = false;
         resetCloudSync();
         if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
-        _cache = {}; _runways = {};
+        _cache = {}; _runways = {}; _settings = {};
         renderHistory();
         document.getElementById('user-chip').classList.add('hidden');
         showAuth();
@@ -2895,6 +3015,7 @@ function applyCloudData(data, { resume = false } = {}) {
   _airports   = data.airports  || {};
   _ukdays     = data.ukdays    || {};
   _runways    = data.runways   || {};
+  _settings   = data.settings  || {};
   _dayMap     = data.dayMap    || {};
   try { localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap)); } catch {}
   cloud.hydrated = true;
@@ -3011,7 +3132,7 @@ function switchMode() {
   if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
   cloud.hydrated = false; cloud.pendingWrite = false; cloud.loadError = false;
   resetCloudSync();
-  _cache = {}; _runways = {};
+  _cache = {}; _runways = {}; _settings = {};
   setMode(other);
   if (other === 'local') applyLocalMode();
   else applyCloudMode();
@@ -3393,7 +3514,7 @@ function updateBlockers() {
   const r = [];
   // El texto pegado no bloquea: se guarda antes de recargar y se repone al arrancar (si no se puede guardar, checkForUpdate no recarga)
   if (val('ap-iata') || val('ap-lat') || val('ap-lon')) r.push('hay un aeropuerto a medio añadir');
-  if (open('day-modal') || open('ukdate-modal') || open('rwy-modal')) r.push('cierra la ventana abierta');
+  if (open('day-modal') || open('ukdate-modal') || open('ukexc-modal') || open('rwy-modal')) r.push('cierra la ventana abierta');
   if (open('auth-overlay') || open('welcome-overlay')) r.push('termina de iniciar sesión');
   if (_lastExport) r.push('cierra la barra de exportación');
   if (_cloudWrites > 0) r.push('guardando en la nube');

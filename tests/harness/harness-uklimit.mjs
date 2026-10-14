@@ -226,8 +226,8 @@ const markExc = (E, iso, reason) => { E.run(`toggleUKExceptional('${iso}')`); E.
   check('AC-2 marca sobre día que ya no es UK no resta («9 / 90»)', E.count().startsWith('9 / 90'), E.count());
   // Huérfana visible en la lista No UK (entrada manual No UK con marca)
   E.run(`_ukdays['2026-04-13'] = { state: 'no', route: '—', onBlock: '--:--', tz: 'BST', manual: true, source: 'manual', reason: 'dormí fuera' };
-         _settings.ukExceptional['2026-04-13'] = { reason: 'x', at: 'y' }; renderUKDays();`);
-  check('AC-2 la lista No UK muestra «(marca exc. conservada)»', /\(marca exc\. conservada\)/.test(E.body()));
+         _settings.ukExceptional['2026-04-13'] = { reason: 'x', at: 'y' }; setUKOutKind('off');`);
+  check('AC-2 la lista Fuera de UK muestra «(marca exc. conservada)»', /\(marca exc\. conservada\)/.test(E.body()));
   // XSS
   markExc(E, '2026-04-14', '<img src=x onerror=alert(1)>');
   check('AC-2 motivo escapado en la lista', E.body().includes('&lt;img') && !E.body().includes('<img'), '');

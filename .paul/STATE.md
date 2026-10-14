@@ -5,16 +5,16 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.2 Seguridad y robustez — todas las fases completas (5, 6, 7, 8); siguiente: cerrar milestone
+**Current focus:** v0.2 — Fase 7.1 [INSERTED] «Fuera de UK» (desglose trabajo/libres) antes de cerrar el milestone
 
 ## Current Position
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 7 of 8 (UK Days año y límite) — ✅ Complete (Fase 8 ✅) — milestone v0.2: 4/4 fases
-Plan: 07-02 completo (UNIFY)
-Status: Loop cerrado — milestone v0.2 listo para /paul:complete-milestone
-Last activity: 2026-10-13 — UNIFY 07-02 + transición Fase 7 (G7 CRG 0.40, G8 security-review); prod v2026.10.13-144210
+Phase: 7.1 [INSERTED] (UK Days: fuera de UK) — Planning
+Plan: 07.1-01 creado, en revisión adversaria (Fable) / pendiente de aprobación
+Status: PLAN creado, listo para APPLY tras aprobación
+Last activity: 2026-10-14 — Creado .paul/phases/07.1-ukdays-fuera-de-uk/07.1-01-PLAN.md
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
@@ -25,7 +25,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop 07-02 cerrado — Fase 7 completa; v0.2 con todas sus fases]
+  ✓        ○        ○     [Plan 07.1-01 creado, pendiente de aprobación]
 ```
 
 ## Accumulated Context
@@ -71,7 +71,6 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
 | Barra «Hay una versión nueva» (fija abajo) tapa el final del botón de exportar mientras está visible → padding-bottom al body cuando se muestra | 03.1 checkpoint | XS | — |
 | UK Days: reconstrucción de tax years anteriores desde el plan ROCS (2024/25 falta plan abr–dic 2024) | Phase 2 | M | — |
-| Revisar uno a uno los 47 días previos de 2026/27 (25 man + 22 R1) | 03-02 checkpoint | S | otra sesión |
 | SBY + email = conflicto; quizá debería mandar el email (regla usuario: SBY no cuenta solo si activado y acaba fuera/después de 00:00) | 03.2-01 checkpoint | S | — |
 | UW en blanco en días sin vuelos con UK manual (DUTY sin email) → ¿UW=1? | 03.2-01 | XS | — |
 | Regla de rol al re-pegar (rol guardado manda) → revisar al ascender a CPT | 03.2-02 | XS | ascenso |
@@ -84,6 +83,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Helpers duplicados entre harness (load/check/extract) → harness-lib | 06-01 (D6/F-06-006) | M | — |
 | Año congelado con email completo y sin entrada muestra "email incompleto: re-pégalo" (re-pegar idéntico no lo arregla; se decide con UK/No UK) — mensaje engañoso, no alcanzable en la práctica | 07-01 G6 | XS | — |
 | rule:* de años congelados no se recalculan aunque se corrija un bug de la regla → requiere migración explícita revisada | 07-01 dialéctica | S | si cambia la regla |
+| Al pegar un email de un día con marca manual que lo contradice, la app conserva la marca sin avisar (caso 03/10/2026) → avisar y ofrecer volver a la regla del email | 2026-10-14 usuario | XS | — |
 | Detectar vuelos de SAFETY PILOT al pegar (VEGRIC 3er FO, sin PF) → proponer funciones 0:00, Pilot 3 SELF y remarks «SAFETY PILOT» (criterio del usuario) | 2026-10-10 sesión PilotLog | S | fase propia tras 08 |
 | Sync: dos dispositivos editando casi a la vez → gana el último por mapa (F-02-001 mitigado, no cerrado); merge por día (opción B) si cambia el uso | 08-02 dialéctica | M | si usa 2 dispositivos a la vez |
 | 08-02 no verificado en iPhone real + Firebase real (e2e simulado); vigilar «Comprobando…» que no termina o «Sin confirmar» con buena cobertura | 08-02 checkpoint | XS | si el usuario lo ve |
@@ -96,7 +96,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Checkpoint 03-02 cerrado (detalle día a día en .paul/phases/03-ukdays/03-02-SUMMARY.md)
 - [x] ¿El 02/10/2026 (FR2134/FR2135) está duplicado en PilotLog? → NO (captura PilotLog 05/10: una sola vez cada sector)
 - [x] ¿Los DH vienen en el email de vuelo como un sector más? → NO: los DH nunca generan email «verified flights», solo aparecen en el ROCS
-- [ ] Revisar uno a uno los 47 días previos (25 man + 22 R1) de 2026/27
+- [x] Revisar uno a uno los días de 2026/27 → HECHO por el usuario 2026-10-14 (todos, hasta el 13/10; cifra confirmada, detalle solo en memoria local). No volver a revisarlos
 - [x] ¿Añadir el año a las fechas de "Sin decidir"? → SÍ, en toda la app (dateISOToDisplay → dd/mm/aa), 2026-10-05
 - (pendiente personal del usuario — detalle en memoria local)
 - [x] ¿Push de los commits de Fase 6? → SÍ, hecho 2026-10-06 (3c93a22..193e7ce, gate pre-push 13/13 + e2e-csp OK)
@@ -120,10 +120,10 @@ Branch: main
 
 ## Session Continuity
 
-Last session: 2026-10-13
-Stopped at: Fase 7 completa (UNIFY 07-02 + transición) — v0.2 con todas sus fases
-Next action: /paul:complete-milestone (v0.2); después, fase propia SAFETY PILOT (diferido)
-Resume file: .paul/HANDOFF-2026-10-13-fase-7-completa.md
+Last session: 2026-10-14
+Stopped at: Plan 07.1-01 creado (desglose «Fuera de UK», petición del usuario tras revisar UK Days)
+Next action: aprobar plan → /paul:apply .paul/phases/07.1-ukdays-fuera-de-uk/07.1-01-PLAN.md; después /paul:complete-milestone (v0.2)
+Resume file: .paul/phases/07.1-ukdays-fuera-de-uk/07.1-01-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

@@ -56,6 +56,22 @@ ok('con motivo: deja de computar «11 / 80» y se cierra la ventana', (await cou
 ok('la barra dice «12 UK · 1 excepcional (no computan)»', /12 UK · 1 excepcional \(no computan\)/.test(await page.textContent('#ukdays-body')));
 ok('la fila muestra «excepcional · Hospital: urgencias»', /excepcional · Hospital: urgencias/.test(await page.textContent('#ukdays-months')));
 
+// 07.1: «Fuera de UK» — 182 días pasados − 12 UK = 170 libres (todo OFF), 0 de trabajo
+const fuera = () => page.textContent('[data-ukmonth="no"]');
+ok('«Fuera de UK» con 170 días', /Fuera de UK\s*170 días/.test(await fuera()), (await fuera()).slice(0, 60));
+await page.click('[data-ukmonth="no"] .month-header'); await page.waitForTimeout(200);
+ok('desglose «0 trabajo · 170 libres» y lista de trabajo vacía («Ninguno»)', /0 trabajo · 170 libres/.test(await fuera()) && /Ninguno/.test(await fuera()));
+await page.selectOption('#uk-out-kind', 'off'); await page.waitForTimeout(200);
+const offRows = await page.$$eval('[data-ukmonth="no"] .day-item', r => r.length);
+ok('al elegir «Días libres / OFF» se ven las 170 filas y el grupo sigue abierto', offRows === 170 && await page.isVisible('#uk-out-kind'), String(offRows));
+ok('el select muestra «libres» tras repintar', (await page.$eval('#uk-out-kind', s => s.value)) === 'off');
+const overflow2 = await page.evaluate(() => ({
+  doc: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  sel: (() => { const s = document.getElementById('uk-out-kind'); return s.getBoundingClientRect().right > document.documentElement.clientWidth + 1; })(),
+  rows: [...document.querySelectorAll('[data-ukmonth="no"] .day-item')].filter(r => r.scrollWidth > r.clientWidth + 1).length,
+}));
+ok(`a ${vw} px «Fuera de UK» (select y filas) no desborda`, !overflow2.doc && !overflow2.sel && overflow2.rows === 0, JSON.stringify(overflow2));
+
 ok('sin errores de página', errs.length === 0, errs.join(' | '));
 await browser.close(); await srv.close();
 console.log(fails ? `\n${fails} FALLO(S)` : '\nTODO OK');

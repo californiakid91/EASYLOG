@@ -192,7 +192,7 @@ run(`_dayMap['2026-11-18'] = 'off'; _dayMap['2026-11-19'] = 'off';`);
 run('renderUKDays()');
 check('cabecera "1 / 90 · 4 pend." (hueco 12–15/11)', count() === '1 / 90 · 4 pend.', count());
 check('texto neutro "sin decidir", sin clase danger por P', /4 días sin decidir/.test(body()) && /uk-status safe/.test(body()), '');
-check('el R2 aparece en "No UK" con su motivo y botón Forzar UK', /No UK/.test(body()) && /LIS \(fuera de UK\)/.test(body()) && /addUKDayManual\('2026-11-17'\)/.test(body()));
+check('el R2 aparece en "Fuera de UK" con su motivo y botón Forzar UK', /<span>Fuera de UK<\/span>/.test(body()) && /LIS \(fuera de UK\)/.test(body()) && /addUKDayManual\('2026-11-17'\)/.test(body()));
 check('UK listado con procedencia R1', /OB 18:10 GMT · R1/.test(body()));
 check('el botón OFF identifica el hueco por su primer día', /ukMarkBlockOff\('2026-11-12'\)/.test(body()));
 run(`ukMarkBlockOff('2026-11-12')`);
@@ -214,7 +214,7 @@ paste(email('2026/11/16', [{ cp: 'STN - DUB', off: '15:00', on: '16:10' }, { cp:
 paste(email('2026/11/17', [{ cp: 'STN - LIS', off: '18:00', on: '21:00' }]));
 run('emailUKDaysBackup()');
 const mail = decodeURIComponent(String(run('window.location.href')).split('body=')[1] || '');
-check('backup: UK con procedencia, No UK con motivo y resumen "N confirmados · P pendientes"', /\[R1\]/.test(mail) && /No UK/.test(mail) && /LIS/.test(mail) && /Total: 1 confirmados · \d+ pendientes/.test(mail), mail.split('\n').slice(-3).join(' | '));
+check('backup: UK con procedencia, Fuera de UK con motivo y resumen "N confirmados · P pendientes"', /\[R1\]/.test(mail) && /Fuera de UK: \d+/.test(mail) && /LIS/.test(mail) && /Total: 1 confirmados · \d+ pendientes/.test(mail), mail.split('\n').slice(-3).join(' | '));
 // Nube sin hidratar: no se calculan pendientes
 reset(); ls.set('easylog_mode', 'cloud'); run('cloud.hydrated = false; renderUKDays()');
 check('nube sin hidratar → "Cargando…" sin bloque de pendientes', /Cargando/.test(body()) && !/sin decidir/.test(body()));

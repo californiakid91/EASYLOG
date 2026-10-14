@@ -124,7 +124,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: e6b135b (fix 11-02) / 19a0504 (feat 11-02) — prod = v2026.10.14-230928
+Last commit: d4be428 (fase 11) / e6b135b (fix 11-02) / 19a0504 (feat 11-02) — prod = v2026.10.14-230928
 Branch: main
 
 ## Session Continuity
@@ -132,7 +132,7 @@ Branch: main
 Last session: 2026-10-15
 Stopped at: Fase 11 cerrada (11-02 UNIFY + transición)
 Next action: decidir dónde va la fase pilotCode (antes de cerrar v0.3 → /paul:add-phase, o en v0.4 → /paul:complete-milestone)
-Resume file: .paul/phases/11-limpieza-xs/11-02-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-15-fase11-cerrada.md
 
 ---
 *STATE.md — Updated after every significant action*

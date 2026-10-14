@@ -5,27 +5,27 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.2 Seguridad y robustez — todas las fases completas (5, 6, 7, 7.1, 8); siguiente: cerrar milestone
+**Current focus:** v0.2 cerrado — definir siguiente milestone
 
 ## Current Position
 
-Version: v0.1.0 (en curso v0.2.0)
-Milestone: v0.2 Seguridad y robustez
-Phase: 7.1 [INSERTED] (UK Days: fuera de UK) — ✅ Complete — milestone v0.2: 5/5 fases
-Plan: 07.1-01 completo (UNIFY)
-Status: Loop cerrado — milestone v0.2 listo para /paul:complete-milestone
-Last activity: 2026-10-14 — UNIFY 07.1-01 + transición Fase 7.1; prod v2026.10.14-112255
+Version: v0.2.0
+Milestone: Awaiting next milestone
+Phase: None active
+Plan: None
+Status: Milestone v0.2 Seguridad y robustez complete — ready for next
+Last activity: 2026-10-14 — Milestone v0.2 completado (tag v0.2.0)
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
-- v0.2 Seguridad y robustez: [██████████] 100% (Fase 5 ✓, 6 ✓, 7 ✓, 7.1 ✓, 8 ✓)
+- v0.2 Seguridad y robustez: [██████████] 100% ✓
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop 07.1-01 cerrado — Fase 7.1 completa; v0.2 con todas sus fases]
+  ○        ○        ○     [Milestone complete - ready for next]
 ```
 
 ## Accumulated Context
@@ -118,15 +118,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: 96e4d80 (fase 07.1) — prod = v2026.10.14-112255 (verificado byte a byte)
+Last commit: cierre milestone v0.2 (tag v0.2.0) — prod = v2026.10.14-112255
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-14
-Stopped at: Fase 7.1 completa (UNIFY 07.1-01 + transición) — v0.2 con todas sus fases
-Next action: /paul:complete-milestone (v0.2); después, fase propia SAFETY PILOT (diferido)
-Resume file: .paul/HANDOFF-2026-10-14-fase-7.1-completa.md
+Stopped at: Milestone v0.2 Seguridad y robustez complete
+Next action: /paul:milestone (siguiente milestone; candidato principal: SAFETY PILOT al pegar)
+Resume file: .paul/MILESTONES.md
 
 ---
 *STATE.md — Updated after every significant action*

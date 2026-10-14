@@ -7,10 +7,24 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 ## Current Milestone
 
 **v0.2 Seguridad y robustez** (v0.2.0)
-Status: ✅ Fases completas — pendiente /paul:complete-milestone
-Phases: 5 of 5 complete
-Theme: Cerrar los hallazgos de la auditoría Aegis (2026-10-05) sin cambiar el flujo de uso: que nadie pueda inyectar código, que nada se pierda en silencio, que UK Days siga bien el año que viene y que los tests frenen regresiones.
-Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
+Status: ✅ Complete
+Completed: 2026-10-14
+
+## Next Milestone
+
+Por definir con /paul:milestone. Candidatos (diferidos en STATE.md): SAFETY PILOT al pegar; aviso al pegar un email que contradice una marca manual; texto del motivo de los No UK manuales; diferidos XS de G8/G6.
+
+## Version Overview
+
+| Version | Name | Status |
+|---------|------|--------|
+| v0.1.0 | Datos fiables | ✅ Complete 2026-10-05 |
+| v0.2.0 | Seguridad y robustez | ✅ Complete 2026-10-14 |
+
+## Completed Milestones
+
+<details>
+<summary>v0.2 Seguridad y robustez - 2026-10-14 (5 phases, 9 plans)</summary>
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
@@ -18,51 +32,11 @@ Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 | 6 | Barrera de tests: runner único + fixtures anonimizadas + gate | 2/2 | ✅ Complete | 2026-10-05 |
 | 7 | UK Days: año fiscal dinámico + límite configurable + máximo posible | 2/2 | ✅ Complete | 2026-10-13 |
 | 7.1 | [INSERTED] UK Days: «Fuera de UK» (total real + desglose trabajo/libres) | 1/1 | ✅ Complete | 2026-10-14 |
-| 8 | Sin pérdidas silenciosas: avisos de escritura bloqueada + estado tras confirm() + sync endurecida | 2/2 | ✅ Complete | 2026-10-11 |
+| 8 | Sin pérdidas silenciosas: avisos + sync endurecida | 2/2 | ✅ Complete | 2026-10-11 |
 
-### Phase 5: Seguridad
-Plans:
-- [x] 05-01: anti-inyección (IATA, claves ISO al pintar, esc, whitelist calendario, claves email Firestore) — prod v2026.10.05-102039
-- [x] 05-02: SheetJS vendorizado + meta CSP + firestore.rules = producción — prod v2026.10.05-120346
-Status: ✅ Complete 2026-10-05
-Focus: F-04-001 (código de aeropuerto → /^[A-Z]{3}$/ + esc + sin onclick inline en esa lista), F-04-002 (SRI SheetJS o vendorizar + meta CSP con connect-src/img-src/form-action), F-04-003 (firestore.rules versionado = producción), F-04-004 (shape-check mínimo de estado cargado), F-04-007 (CSV formula injection).
-Plans: TBD (defined during /paul:plan)
+Detalle completo: .paul/milestones/v0.2.0-ROADMAP.md
 
-### Phase 6: Barrera de tests
-Focus: F-06-001/002/003 — un `run-all` que ejecuta todos los harness con fixtures anonimizadas versionadas y golden de cabeceras del importer; gate en pre-commit/pre-push; Playwright sin rutas absolutas.
-Plans:
-- [x] 06-01: fixtures anonimizadas + golden (cabeceras importer + CSV) + harness en tests/ + run-all — 12/12 en 1,3 s, clon limpio OK
-- [x] 06-02: Playwright propio (package.json) + e2e en tests/e2e + gate pre-commit/pre-push — 14/14, e2e-runways reparado
-Status: ✅ Complete 2026-10-05
-
-### Phase 7: UK Days año y límite
-Focus: F-03-001 (año fiscal derivado de la fecha / selector, antes del 06/04/2027), límite configurable (valor a confirmar por el usuario), "máximo posible" con pendientes, etiqueta sin "bonus" (F-DA-008/D-010), F-03-006 (año explícito en comando manual).
-Plans:
-- [x] 07-01 (prod v2026.10.06-170132): año fiscal derivado + FLOOR + congelación + chip ‹ año › + banner abril + Excel/comando por año + tests sin año real (dialéctica Fable)
-- [x] 07-02 (prod v2026.10.13-142842): límite configurable por año + días excepcionales (no computables, tope 60) + "máximo posible" + textos sin "bonus"; harness-uklimit + e2e-uklimit
-Status: ✅ Complete 2026-10-13
-
-### Phase 7.1: [INSERTED] UK Days — fuera de UK
-Focus: la lista «No UK» solo enseña entradas guardadas; el usuario necesita el total real de días fuera de UK desglosado en trabajo / libres (OFF), con desplegable, y el mismo desglose en el backup.
-Plans:
-- [x] 07.1-01 (prod v2026.10.14-112255): «Fuera de UK» con desplegable trabajo/libres + backup con desglose + confirm en el botón UK; harness-ukfuera + e2e
-Status: ✅ Complete 2026-10-14
-
-### Phase 8: Sin pérdidas silenciosas
-Focus: F-02-006 + F-RG-003 (escritura bloqueada tapada por "ok"), F-02-001 (estado obsoleto tras confirm()), F-02-004/005/007 (fallos de localStorage/nube solo en consola), F-RG-004 (textos que prometen importar). Política de sync (LWW vs merge por día) se decide en el plan.
-Plans:
-- [x] 08-01 (prod v2026.10.11-083932): guarda de hidratación en todos los mutadores + OK solo si se guardó + payload antes del await + errores de guardado visibles + copia local dañada protegida + textos honestos
-- [x] 08-02 (prod v2026.10.11-093029): sync endurecida — opción A de la dialéctica (sin temporizadores, aviso «Sin confirmar», rearme del listener, relectura al volver); harness-sync + e2e-sync
-Status: ✅ Complete 2026-10-11
-
-## Version Overview
-
-| Version | Name | Status |
-|---------|------|--------|
-| v0.1.0 | Datos fiables | ✅ Complete 2026-10-05 |
-| v0.2.0 | Seguridad y robustez | ✅ Fases completas (cerrar milestone) |
-
-## Completed Milestones
+</details>
 
 <details>
 <summary>v0.1 Datos fiables - 2026-10-05 (8 phases, 11 plans)</summary>
@@ -83,4 +57,4 @@ Detalle completo: .paul/milestones/v0.1.0-ROADMAP.md
 </details>
 
 ---
-*Roadmap created: 2026-10-03 · Updated: 2026-10-14 (Fase 7.1 completa — v0.2 con todas sus fases)*
+*Roadmap created: 2026-10-03 · Updated: 2026-10-14 (milestone v0.2 completo)*

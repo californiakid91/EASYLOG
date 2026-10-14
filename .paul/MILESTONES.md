@@ -5,6 +5,42 @@ Completed milestone log for this project.
 | Milestone | Completed | Duration | Stats |
 |-----------|-----------|----------|-------|
 | v0.1 Datos fiables | 2026-10-05 | 3 días | 8 phases, 11 plans |
+| v0.2 Seguridad y robustez | 2026-10-14 | 10 días | 5 phases, 9 plans |
+
+---
+
+## ✅ v0.2 Seguridad y robustez
+
+**Completed:** 2026-10-14
+**Duration:** 10 días (2026-10-05 → 2026-10-14)
+
+### Stats
+
+| Metric | Value |
+|--------|-------|
+| Phases | 5 (5, 6, 7, 8 + 7.1 insertada) |
+| Plans | 9 |
+| Files changed | 41 fuera de .paul/ (+4879 / −224; index.html +806 / −223) |
+| Commits | 56 |
+
+### Key Accomplishments
+
+- Anti-inyección: datos externos (IATA, claves ISO, calendario, claves del email) validados antes de pintarse
+- SheetJS vendorizado con hash fijado + meta CSP de control de salida con aviso visible de bloqueos
+- Reglas de Firestore versionadas = producción (per-uid) + comprobador repo↔prod de solo lectura
+- Barrera de tests: `run-all` con harness (fixtures anonimizadas, golden CSV/importer) + e2e WebKit; gate pre-commit (harness) y pre-push = deploy (harness + e2e)
+- Sin pérdidas silenciosas: guarda de hidratación en todos los mutadores, OK solo si se guardó, errores de guardado visibles, copia local dañada protegida
+- Sync endurecida (LWW por mapa sin temporizadores): «Sin confirmar», rearme del listener, relectura al volver de segundo plano
+- UK Days multi-año: año fiscal derivado de la fecha con selector ‹ año ›, años cerrados congelados, límite configurable por año en los datos del usuario, días excepcionales (máx. 60), «máximo posible», sin «bonus»
+- UK Days «Fuera de UK»: total real de días pasados fuera de UK con desglose trabajo / libres y backup con el desglose
+
+### Key Decisions
+
+- Sync = A (gana el último por mapa, endurecido); merge por día diferido salvo uso simultáneo en varios dispositivos (dialéctica Fable)
+- Año fiscal derivado, sin estado persistido; FLOOR 06/04/2026; congelado a +30 días (dialéctica Fable)
+- Límite de UK Days = dato del usuario, nunca en el repo público (default genérico 90)
+- Push = deploy → bloqueado si fallan los tests; nunca --no-verify
+- CSP con 'unsafe-inline' (onclick inline) = control de salida, no anti-XSS; residuales documentados
 
 ---
 

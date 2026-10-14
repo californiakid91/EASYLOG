@@ -13,9 +13,9 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Attribute | Value |
 |-----------|-------|
 | Type | Application |
-| Version | 0.1.0 (v0.1 Datos fiables, cerrado 2026-10-05) |
-| Status | Production — v0.1.0 cerrado; v0.2: las 5 fases completas (5, 6, 7, 7.1, 8) — pendiente cerrar milestone |
-| Last Updated | 2026-10-14 (07.1-01, Fase 7.1 completa) |
+| Version | 0.2.0 (v0.2 Seguridad y robustez, cerrado 2026-10-14) |
+| Status | Production — v0.2.0 cerrado; siguiente milestone por definir |
+| Last Updated | 2026-10-14 (milestone v0.2 completo) |
 
 **Production URLs:**
 - https://californiakid91.github.io/EASYLOG/ — app (deploy automático al push a `main`)
@@ -62,8 +62,8 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 - [ ] Comprobar histórico ya importado en PilotLog (sin NIGHT; posibles fechas post-medianoche) con informe sobre export de PilotLog
 
-- [ ] Seguridad y robustez post-Aegis (informe 2026-10-05, roadmap en .aegis/report/05-remediation-roadmap.md):
-  - [ ] Documento único de Firestore: medir tamaño + entradas de índice; partir history/excelData o eximir índices (único HIGH)
+- [x] Seguridad y robustez post-Aegis (informe 2026-10-05) — v0.2:
+  - [x] Documento único de Firestore: medido 127 KiB (12 %) y ~1,9k entradas de índice (5 %) → ~2,5 años de margen; deja de ser HIGH (vigilar)
   - [x] XSS por código de aeropuerto + SRI/CSP para CDNs — Phase 5
   - [x] Reglas de Firestore versionadas en el repo (per-uid) + restricciones de la apiKey — Phase 5
   - [x] Año fiscal derivado de la fecha + selector ‹ año › + años cerrados protegidos — Phase 7 (07-01)
@@ -75,6 +75,9 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ### Planned (Next)
 
+- [ ] Detectar vuelos de SAFETY PILOT al pegar → funciones 0:00, Pilot 3 SELF, remarks «SAFETY PILOT» (criterio del usuario)
+- [ ] Avisar al pegar un email que contradice una marca manual de UK Days y ofrecer volver a la regla del email
+- [ ] Texto del motivo de los «No UK» decididos a mano sin email
 - [ ] (opcional) Pistas exactas: FR24 API (token + 9 $/mes del usuario) o ADS-B adsb.lol vía proxy — decisión del usuario
 
 ### Out of Scope
@@ -163,4 +166,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-14 after Phase 7.1 (UK Days fuera de UK) — milestone v0.2 con todas sus fases*
+*Last updated: 2026-10-14 after v0.2 Seguridad y robustez*

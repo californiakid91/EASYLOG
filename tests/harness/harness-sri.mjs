@@ -56,6 +56,10 @@ if (watch) {
   ok('d: inline/eval/data/blob solo a consola (no en pantalla)', shown.length === 0 && warns.length === nWarn + 4 && warns.slice(-4).every(w => /\): (inline|eval|data|blob)/.test(w)), JSON.stringify(shown));
   fire({ blockedURI: 'wss://ws.example.net/s', effectiveDirective: 'connect-src' });
   ok('d: wss también se avisa en pantalla', shown[0] === 'Bloqueado por seguridad (connect-src): ws.example.net', JSON.stringify(shown));
+  fire({ blockedURI: 'https://www.google.com/gen_204?x=1', effectiveDirective: 'img-src' });
+  ok('d: píxel de Google (img-src www.google.com) solo a consola', shown.length === 1 && warns.some(w => w.includes('img-src): www.google.com')), JSON.stringify(shown));
+  fire({ blockedURI: 'https://www.google.com/x', effectiveDirective: 'connect-src' }); fire({ blockedURI: 'https://evil.google.com.example/a.png', effectiveDirective: 'img-src' });
+  ok('d: www.google.com en otra directiva u otro host parecido SÍ se avisan', shown.length === 3 && shown[1].endsWith('(connect-src): www.google.com') && shown[2].endsWith('evil.google.com.example'), JSON.stringify(shown));
   ok('d: detalle completo solo en consola', warns.some(w => w.includes('steal?token')) && !shown.concat(win.__cspQ).some(m => m.includes('token')));
 }
 // (e) el script principal conecta __cspShow con showStatus y vacía la cola (ejecutado de verdad, no solo regex)

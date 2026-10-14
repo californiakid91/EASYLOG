@@ -263,6 +263,7 @@ check('AC-5 sin «Repite el último cambio si no aparece»', !html.includes('Rep
   const E = await makeEnv({ mode: 'local', lsInit: { easylog_history_v1: '{roto', easylog_days_v1: '[1' } });
   E.run('loadDayMap()');
   const box = () => E.byId('corrupt-box').innerHTML;
+  check('11-02 aviso de arranque con las dos copias dañadas (no solo el calendario)', /No se pudo leer: la lista de días, el calendario/.test(E.statuses.at(-1) || ''), E.statuses.at(-1));
   check('11-02 AC-4 botón por cada copia dañada (data-act)', /data-act="discardCorrupt" data-arg="easylog_history_v1"/.test(box()) && /data-arg="easylog_days_v1"/.test(box()) && /la lista de días/.test(box()) && /el calendario/.test(box()), box());
   const T = k => E.run(`DATA_ACTS.discardCorrupt[0].test(${JSON.stringify(k)})`);
   check('11-02 AC-4 validador: acepta solo claves dañadas conocidas', T('easylog_history_v1') === true && T('easylog_excel_v1') === false && T('easylog_mode') === false && T('x"><img') === false);

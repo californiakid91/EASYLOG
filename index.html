@@ -757,7 +757,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.14-230417';
+const APP_VERSION = '2026.10.14-230928';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -1505,8 +1505,9 @@ async function discardCorrupt(k) {
   try { localStorage.removeItem(k); }
   catch (e) { console.warn('removeItem failed:', e); showStatus('err', `No se ha podido borrar la copia dañada ${deName(name)}.`); return; }
   _localCorrupt.delete(k);
-  // G6: lo que hay en memoria (vacío, o lo pegado después sin poder guardarse) se guarda ya en la clave limpia: no desaparece
-  if (k === CAL_KEY) saveDayMap(); else persist();
+  // G6: lo que hay en memoria (vacío, o lo pegado después sin poder guardarse) se guarda ya en la clave limpia: no desaparece.
+  // UK Days se recalcula por si se pegó un día mientras la copia estaba dañada (backfill guarda solo si cambia algo)
+  if (k === CAL_KEY) saveDayMap(); else { backfillUKDays(); persist(); }
   renderCorruptBox();
   renderHistory();
   renderAirports();
@@ -3685,7 +3686,12 @@ function loadDayMap() {
     console.warn('loadDayMap failed:', e);
     _dayMap = {};
     // En modo Nube la copia local es solo un espejo (el snapshot la reescribe); en Local es el dato: no se pisa
-    if (getMode() === 'local') { _localCorrupt.add(CAL_KEY); showStatus('warn', 'No se pudo leer: el calendario. El resto de tus datos está cargado; ese dato no se sobrescribe.'); renderCorruptBox(); }
+    if (getMode() === 'local') {
+      _localCorrupt.add(CAL_KEY);
+      const names = [..._localCorrupt].map(k => LOCAL_KEY_NAMES[k] || k).join(', '); // con las de hydrateLocal: un solo aviso
+      showStatus('warn', `No se pudo leer: ${names}. El resto de tus datos está cargado; ese dato no se sobrescribe.`);
+      renderCorruptBox();
+    }
   }
 }
 // Devuelve true si se guardó (local) o se envió (nube). Un fallo del espejo local no impide la escritura en la nube.

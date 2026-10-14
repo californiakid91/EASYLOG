@@ -11,9 +11,9 @@ function load(src) {
   const els = new Map();
   const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', textContent: '' }, { get: (t, k) => k in t ? t[k] : k === 'classList' ? { add() {}, remove() {}, toggle() {}, contains() { return false; } } : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mk(), set: (t, k, v) => (t[k] = v, true) });
   const ls = new Map([['easylog_mode', 'local']]);
-  const env = { prompts: [], confirms: [], answer: true, els, warns: [] };
+  const env = { prompts: [], confirms: [], answer: true, els, warns: [], lis: {} };
   const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) || els.set(id, mk()), els.get(id)),
-      querySelector: sel => sel === 'input[name="role"]:checked' ? { value: 'FO' } : mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener() {} },
+      querySelector: sel => sel === 'input[name="role"]:checked' ? { value: 'FO' } : mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener: (t, f) => (env.lis[t] = env.lis[t] || []).push(f) },
     localStorage: { getItem: k => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) },
     window: { location: {}, _ukNowOverride: '2026-10-20T12:00:00Z' }, navigator: {}, location: {},
     console: { ...console, warn: (...a) => env.warns.push(a.join(' ')) }, Date, Math, JSON, Promise, Intl,
@@ -37,11 +37,15 @@ const email = (date, secs, extra = []) => date + '\n\n' + secs.map((s, i) => [
   ...extra, '', 'Pilot Flying :', 'Take Off : VEGRIC', 'Landing : VEGRIC', ''].join('\n')).join('\n\n') +
   '\nFlight Deck Crew :\nABC123 : CP : JOHN SMITH\nVEGRIC : FO : RICARDO VEGA\n';
 
-// Analiza el HTML: nada ejecutable sin escapar y todos los argumentos de onclick con formato conocido
-const ARG_OK = a => /^\d{4}-\d{2}-\d{2}$/.test(a) || /^[A-Z]{3}$/.test(a) || /^\d{4}-\d{2}$/.test(a) || ['no', 'excel-only'].includes(a);
+// Analiza el HTML: nada ejecutable sin escapar y todos los argumentos (onclick estáticos y data-arg de 11-01) con formato conocido
+const ARG_OK = a => /^\d{4}-\d{2}-\d{2}$/.test(a) || /^[A-Z]{3}$/.test(a) || /^\d{4}-\d{2}$/.test(a) || /^\d+$/.test(a) || ['no', 'uk', 'excel-only'].includes(a);
 // Etiqueta real (con < sin escapar) o atributo de evento dentro de una etiqueta real; el texto escapado (&lt;img …) es inofensivo
 const unsafe = h => /<(img|script|svg)\b/i.test(h) || /<[^>]*\s(onerror|onmouseover|onload)=/i.test(h);
-const badArgs = h => [...h.matchAll(/onclick="\w+\('(.*?)'\)"/g)].map(m => m[1]).filter(a => !ARG_OK(a));
+const badArgs = h => [...h.matchAll(/onclick="\w+\('(.*?)'\)"/g), ...h.matchAll(/data-arg2?="([^"]*)"/g)].map(m => m[1]).filter(a => !ARG_OK(a));
+// 11-01: ningún onclick lleva un dato interpolado (los que quedan son literales del código: 'no', 'excel-only')
+const ONCLICK_LITERAL = /^\w+\((?:'(?:no|excel-only)')?\)(?:;return false;)?$/;
+const dynOnclick = h => [...h.matchAll(/onclick="([^"]*)"/g)].map(m => m[1]).filter(c => !ONCLICK_LITERAL.test(c));
+const nArgs = h => (h.match(/data-arg="/g) || []).length;
 
 let app;
 try { app = load(scriptOf(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'))); }
@@ -65,11 +69,12 @@ const ah = app.html('airports-list');
 check('(b) lista de aeropuertos sin HTML ejecutable', !unsafe(ah), ah.slice(0, 200));
 check('(b) onclick de aeropuertos con argumentos válidos', badArgs(ah).length === 0, JSON.stringify(badArgs(ah)));
 check('(b) clave inválida visible marcada "inválido"', /inválido/.test(ah));
-check('(b) la inválida se borra por índice (removeAirportAt(n))', /removeAirportAt\(\d+\)/.test(ah));
+check('(b) la inválida se borra por índice (data-act removeAirportAt + data-arg n)', /data-act="removeAirportAt" data-arg="\d+"/.test(ah));
+check('(b) aeropuertos: sin onclick con datos y con data-arg', dynOnclick(ah).length === 0 && nArgs(ah) === 2, JSON.stringify(dynOnclick(ah)));
 const rows = (ah.match(/class="day-item"/g) || []).length;
 check('(b) contador = filas pintadas', String(app.els.get('airports-count')?.textContent).includes(String(rows)) && rows === 2, `rows=${rows} cnt=${app.els.get('airports-count')?.textContent}`);
-if (/removeAirportAt\(\d+\)/.test(ah)) {
-  const idx = ah.match(/removeAirportAt\((\d+)\)/)[1];
+if (/data-act="removeAirportAt" data-arg="\d+"/.test(ah)) {
+  const idx = ah.match(/data-act="removeAirportAt" data-arg="(\d+)"/)[1];
   app.run(`removeAirportAt(${idx})`);
   check('(b) removeAirportAt borra solo la inválida', JSON.stringify(app.J('Object.keys(_airports)')) === '["XXQ"]', JSON.stringify(app.J('Object.keys(_airports)')));
 }
@@ -94,9 +99,27 @@ check('(c) UK Days sin HTML ejecutable', !unsafe(uh), (uh.match(/.{0,60}(<img|on
 check('(c) UK Days: onclick con argumentos válidos', badArgs(uh).length === 0, JSON.stringify(badArgs(uh)));
 check('(c) Días guardados / solo Excel sin HTML ejecutable', !unsafe(hh));
 check('(c) Días guardados / solo Excel: onclick con argumentos válidos', badArgs(hh).length === 0, JSON.stringify(badArgs(hh)));
-check('(c) claves válidas siguen pintándose', hh.includes("removeDay('2026-10-05')") && hh.includes("removeExcelOnlyDay('2026-09-01')"));
+check('(c) claves válidas siguen pintándose', hh.includes('data-act="removeDay" data-arg="2026-10-05"') && hh.includes('data-act="removeExcelOnlyDay" data-arg="2026-09-01"'));
+check('(c) UK Days / Días guardados: sin onclick con datos (todo en data-arg)', dynOnclick(uh).length === 0 && dynOnclick(hh).length === 0 && nArgs(uh) > 0 && nArgs(hh) > 0, JSON.stringify(dynOnclick(uh).concat(dynOnclick(hh))));
 check('(c) contador de días sobre lista filtrada', /^1 día\b/.test(String(app.els.get('hist-count')?.textContent)), String(app.els.get('hist-count')?.textContent));
 check('(c) estado intacto tras renderizar', JSON.stringify(before) === JSON.stringify(app.J('{ u: _ukdays, c: _cache, x: _excelData }')));
+
+// ── (c3) 11-01: el listener delegado solo llama con acción conocida y argumento de formato válido
+{
+  const clicks = app.lis.click || [];
+  check('(c3) hay un listener de click en document', clicks.length === 1, String(clicks.length));
+  app.run('var __calls = []; removeDay = a => __calls.push(["removeDay", a]); ukDecidePending = (a, b) => __calls.push(["ukDecidePending", a, b]); openDayModal = a => __calls.push(["openDayModal", a]);');
+  const fire = (dataset, tagName = 'BUTTON') => { let prevented = false; const el = { tagName, dataset };
+    clicks.forEach(f => f({ target: { closest: sel => sel === '[data-act]' ? el : null }, preventDefault: () => { prevented = true; } })); return prevented; };
+  fire({ act: 'removeDay', arg: "x');alert(1);//" });
+  fire({ act: 'removeDay', arg: '2026-10-05' });
+  fire({ act: 'ukDecidePending', arg: '2026-10-05', arg2: 'uk' }); fire({ act: 'ukDecidePending', arg: '2026-10-05', arg2: 'x' });
+  fire({ act: 'constructor', arg: '2026-10-05' }); fire({ act: 'alert', arg: '2026-10-05' }); fire({ act: 'removeDay' });
+  const prevented = fire({ act: 'openDayModal', arg: '2026-10-05' }, 'A');
+  check('(c3) solo pasan las llamadas válidas (payload, acción desconocida y arg2 raro se ignoran)',
+    JSON.stringify(app.J('__calls')) === JSON.stringify([['removeDay', '2026-10-05'], ['ukDecidePending', '2026-10-05', 'uk'], ['openDayModal', '2026-10-05']]), JSON.stringify(app.J('__calls')));
+  check('(c3) los enlaces <a href="#"> no navegan (preventDefault)', prevented);
+}
 
 // ── (c2) revisión G6: source no-texto no rompe el panel; backfill no copia claves inválidas; borrar historial habilitado
 reset();

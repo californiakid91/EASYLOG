@@ -131,7 +131,7 @@ check('(vii) 2027-28 visible con huecos pasados → bloqueado solo por los de 20
 // ── G6: el botón OFF pintado antes del 06/04 sigue marcando SU hueco aunque el año visible cambie solo
 reset(); now('2027-04-05T12:00:00Z');
 run(`(() => { for (let iso = '2026-04-06'; iso <= '2027-03-31'; iso = addDaysISO(iso, 1)) _dayMap[iso] = 'off'; })()`);
-const offBtn = (body().match(/ukMarkBlockOff\('([\d-]+)'\)/) || [])[1];
+const offBtn = (body().match(/data-act="ukMarkBlockOff" data-arg="([\d-]+)"/) || [])[1];
 check('G6: OFF pintado el 05/04 apunta al hueco 01/04/2027', offBtn === '2027-04-01', offBtn);
 now('2027-04-09T12:00:00Z'); run(`ukMarkBlockOff('${offBtn}')`);
 // el 09/04 el hueco de 2026-27 ya incluye el 05/04 (pasado): se marca entero, pero nada de 2027-28

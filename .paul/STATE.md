@@ -12,9 +12,9 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 Version: v0.2.0 (v0.3.0 en curso)
 Milestone: v0.3 Pegar sin sorpresas
 Phase: 11 (3 of 3 del milestone) — Limpieza XS (diferidos G6/G8)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-14 — Fase 10 completa (10-01 aprobado por capturas; prod v2026.10.14-165223)
+Plan: 11-01 creado (revisado por Fable adversario), pendiente de aprobación — 11-02 (datos/sync) después
+Status: PLAN created, ready for APPLY
+Last activity: 2026-10-14 — Creado .paul/phases/11-limpieza-xs/11-01-PLAN.md
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
@@ -26,7 +26,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ○        ○        ○     [Fase 10 cerrada — listo para /paul:plan de la Fase 11]
+  ✓        ○        ○     [11-01 creado, pendiente de aprobación]
 ```
 
 ## Accumulated Context
@@ -106,8 +106,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - [x] ¿Añadir el año a las fechas de "Sin decidir"? → SÍ, en toda la app (dateISOToDisplay → dd/mm/aa), 2026-10-05
 - (pendiente personal del usuario — detalle en memoria local)
 - [x] ¿Push de los commits de Fase 6? → SÍ, hecho 2026-10-06 (3c93a22..193e7ce, gate pre-push 13/13 + e2e-csp OK)
-- [ ] ¿Tolerar en e2e-csp el beacon `connect-src https://apis.google.com/js/gen_204` (telemetría de gapi, intermitente)? Hoy lo amortigua el reintento del pre-push
-- [ ] ¿Sacar del repo público el código de piloto/nombre (hoy fijos en index.html para T/O-LDG y CREWLIST; también en PROJECT.md, harness y AUDIT)? → requiere configuración en la app + quizá otra purga de historial (G8 Fase 5)
+- [x] ¿Tolerar el beacon `connect-src https://apis.google.com/js/gen_204`? → SÍ (Fable + usuario 2026-10-14): en e2e-csp Y en #csp-watch (solo consola), coincidencia exacta directiva+host+ruta; nunca relajar la CSP; antes confirmar en iPhone que WebKit entrega la ruta (si solo da origen → se sigue mostrando). Entra en Fase 11
+- [x] ¿Sacar del repo público el código de piloto/nombre? → SÍ hacia adelante, NO purgar (Fable + usuario 2026-10-14): nombre irrecuperable (handle/autoría); código = settings.pilotCode en _settings (prompt 1 vez tras requireHydrated), myCode() en vez de literales, CREWLIST desde el email, fixtures/golden con código/nombre sintéticos, docs .paul/ forward-only. Coste S → fase propia tras la 11 (antes de cerrar v0.3 o en v0.4)
 
 ### Post-Aegis (2026-10-05)
 - Reglas Firestore en producción = per-uid (request.auth.uid == uid) ✓ — versionadas en el repo (05-02), comprobador check-firestore-rules.mjs
@@ -127,9 +127,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-14
-Stopped at: Fase 10 completa, lista para planificar la Fase 11
-Next action: /paul:plan 11
-Resume file: .paul/phases/10-ukdays-avisos-al-pegar/10-01-SUMMARY.md
+Stopped at: Plan 11-01 creado (gen_204 + onclick→data-act + backup al portapapeles)
+Next action: Aprobar y /paul:apply .paul/phases/11-limpieza-xs/11-01-PLAN.md; luego plan 11-02 (epoch _cloudWrites, validación applyCloudData, «dar por perdida» copia local)
+Resume file: .paul/phases/11-limpieza-xs/11-01-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

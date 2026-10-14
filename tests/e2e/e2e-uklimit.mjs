@@ -46,7 +46,7 @@ const overflow = await page.evaluate(() => {
   return { doc, rows };
 });
 ok(`a ${vw} px la página y las filas con «Exc» no desbordan`, !overflow.doc && overflow.rows === 0, JSON.stringify(overflow));
-await page.click('[data-ukmonth="2026-04"] button[onclick="toggleUKExceptional(\'2026-04-07\')"]');
+await page.click('[data-ukmonth="2026-04"] [data-act="toggleUKExceptional"][data-arg="2026-04-07"]');
 ok('«Exc» abre la ventana del motivo', await page.isVisible('#ukexc-modal .day-modal-box'));
 await page.click('#ukexc-modal button.btn-blue');   // sin motivo → alert (aceptado) y sigue abierta
 ok('sin motivo no guarda y la ventana sigue abierta', await page.isVisible('#ukexc-modal .day-modal-box') && (await count()).startsWith('12 / 80'));

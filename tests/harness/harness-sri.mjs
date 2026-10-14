@@ -60,6 +60,20 @@ if (watch) {
   ok('d: píxel de Google (img-src www.google.com) solo a consola', shown.length === 1 && warns.some(w => w.includes('img-src): www.google.com')), JSON.stringify(shown));
   fire({ blockedURI: 'https://www.google.com/x', effectiveDirective: 'connect-src' }); fire({ blockedURI: 'https://evil.google.com.example/a.png', effectiveDirective: 'img-src' });
   ok('d: www.google.com en otra directiva u otro host parecido SÍ se avisan', shown.length === 3 && shown[1].endsWith('(connect-src): www.google.com') && shown[2].endsWith('evil.google.com.example'), JSON.stringify(shown));
+  const nW2 = warns.length;
+  fire({ blockedURI: 'https://apis.google.com/js/gen_204?a=1&b=2', effectiveDirective: 'connect-src' });
+  fire({ blockedURI: 'https://apis.google.com/js/gen_204', effectiveDirective: 'connect-src' });
+  ok('d: beacon gen_204 de gapi (connect-src, con o sin query) solo a consola', shown.length === 3 && warns.length === nW2 + 2 && warns.slice(-2).every(w => w.includes('connect-src): apis.google.com')), JSON.stringify(shown));
+  fire({ blockedURI: 'https://apis.google.com/js/gen_204x', effectiveDirective: 'connect-src' });
+  ok('d: apis.google.com con otra ruta SÍ se avisa', shown.length === 4 && shown[3].endsWith('(connect-src): apis.google.com'), JSON.stringify(shown));
+  // Deduplica por host: los siguientes casos con contexto nuevo para que cada uno se vea por separado
+  const fresh = () => { const s = [], w = {}; let h = null; vm.runInContext(watch, vm.createContext({ window: w, document: { addEventListener: (t, f) => { h = f; } }, console: { warn() {} }, URL, Set })); w.__cspShow = m => s.push(m); return { s, f: e => h({ effectiveDirective: 'connect-src', sourceFile: '', blockedURI: '', ...e }) }; };
+  let F = fresh(); F.f({ blockedURI: 'https://apis.google.com' }); F.f({ blockedURI: 'https://apis.google.com/' });
+  ok('d: si solo llega el origen (sin ruta) SÍ se avisa', F.s.length === 1 && F.s[0].endsWith('(connect-src): apis.google.com'), JSON.stringify(F.s));
+  F = fresh(); F.f({ blockedURI: 'https://apis.google.com/js/gen_204', effectiveDirective: 'img-src' });
+  ok('d: gen_204 con otra directiva (img-src) SÍ se avisa', F.s.length === 1 && F.s[0].endsWith('(img-src): apis.google.com'), JSON.stringify(F.s));
+  F = fresh(); F.f({ blockedURI: 'https://apis.google.com.evil.example/js/gen_204' }); F.f({ blockedURI: 'https://www.google.com/js/gen_204' });
+  ok('d: gen_204 en otro host SÍ se avisa', F.s.length === 2, JSON.stringify(F.s));
   ok('d: detalle completo solo en consola', warns.some(w => w.includes('steal?token')) && !shown.concat(win.__cspQ).some(m => m.includes('token')));
 }
 // (e) el script principal conecta __cspShow con showStatus y vacía la cola (ejecutado de verdad, no solo regex)

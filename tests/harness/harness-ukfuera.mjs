@@ -78,7 +78,7 @@ check('AC-3 desglose «5 trabajo · 4 libres»', sec().includes('5 trabajo · 4 
 check('AC-3 select con contadores y «trabajo» seleccionado', /<option value="work" selected>Días de trabajo fuera de UK \(5\)<\/option>/.test(sec()) && /<option value="off">Días libres \/ OFF \(4\)<\/option>/.test(sec()));
 check('AC-3 solo la lista activa (trabajo): 02/09 sí, 04/09 no', sec().includes('02/09/26') && !sec().includes('04/09/26'));
 check('AC-3 grupo cerrado por defecto', /data-ukmonth="no"[\s\S]*?<div class="day-list" style="display:none">/.test(b));
-check('AC-3 No UK manual futuro visible aparte con ✕', /Marcados para hoy o fechas futuras/.test(sec()) && sec().includes('15/10/26') && /removeUKDay\('2026-10-15'\)/.test(sec()));
+check('AC-3 No UK manual futuro visible aparte con ✕', /Marcados para hoy o fechas futuras/.test(sec()) && sec().includes('15/10/26') && sec().includes('data-act="removeUKDay" data-arg="2026-10-15"'));
 check('AC-3 sin pendientes no hay nota… (hay huecos → nota presente)', /pendientes? sin decidir no incluidos?/.test(sec()));
 run(`setUKOutKind('off')`);
 check('AC-3 setUKOutKind(off): libres visibles, trabajo no', sec().includes('04/09/26') && sec().includes('10/09/26') && !sec().includes('02/09/26'));
@@ -89,7 +89,7 @@ run('renderUKDays()');
 check('AC-3 opción y apertura sobreviven a un repintado', /<option value="off" selected>/.test(sec()) && /style="display:">/.test(sec()));
 run(`setUKOutKind('x<script>')`);
 check('AC-3 valor inválido ignorado', run('_ukOutKind') === 'off');
-check('AC-3 filas con botón UK y ✕ solo en manuales', /ukForceUKFromOut\('2026-09-04'\)/.test(sec()) && /removeUKDay\('2026-09-06'\)/.test(sec()) && !/removeUKDay\('2026-09-04'\)/.test(sec()));
+check('AC-3 filas con botón UK y ✕ solo en manuales', sec().includes('data-act="ukForceUKFromOut" data-arg="2026-09-04"') && sec().includes('data-act="removeUKDay" data-arg="2026-09-06"') && !sec().includes('data-act="removeUKDay" data-arg="2026-09-04"'));
 // Botón «UK» de la lista: pide confirmación; cancelar no cambia nada, aceptar → UK manual
 __answer = false; run(`ukForceUKFromOut('2026-09-04')`);
 check('UK en «Fuera de UK» pide confirmación con fecha y estado actual', /¿Pasar el 04\/09\/26 a UK Day\?/.test(__confirms.at(-1) || '') && /OFF en calendario/.test(__confirms.at(-1) || ''), __confirms.at(-1));
@@ -128,6 +128,18 @@ check('G6 libre guardado a mano sale uno a uno con motivo y [man]', /20\/09\/26 
 check('G6 No UK futuro en el backup', /hoy o fechas futuras[\s\S]*20\/10\/26 {2}viaje previsto/.test(mail));
 check('AC-4 ya no hay sección «No UK (no cuentan)»', !/No UK \(no cuentan\)/.test(mail));
 check('AC-4 Total y Computables intactos', /Total: 1 confirmados · \d+ pendientes/.test(mail) && /Computables: 1 \(1 UK − 0 excepcionales\)/.test(mail));
+
+// ── 11-01: copia al portapapeles en el mismo gesto; el mailto no cambia
+const hrefNoClip = String(run('window.location.href'));
+run(`var __clip = []; navigator.clipboard = { writeText: t => (__clip.push(t), Promise.resolve()) }; window.location.href = ''; emailUKDaysBackup();`);
+const clip = JSON.parse(run('JSON.stringify(__clip)'));
+check('11-01 portapapeles = texto completo del correo', clip.length === 1 && clip[0] === mail, `${clip.length} copia(s), ${clip[0]?.length} vs ${mail.length} chars`);
+check('11-01 mailto idéntico con y sin portapapeles', String(run('window.location.href')) === hrefNoClip);
+run(`navigator.clipboard = { writeText: () => Promise.reject(new Error('denegado')) }; window.location.href = ''; emailUKDaysBackup();`);
+check('11-01 portapapeles que rechaza: el correo se abre igual', String(run('window.location.href')) === hrefNoClip);
+run(`navigator.clipboard = { writeText: () => { throw new Error('síncrono'); } }; window.location.href = ''; emailUKDaysBackup();`);
+check('11-01 portapapeles que lanza: el correo se abre igual', String(run('window.location.href')) === hrefNoClip);
+run(`delete navigator.clipboard;`);
 
 console.log(fails ? `\n${fails} FALLO(S)` : '\nTODO OK');
 process.exit(fails ? 1 : 0);

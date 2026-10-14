@@ -9,17 +9,21 @@
 // Hasta que el script principal define window.__cspShow, los avisos se encolan.
 (function () {
   var seen = new Set(), EXT = /^(chrome|moz|safari-web|safari)-extension:/;
-  // Píxel de telemetría de los scripts de Google (login): se sigue bloqueando, pero solo va a consola
-  var QUIET = { 'img-src': /^www\.google\.com$/ };
+  // Telemetría de los scripts de Google (login): se sigue bloqueando, pero solo va a consola.
+  // Por directiva: host exacto y, si se indica, ruta exacta (si el navegador solo da el origen, se avisa)
+  var QUIET = { 'img-src': [{ host: /^www\.google\.com$/ }],
+                'connect-src': [{ host: /^apis\.google\.com$/, path: /^\/js\/gen_204$/ }] };
   window.__cspQ = [];
   document.addEventListener('securitypolicyviolation', function (e) {
     var src = String(e.sourceFile || ''), uri = String(e.blockedURI || '');
     var msg = 'Bloqueado por seguridad (' + (e.effectiveDirective || e.violatedDirective) + '): ';
     if (EXT.test(src) || EXT.test(uri) || !/^(https?|wss?):/.test(uri)) { console.warn(msg + (uri || 'inline'), src, e.lineNumber); return; }
-    var host;
-    try { host = new URL(uri).host; } catch (_) { host = '?'; }
-    var quiet = QUIET[e.effectiveDirective || e.violatedDirective];
-    if (quiet && quiet.test(host)) { console.warn(msg + host, uri); return; }
+    var host, path;
+    try { var u = new URL(uri); host = u.host; path = u.pathname; } catch (_) { host = '?'; path = ''; }
+    var quiet = QUIET[e.effectiveDirective || e.violatedDirective] || [];
+    for (var i = 0; i < quiet.length; i++) {
+      if (quiet[i].host.test(host) && (!quiet[i].path || quiet[i].path.test(path))) { console.warn(msg + host, uri); return; }
+    }
     if (seen.has(host)) return;
     seen.add(host);
     console.warn(msg + host, uri, src, e.lineNumber);
@@ -752,7 +756,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.14-165223';
+const APP_VERSION = '2026.10.14-200023';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -2064,13 +2068,13 @@ function renderAirports() {
       <div class="day-item">
         <span class="day-date">${k}</span>
         <span class="day-route">${_airports[k].lat.toFixed(4)}, ${_airports[k].lon.toFixed(4)}</span>
-        <button class="day-del" onclick="removeAirport('${k}')" title="Borrar">✕</button>
+        <button class="day-del" data-act="removeAirport" data-arg="${esc(k)}" title="Borrar">✕</button>
       </div>
     ` : `
       <div class="day-item">
         <span class="day-date">${esc(k)}</span>
         <span class="day-route">inválido</span>
-        <button class="day-del" onclick="removeAirportAt(${i})" title="Borrar">✕</button>
+        <button class="day-del" data-act="removeAirportAt" data-arg="${i}" title="Borrar">✕</button>
       </div>
     `).join('');
   }
@@ -2415,7 +2419,7 @@ function tyCloseBannerHTML() {
   const prev = taxYearOf(addDaysISO(cur.start, -1));
   if (prev.end < UK_DAYS_FLOOR) return '';
   const n = pendingUKDays(ukNow(), prev).length;
-  return `<button class="ty-banner" id="ty-banner" onclick="ukShowTY('${prev.label}')">📅 Cierra ${prev.label} · ${n ? `${n} pendiente${n !== 1 ? 's' : ''} · Excel` : 'descarga su Excel'} ›</button>`;
+  return `<button class="ty-banner" id="ty-banner" data-act="ukShowTY" data-arg="${esc(prev.label)}">📅 Cierra ${prev.label} · ${n ? `${n} pendiente${n !== 1 ? 's' : ''} · Excel` : 'descarga su Excel'} ›</button>`;
 }
 
 // ── 07-02: límite por año fiscal y días excepcionales ──
@@ -2562,16 +2566,16 @@ function renderUKDays() {
   if (P) {
     const blockRows = blocks.map((b, i) => `
       <div class="day-item">
-        <span class="day-route">${b.days.length > 7 ? ukRangeLabel(b.days) : b.days.map(iso => `<a href="#" style="color:var(--text)" onclick="openDayModal('${iso}');return false;">${dateISOToDisplay(iso)}</a>`).join(' ')}</span>
+        <span class="day-route">${b.days.length > 7 ? ukRangeLabel(b.days) : b.days.map(iso => `<a href="#" style="color:var(--text)" data-act="openDayModal" data-arg="${esc(iso)}">${dateISOToDisplay(iso)}</a>`).join(' ')}</span>
         <span class="day-count">${b.days.length} día${b.days.length !== 1 ? 's' : ''}</span>
-        <button class="btn btn-ghost btn-sm" onclick="ukMarkBlockOff('${b.days[0]}')">OFF</button>
+        <button class="btn btn-ghost btn-sm" data-act="ukMarkBlockOff" data-arg="${esc(b.days[0])}">OFF</button>
       </div>`).join('');
     const otherRows = pending.filter(x => x.kind !== 'gap').map(x => `
       <div class="day-item">
         <span class="day-date">${dateISOToDisplay(x.iso)}</span>
         <span class="day-route" style="font-family:inherit">${esc(x.reason)}</span>
-        <button class="btn btn-ghost btn-sm" onclick="ukDecidePending('${x.iso}','uk')">UK</button>
-        <button class="btn btn-ghost btn-sm" onclick="ukDecidePending('${x.iso}','no')">No UK</button>
+        <button class="btn btn-ghost btn-sm" data-act="ukDecidePending" data-arg="${esc(x.iso)}" data-arg2="uk">UK</button>
+        <button class="btn btn-ghost btn-sm" data-act="ukDecidePending" data-arg="${esc(x.iso)}" data-arg2="no">No UK</button>
       </div>`).join('');
     pendingHTML = `
       <div style="margin:.75rem 0;color:var(--text);font-size:.85rem;font-weight:600;">⏳ ${P} día${P !== 1 ? 's' : ''} sin decidir — confirma los huecos</div>
@@ -2593,9 +2597,9 @@ function renderUKDays() {
         const ob = e ? `OB ${esc(e.onBlock)} ${esc(e.tz)}` : 'calendario';
         const says = e?.manual ? ukEmailSays(x.iso) : undefined;
         const warn = (x.legacyOutside ? ` <span style="color:var(--amber)" title="Acaba fuera de UK: re-pega el email">⚠ revisar</span>` : '') + (says ? ukSaysTag(says) : '');
-        const del = `<button class="day-del" title="Marcar como NO UK Day / eliminar" onclick="removeUKDay('${x.iso}')">✕</button>`;
+        const del = `<button class="day-del" title="Marcar como NO UK Day / eliminar" data-act="removeUKDay" data-arg="${esc(x.iso)}">✕</button>`;
         const ex = excMap[x.iso];
-        const excBtn = `<button class="btn btn-ghost btn-sm" style="padding:.15rem .4rem;font-size:.7rem${ex ? ';color:var(--amber);border-color:var(--amber)' : ''}" title="${ex ? 'Quitar la marca de circunstancia excepcional' : 'Marcar como circunstancia excepcional (no computa)'}" onclick="toggleUKExceptional('${x.iso}')">Exc</button>`;
+        const excBtn = `<button class="btn btn-ghost btn-sm" style="padding:.15rem .4rem;font-size:.7rem${ex ? ';color:var(--amber);border-color:var(--amber)' : ''}" title="${ex ? 'Quitar la marca de circunstancia excepcional' : 'Marcar como circunstancia excepcional (no computa)'}" data-act="toggleUKExceptional" data-arg="${esc(x.iso)}">Exc</button>`;
         const excTag = ex ? `<div style="font-size:.72rem;color:var(--amber);font-family:inherit">excepcional · ${esc(ex.reason)}</div>` : '';
         return `
           <div class="day-item">
@@ -2607,7 +2611,7 @@ function renderUKDays() {
       }).join('');
       return `
         <div class="month-group" data-ukmonth="${mk}">
-          <div class="month-header" onclick="toggleUKMonth('${mk}')">
+          <div class="month-header" data-act="toggleUKMonth" data-arg="${esc(mk)}">
             <span class="chev" style="transform:rotate(-90deg)">▾</span>
             <span>${monthLabel(mk)}</span>
             <span class="meta">${entries.length} día${entries.length !== 1 ? 's' : ''}</span>
@@ -2629,8 +2633,8 @@ function renderUKDays() {
         <span class="day-date">${dateISOToDisplay(x.iso)}</span>
         <span class="day-route" style="font-family:inherit;font-size:.78rem">${esc(ukReasonText(x.reason))}${excMap[x.iso] ? ' <span style="color:var(--amber)">(marca exc. conservada)</span>' : ''}${saysTag(x.iso)}</span>
         <span class="day-count">${esc(ukSourceLabel(x.source))}</span>
-        <button class="btn btn-ghost btn-sm" title="Forzar UK Day" onclick="ukForceUKFromOut('${x.iso}')">UK</button>
-        ${_ukdays[x.iso]?.manual ? `<button class="day-del" title="Quitar la marca" onclick="removeUKDay('${x.iso}')">✕</button>` : ''}
+        <button class="btn btn-ghost btn-sm" title="Forzar UK Day" data-act="ukForceUKFromOut" data-arg="${esc(x.iso)}">UK</button>
+        ${_ukdays[x.iso]?.manual ? `<button class="day-del" title="Quitar la marca" data-act="removeUKDay" data-arg="${esc(x.iso)}">✕</button>` : ''}
       </div>`;
     const opt = (k, label) => `<option value="${k}"${_ukOutKind === k ? ' selected' : ''}>${label}</option>`;
     const items = `
@@ -2792,6 +2796,10 @@ function emailUKDaysBackup() {
 
   const subject = encodeURIComponent(`EasyLog — UK Days Backup ${ty.label}`);
   const body    = encodeURIComponent(lines.join('\n'));
+  // 11-01: copia completa al portapapeles por si el correo corta un texto largo (mismo gesto del usuario, sin await antes del mailto)
+  let copied = false;
+  try { if (navigator.clipboard?.writeText) { navigator.clipboard.writeText(lines.join('\n')).catch(() => {}); copied = true; } } catch (_) {}
+  if (copied) showStatus('ok', 'Backup abierto en el correo y copiado también al portapapeles.');
   window.location.href = `mailto:rivegabur@gmail.com?subject=${subject}&body=${body}`;
 }
 
@@ -2893,19 +2901,19 @@ function renderHistory() {
           <span class="day-route">${esc(route || '—')}</span>
           <span class="day-count">${count} vuelo${count !== 1 ? 's' : ''}${day.role === 'SP' ? ' <span class="day-sp" title="Safety pilot">SP</span>' : ''}</span>
           ${rwyButtonHTML(iso, day.flights)}
-          <button class="day-del" title="Borrar día" onclick="removeDay('${iso}')">✕</button>
+          <button class="day-del" title="Borrar día" data-act="removeDay" data-arg="${esc(iso)}">✕</button>
         </div>`;
     }).join('');
 
     return `
       <div class="month-group" data-month="${mk}">
-        <div class="month-header" onclick="toggleMonth('${mk}')">
+        <div class="month-header" data-act="toggleMonth" data-arg="${esc(mk)}">
           <span class="chev">▾</span>
           <span>${monthLabel(mk)}</span>
           <span class="meta">${days.length} día${days.length !== 1 ? 's' : ''} · ${fcount} vuelo${fcount !== 1 ? 's' : ''}</span>
         </div>
         <div class="month-actions">
-          <button class="btn btn-ghost btn-sm" onclick="downloadMonthCSV('${mk}')">⬇ CSV de ${monthLabel(mk)}</button>
+          <button class="btn btn-ghost btn-sm" data-act="downloadMonthCSV" data-arg="${esc(mk)}">⬇ CSV de ${monthLabel(mk)}</button>
         </div>
         <div class="day-list">${items}</div>
       </div>`;
@@ -2917,7 +2925,7 @@ function renderHistory() {
 function rwyButtonHTML(iso, flights) {
   const keys = rwyKeys(flights), t = keys.length * 2;
   const c = keys.reduce((n, k) => n + (_runways[k]?.dep ? 1 : 0) + (_runways[k]?.arr ? 1 : 0), 0);
-  return `<button class="day-rwy${c === t ? ' done' : ''}" title="Pistas" onclick="openRwyModal('${iso}')">🛬 ${c === t ? '✓' : `${c}/${t}`}</button>`;
+  return `<button class="day-rwy${c === t ? ' done' : ''}" title="Pistas" data-act="openRwyModal" data-arg="${esc(iso)}">🛬 ${c === t ? '✓' : `${c}/${t}`}</button>`;
 }
 
 let _rwySel = null; // { iso, token, rows: [{ key, fn, dep, arr, confirmed: {dep, arr}, val: {dep, arr}, sug: {dep, arr} }] }
@@ -3042,7 +3050,7 @@ function excelOnlyHTML(hist) {
           <span class="day-date">${dateISOToDisplay(iso)}</span>
           <span class="day-route">${esc(routeOfDay(_excelData[iso].flights || []) || '—')}</span>
           <span class="day-count">solo Excel${_excelData[iso].role === 'SP' ? ' <span class="day-sp" title="Safety pilot">SP</span>' : ''}</span>
-          <button class="day-del" title="Borrar del Excel" onclick="removeExcelOnlyDay('${iso}')">✕</button>
+          <button class="day-del" title="Borrar del Excel" data-act="removeExcelOnlyDay" data-arg="${esc(iso)}">✕</button>
         </div>`).join('');
   return `
       <div class="month-group collapsed" data-month="excel-only">
@@ -3694,6 +3702,36 @@ renderUKDays(); // ya con el calendario cargado (modo local)
 document.getElementById('cal-grid').addEventListener('click', e => {
   const day = e.target.closest('[data-iso]');
   if (day) openDayModal(day.dataset.iso);
+});
+
+// 11-01: botones de las listas con un dato (fecha, mes, año, aeropuerto) → data-act + data-arg, nunca dentro de un onclick.
+// Tabla cerrada: solo estas acciones, y solo con un argumento de formato conocido
+const MONTH_RE = /^\d{4}-\d{2}$/;
+const DATA_ACTS = {
+  removeAirport:       [IATA_RE, a => removeAirport(a)],
+  removeAirportAt:     [/^\d+$/, a => removeAirportAt(Number(a))],
+  ukShowTY:            [TY_LABEL_RE, a => ukShowTY(a)],
+  openDayModal:        [ISO_RE, a => openDayModal(a)],
+  ukMarkBlockOff:      [ISO_RE, a => ukMarkBlockOff(a)],
+  ukDecidePending:     [ISO_RE, (a, b) => { if (b === 'uk' || b === 'no') ukDecidePending(a, b); }],
+  removeUKDay:         [ISO_RE, a => removeUKDay(a)],
+  toggleUKExceptional: [ISO_RE, a => toggleUKExceptional(a)],
+  toggleUKMonth:       [MONTH_RE, a => toggleUKMonth(a)],
+  ukForceUKFromOut:    [ISO_RE, a => ukForceUKFromOut(a)],
+  removeDay:           [ISO_RE, a => removeDay(a)],
+  toggleMonth:         [MONTH_RE, a => toggleMonth(a)],
+  downloadMonthCSV:    [MONTH_RE, a => downloadMonthCSV(a)],
+  openRwyModal:        [ISO_RE, a => openRwyModal(a)],
+  removeExcelOnlyDay:  [ISO_RE, a => removeExcelOnlyDay(a)],
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest?.('[data-act]');
+  if (!el) return;
+  if (el.tagName === 'A') e.preventDefault();
+  const act = Object.prototype.hasOwnProperty.call(DATA_ACTS, el.dataset.act) ? DATA_ACTS[el.dataset.act] : null;
+  const arg = el.dataset.arg ?? '';
+  if (!act || !act[0].test(arg)) { console.warn('Acción ignorada:', el.dataset.act, arg); return; }
+  act[1](arg, el.dataset.arg2);
 });
 
 // ─── Auto-actualización ──────────────────────────────────────────────────────

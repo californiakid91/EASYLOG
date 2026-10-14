@@ -97,9 +97,9 @@ check('downloadTaxExcel usa el año fiscal visible (viewTY)', /const ty = viewTY
 // ── AC-5: días en Excel sin historial
 const histHTML = () => ctx.document.getElementById('history').innerHTML;
 reset(); run(`_excelData = { '2026-09-18': { role: 'FO', flights: [] } }; _ukdays = { '2026-09-18': { route: 'A→B', onBlock: '20:00', tz: 'BST' } }; renderHistory();`);
-check('historial vacío: aparece "Días en Excel sin historial" con el 18/09', /Días en Excel sin historial/.test(histHTML()) && /removeExcelOnlyDay\('2026-09-18'\)/.test(histHTML()));
+check('historial vacío: aparece "Días en Excel sin historial" con el 18/09', /Días en Excel sin historial/.test(histHTML()) && histHTML().includes('data-act="removeExcelOnlyDay" data-arg="2026-09-18"'));
 check('la sección va plegada', /month-group collapsed" data-month="excel-only"/.test(histHTML()));
-paste(UKD); check('con historial: la sección sigue apareciendo (18/09 no está en historial)', /removeExcelOnlyDay\('2026-09-18'\)/.test(histHTML()) && !/removeExcelOnlyDay\('2026-11-10'\)/.test(histHTML()));
+paste(UKD); check('con historial: la sección sigue apareciendo (18/09 no está en historial)', histHTML().includes('data-act="removeExcelOnlyDay" data-arg="2026-09-18"') && !histHTML().includes('data-act="removeExcelOnlyDay" data-arg="2026-11-10"'));
 run(`removeExcelOnlyDay('2026-09-18')`);
 check('borrar solo-Excel: fuera de _excelData y persistido', !run(`'2026-09-18' in _excelData`) && !('2026-09-18' in JSON.parse(ls.get('easylog_excel_v1'))));
 check('borrar solo-Excel NO toca UK Days', uk('2026-09-18') !== 'null');

@@ -116,7 +116,12 @@ ok('A: Excel descargado (nombre y tamaño)', /^TAX YEAR \d\d-\d\d\.xlsx$/.test(A
 ok('A: ninguna petición a cdn.sheetjs.com', !A.sheetjsCdn && !A0.sheetjsCdn);
 ok('A: calendario y UK Days pintados', A.calCells > 27 && A.ukBody > 20, `${A.calCells} celdas, ${A.ukBody} chars`);
 ok('A: Unsplash cargado (img-src)', A.unsplash && A.unsplashOk, `${A.unsplashOk} ok`);
-ok('A: 0 violaciones de CSP en el recorrido', A.cspBeforeNeg.length === 0 && A.cons.filter(c => !c.includes('example.com')).length === 0, JSON.stringify(A.cspBeforeNeg.concat(A.cons)));
+// 11-01: el beacon de telemetría de gapi (connect-src apis.google.com/js/gen_204) es intermitente y la app lo silencia
+// (solo consola, #csp-watch); se tolera SOLO esa URL exacta. Cualquier otra violación sigue fallando
+const GAPI_BEACON = /https:\/\/apis\.google\.com\/js\/gen_204(?=[?\s'"]|$)/;
+const isGapiBeacon = (s, fromCsp) => GAPI_BEACON.test(s) && (fromCsp ? s.startsWith('connect-src ') : /^Refused to connect to /.test(s));
+const tol = (list, fromCsp) => list.filter(s => { if (!isGapiBeacon(s, fromCsp)) return true; console.log('# tolerado: ' + s); return false; });
+ok('A: 0 violaciones de CSP en el recorrido', tol(A.cspBeforeNeg, true).length === 0 && tol(A.cons).filter(c => !c.includes('example.com')).length === 0, JSON.stringify(A.cspBeforeNeg.concat(A.cons)));
 ok('A: sin aviso «Bloqueado» antes de la prueba negativa', !/Bloqueado/.test(A.statusBeforeNeg), A.statusBeforeNeg);
 ok('A: negativa — fetch a example.com bloqueado por connect-src', A.neg === 'bloqueado' && A.cspAfterNeg.some(v => v.startsWith('connect-src') && v.includes('example.com')), JSON.stringify(A.cspAfterNeg));
 ok('A: negativa — el usuario ve el aviso', /Bloqueado por seguridad \(connect-src\): example\.com/.test(A.statusAfterNeg), A.statusAfterNeg);
@@ -129,7 +134,7 @@ ok('B: iframe de auth de firebaseapp.com cargado', B.authIframe);
 ok('B: popup de Google abierta', !!B.popupUrl, B.popupUrl);
 ok('B: Firestore alcanzado y rechazado por las reglas (no por la CSP)', B.fsReq && B.probe.fs === 'permission-denied' && B.probe.fs === B0.probe.fs, `${B.probe.fs} (base ${B0.probe.fs})`);
 ok('B: Identity Toolkit alcanzado (respuesta del servidor, no CSP)', B.itReq && B.probe.auth === B0.probe.auth && !/network/.test(B.probe.auth), `${B.probe.auth} (base ${B0.probe.auth})`);
-ok('B: 0 violaciones de CSP', B.csp.length === 0 && B.cons.length === 0, JSON.stringify(B.csp.concat(B.cons)));
+ok('B: 0 violaciones de CSP', tol(B.csp, true).length === 0 && tol(B.cons).length === 0, JSON.stringify(B.csp.concat(B.cons)));
 ok('B: sin aviso «Bloqueado»', !/Bloqueado/.test(B.status), B.status);
 ok('B: pageerror = línea base', JSON.stringify(B.errs) === JSON.stringify(B0.errs), `csp ${JSON.stringify(B.errs)} | base ${JSON.stringify(B0.errs)}`);
 ok('B: línea base equivalente (gapi/iframe/popup también sin CSP)', B0.gapi === B.gapi && B0.authIframe === B.authIframe && !!B0.popupUrl === !!B.popupUrl);

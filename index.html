@@ -752,7 +752,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.14-164017';
+const APP_VERSION = '2026.10.14-165223';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -2237,7 +2237,7 @@ function ukAskEmailRule(iso, flights) {
 }
 // Aviso en una fila de UK Days: la marca manual contradice al email guardado (texto fijo, sin datos externos)
 function ukSaysTag(says) {
-  return ` <span style="color:var(--amber)" title="Pulsa ✕ para volver a lo que dice el email">⚠ el email dice ${ukStateName(says)}</span>`;
+  return ` <span style="display:block;color:var(--amber);font-family:system-ui,sans-serif;font-size:.72rem" title="Pulsa ✕ para volver a lo que dice el email">⚠ el email dice ${ukStateName(says)}</span>`;
 }
 // Motivo legible: las decisiones manuales guardadas antes de la Fase 10 llevaban la instrucción del pendiente («pega el email»…)
 function ukReasonText(r) {

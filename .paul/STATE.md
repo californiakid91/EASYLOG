@@ -5,28 +5,28 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.3 Pegar sin sorpresas — Fase 10 UK Days: avisos al pegar
+**Current focus:** v0.3 Pegar sin sorpresas — Fase 11 Limpieza XS (diferidos G6/G8)
 
 ## Current Position
 
 Version: v0.2.0 (v0.3.0 en curso)
 Milestone: v0.3 Pegar sin sorpresas
-Phase: 10 (2 of 3 del milestone) — UK Days: avisos al pegar
-Plan: 10-01 created, awaiting approval
-Status: PLAN created (revisado por Fable adversario), ready for APPLY
-Last activity: 2026-10-14 — Created .paul/phases/10-ukdays-avisos-al-pegar/10-01-PLAN.md
+Phase: 11 (3 of 3 del milestone) — Limpieza XS (diferidos G6/G8)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-14 — Fase 10 completa (10-01 aprobado por capturas; prod v2026.10.14-165223)
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
 - v0.2 Seguridad y robustez: [██████████] 100% ✓
-- v0.3 Pegar sin sorpresas: [███░░░░░░░] 33% (Fase 9 ✓)
+- v0.3 Pegar sin sorpresas: [██████░░░░] 67% (Fases 9 y 10 ✓)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 10-01 creado, awaiting approval]
+  ○        ○        ○     [Fase 10 cerrada — listo para /paul:plan de la Fase 11]
 ```
 
 ## Accumulated Context
@@ -65,6 +65,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 07.1-01 (aplicado): «Fuera de UK» = ukPastDays con estado no (hoy/futuros nunca); outKind work = email | ruta real guardada | DUTY/SBY/SIM/SD, si no off; solo se pinta la lista activa; apertura desde _ukOutOpen (no del DOM); botón UK de la lista → ukForceUKFromOut con confirm; backup: OFF de calendario en rangos, decisiones a mano con motivo
 - 09 (usuario 2026-10-14): SAFETY PILOT = 3+ pilotos en cabina y VEGRIC ausente de todos los Take Off/Landing del día → SP todo el día (nunca cambio de asiento a mitad de día); siempre con confirm; rol del email no distingue (ambos FO), Verified By siempre CP, Captain Remarks no fiable
 - 09-01 (aplicado): detectSafetyPilot por día (≥3 CP/FO, VEGRIC FO, TO y LDG no vacíos en todos, VEGRIC en ninguno) → confirm solo en día nuevo con FO; rol 'SP' en hist/_excelData; CSV SP: TIME_AIR/NIGHT '0:00', TOTAL/SIC/IFR 0, PIC '', TIME_TO/TIME_LDG VACÍAS (PilotLog rechaza AIR > TOTAL), TO/LDG 0, PF FALSE, PILOT2 = FO que vuela el sector, PILOT3 VEGRIC/SELF, REMARKS «FRxxxx SAFETY PILOT»; PILOT3_* al final; tests localizan columnas por nombre; tras cada confirm en addDay: requireHydrated + releer historial; parseText: tabuladores → espacios (emails 2025); BASELINES.preFase9 = a4f135a
+- 10-01 (aplicado): marca manual de UK Days contradicha por el email → ukAskEmailRule (confirm; Aceptar = regla del email, Cancelar = marca) en día nuevo, reemplazo e idéntico; tras CADA confirm de addDay requireHydrated + changedMeanwhile/otherDevice; _ukdays se restaura si falla el guardado; «⚠ el email dice …» solo al pintar (ukEmailSays); motivos con ukReasonText (normaliza los 3 textos viejos al pintar, sin migrar); stub de confirm de los harness acepta función; BASELINES.preFase10 = 0819555; #csp-watch: img-src www.google.com (host exacto) solo a consola
 - _runways = mapa propio (localStorage + campo Firestore `runways`); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -87,8 +88,6 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Helpers duplicados entre harness (load/check/extract) → harness-lib | 06-01 (D6/F-06-006) | M | — |
 | Año congelado con email completo y sin entrada muestra "email incompleto: re-pégalo" (re-pegar idéntico no lo arregla; se decide con UK/No UK) — mensaje engañoso, no alcanzable en la práctica | 07-01 G6 | XS | — |
 | rule:* de años congelados no se recalculan aunque se corrija un bug de la regla → requiere migración explícita revisada | 07-01 dialéctica | S | si cambia la regla |
-| Al pegar un email de un día con marca manual que lo contradice, la app conserva la marca sin avisar (caso 03/10/2026) → avisar y ofrecer volver a la regla del email | 2026-10-14 usuario | XS | — |
-| Motivo de los No UK manuales decididos sin email («DUTY en calendario sin email: pega el email») no explica la causa real (p. ej. calzos tras 00:00) → texto «No UK decidido a mano (DUTY sin email)» o pegar el email y quitar la marca | 07.1 checkpoint | XS | — |
 | G8 07.1: onclick con iso interpolado (seguro hoy por ISO_RE/ukPastDays) → data-iso + addEventListener; reason muy largo podría pasarse del límite de mailto en el backup | 07.1 G8 | XS | — |
 | Sync: dos dispositivos editando casi a la vez → gana el último por mapa (F-02-001 mitigado, no cerrado); merge por día (opción B) si cambia el uso | 08-02 dialéctica | M | si usa 2 dispositivos a la vez |
 | 08-02 no verificado en iPhone real + Firebase real (e2e simulado); vigilar «Comprobando…» que no termina o «Sin confirmar» con buena cobertura | 08-02 checkpoint | XS | si el usuario lo ve |
@@ -122,15 +121,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: fase 9 (09-01) — prod = v2026.10.14-142413
+Last commit: a108274 (10-01) + commit de cierre de fase — prod = v2026.10.14-165223
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-14
-Stopped at: Plan 10-01 creado y revisado por Fable
-Next action: Aprobar plan y /paul:apply .paul/phases/10-ukdays-avisos-al-pegar/10-01-PLAN.md
-Resume file: .paul/phases/10-ukdays-avisos-al-pegar/10-01-PLAN.md
+Stopped at: Fase 10 completa, lista para planificar la Fase 11
+Next action: /paul:plan 11
+Resume file: .paul/phases/10-ukdays-avisos-al-pegar/10-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

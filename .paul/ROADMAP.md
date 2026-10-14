@@ -8,13 +8,13 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 
 **v0.3 Pegar sin sorpresas** (v0.3.0)
 Status: 🚧 In Progress
-Phases: 1 of 3 complete
+Phases: 2 of 3 complete
 Theme: Que al pegar un email la app detecte los casos especiales (SAFETY PILOT, contradicciones con marcas manuales de UK Days) y avise, y cerrar los diferidos XS de G6/G8.
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 9 | SAFETY PILOT al pegar | 1/1 | ✅ Complete | 2026-10-14 |
-| 10 | UK Days: avisos al pegar (marca manual vs email + motivo No UK) | 0/1 | Planning | - |
+| 10 | UK Days: avisos al pegar (marca manual vs email + motivo No UK) | 1/1 | ✅ Complete | 2026-10-14 |
 | 11 | Limpieza XS (diferidos G6/G8) | TBD | Not started | - |
 
 ### Phase 9: SAFETY PILOT al pegar
@@ -25,7 +25,7 @@ Plans: TBD (defined during /paul:plan)
 ### Phase 10: UK Days: avisos al pegar
 
 Focus: al pegar un email de un día con marca manual que lo contradice, avisar y ofrecer volver a la regla del email (caso 03/10/2026); texto correcto del motivo de los «No UK» decididos a mano sin email.
-Plans: TBD (defined during /paul:plan)
+Plans: 10-01 ✅ (SUMMARY: .paul/phases/10-ukdays-avisos-al-pegar/10-01-SUMMARY.md)
 
 ### Phase 11: Limpieza XS (diferidos G6/G8)
 
@@ -76,4 +76,4 @@ Detalle completo: .paul/milestones/v0.1.0-ROADMAP.md
 </details>
 
 ---
-*Roadmap created: 2026-10-03 · Updated: 2026-10-14 (Fase 9 completa)*
+*Roadmap created: 2026-10-03 · Updated: 2026-10-14 (Fase 10 completa)*

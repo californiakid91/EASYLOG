@@ -122,7 +122,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: 46ec3a4 (11-01) — prod = v2026.10.14-200023
+Last commit: 9284576 (docs 11-01) / 46ec3a4 (feat 11-01) — prod = v2026.10.14-200023
 Branch: main
 
 ## Session Continuity
@@ -130,7 +130,7 @@ Branch: main
 Last session: 2026-10-14
 Stopped at: 11-01 cerrado (SUMMARY escrito)
 Next action: /paul:plan 11 → plan 11-02 (epoch _cloudWrites, validación applyCloudData, «dar por perdida» copia local)
-Resume file: .paul/phases/11-limpieza-xs/11-01-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-14-plan11-01.md
 
 ---
 *STATE.md — Updated after every significant action*

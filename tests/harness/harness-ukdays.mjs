@@ -8,13 +8,13 @@ const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', t
 const ls = new Map([['easylog_mode', 'local']]); const st = []; const confirms = []; let answer = true;
 const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) || els.set(id, mk()), els.get(id)), querySelector: () => mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener() {} },
   localStorage: { getItem: k => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) },
-  window: { _ukNowOverride: FIXED_NOW }, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, confirm: m => (confirms.push(m), answer), prompt: () => null, alert: m => st.push('alert: ' + m),
+  window: { _ukNowOverride: FIXED_NOW }, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, confirm: m => (confirms.push(m), typeof answer === 'function' ? answer(m) : answer), prompt: () => null, alert: m => st.push('alert: ' + m),
   setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, __st: st });
 vm.runInContext(SCRIPT, ctx);
 vm.runInContext('showStatus = (t, m) => __st.push(t + ": " + m); var __persists = 0; const __p = persist; persist = function () { __persists++; return __p(); };', ctx);
 const run = c => vm.runInContext(c, ctx); let fails = 0;
 const check = (n, ok, d = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? '  — ' + d : ''}`); if (!ok) fails++; };
-const reset = () => run('_cache = {}; _excelData = {}; _ukdays = {}; __persists = 0;');
+const reset = () => { run('_cache = {}; _excelData = {}; _ukdays = {}; __persists = 0;'); answer = true; };
 // 03-02: las entradas llevan state/source/reason; un "No UK" (state 'no') no cuenta → se lee como null
 const uk = iso => run(`(e => !e || (e.state || 'uk') === 'no' ? 'null' : JSON.stringify({ route: e.route, onBlock: e.onBlock, tz: e.tz, ...(e.manual ? { manual: true } : {}) }))(_ukdays['${iso}'])`);
 const paste = text => { ctx.document.getElementById('input').value = text; run('addDay()'); };
@@ -60,8 +60,8 @@ reset(); run(`_ukdays = { '2026-11-10': { route: 'X→Y', onBlock: '10:00', tz: 
 check('re-pegar SIN historial previo (tras Borrar historial) → recalcula y elimina', uk('2026-11-10') === 'null');
 reset(); paste(NOT); paste(UKD);
 check('re-pegar no UK → UK: se crea', uk('2026-11-10') === '{"route":"DUB→STN","onBlock":"18:10","tz":"GMT"}', uk('2026-11-10'));
-reset(); run(`_ukdays = { '2026-11-10': { route: '—', onBlock: '--:--', tz: 'GMT', manual: true } };`); paste(NOT);
-check('entrada manual + pegar día no UK → manual intacta', JSON.parse(uk('2026-11-10'))?.manual === true);
+reset(); run(`_ukdays = { '2026-11-10': { route: '—', onBlock: '--:--', tz: 'GMT', manual: true } };`); answer = m => !/marca tuya/.test(m); paste(NOT);
+check('entrada manual + pegar día no UK → manual intacta (pregunta y se cancela)', JSON.parse(uk('2026-11-10'))?.manual === true);
 reset(); paste(UKD); const keep = uk('2026-11-10'); paste(NOON);
 check('último sector sin On Block → entrada existente NO se toca', uk('2026-11-10') === keep, uk('2026-11-10'));
 check('addDay: una sola escritura persist() por pegado', (reset(), paste(UKD), run('__persists')) === 1, `persists=${run('__persists')}`);

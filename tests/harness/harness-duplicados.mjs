@@ -14,7 +14,7 @@ const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) ||
     querySelector: sel => sel === 'input[name="role"]:checked' ? { value: curRole } : mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener() {} },
   localStorage: { getItem: k => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) },
   window: win, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, Blob: class { constructor(p) { this.p = p; } }, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} },
-  confirm: m => (confirms.push(m), answer), prompt: m => (prompts.push(m), promptAnswers.length ? promptAnswers.shift() : null), alert: m => st.push('alert: ' + m),
+  confirm: m => (confirms.push(m), typeof answer === 'function' ? answer(m) : answer), prompt: m => (prompts.push(m), promptAnswers.length ? promptAnswers.shift() : null), alert: m => st.push('alert: ' + m),
   setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, __st: st });
 let bootError = null;
 try { vm.runInContext(SCRIPT, ctx); } catch (e) { bootError = e; }
@@ -107,8 +107,8 @@ paste(email(D, [{ ...SECS[0], remarks: 'B'.repeat(200) }]));
 check('AC-5 valores largos cortados', confirms[0].length < 200, String(confirms[0].length));
 // UK manual no se toca al aceptar un distinto
 reset(); paste(email(D, SECS)); run(`_ukdays['${ISO}'] = ukManualEntry('${ISO}')`); const man = JSON.stringify(K(ISO));
-paste(email(D, SECS_PLUS));
-check('AC-5 aceptar respeta entrada UK manual', JSON.stringify(K(ISO)) === man && H(ISO).flights.length === 3);
+answer = m => !/marca tuya/.test(m); paste(email(D, SECS_PLUS));
+check('AC-5 aceptar respeta entrada UK manual (cancelar la pregunta de la marca)', JSON.stringify(K(ISO)) === man && H(ISO).flights.length === 3 && confirms.some(m => /marca tuya/.test(m)));
 // orden del email conservado
 reset(); const SECS_MN = [{ cp: 'STN - DUB', fn: 'FR900', off: '22:00', on: '23:10' }, { cp: 'DUB - STN', fn: 'FR100', off: '00:10', on: '01:20' }];
 paste(email(D, SECS_MN)); run(`delete _cache['${ISO}']`); paste(email(D, SECS_MN));

@@ -14,7 +14,7 @@ Theme: Que al pegar un email la app detecte los casos especiales (SAFETY PILOT, 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 9 | SAFETY PILOT al pegar | 1/1 | ✅ Complete | 2026-10-14 |
-| 10 | UK Days: avisos al pegar (marca manual vs email + motivo No UK) | TBD | Not started | - |
+| 10 | UK Days: avisos al pegar (marca manual vs email + motivo No UK) | 0/1 | Planning | - |
 | 11 | Limpieza XS (diferidos G6/G8) | TBD | Not started | - |
 
 ### Phase 9: SAFETY PILOT al pegar

@@ -9,7 +9,7 @@ const ls = new Map([['easylog_mode', 'local']]); const st = []; const confirms =
 const win = { location: {}, _ukNowOverride: FIXED_NOW }; // reloj fijo: independiente del año real
 const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) || els.set(id, mk()), els.get(id)), querySelector: () => mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener() {} },
   localStorage: { getItem: k => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) },
-  window: win, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, Blob: class { constructor(p) { this.p = p; } }, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }, confirm: m => (confirms.push(m), answer), prompt: () => null, alert: m => st.push('alert: ' + m),
+  window: win, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, Blob: class { constructor(p) { this.p = p; } }, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }, confirm: m => (confirms.push(m), typeof answer === 'function' ? answer(m) : answer), prompt: () => null, alert: m => st.push('alert: ' + m),
   setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, __st: st });
 let bootError = null;
 try { vm.runInContext(SCRIPT, ctx); } catch (e) { bootError = e; }
@@ -57,8 +57,8 @@ x = E('2026-11-12');
 check('✕ en UK automático → tombstone {state:no, manual, source:manual, at}', x?.state === 'no' && x.manual === true && x.source === 'manual' && !!x.at, e('2026-11-12'));
 run('backfillUKDays()');
 check('tombstone sobrevive a backfillUKDays', E('2026-11-12')?.state === 'no' && E('2026-11-12')?.manual === true);
-paste(email('2026/11/12', [{ cp: 'STN - DUB', off: '15:00', on: '16:10' }, { cp: 'DUB - STN', off: '17:00', on: '18:10' }]));
-check('tombstone sobrevive a re-pegar el email', E('2026-11-12')?.state === 'no' && E('2026-11-12')?.manual === true, e('2026-11-12'));
+answer = m => !/marca tuya/.test(m); paste(email('2026/11/12', [{ cp: 'STN - DUB', off: '15:00', on: '16:10' }, { cp: 'DUB - STN', off: '17:00', on: '18:10' }]));
+check('tombstone sobrevive a re-pegar el email (pregunta y se cancela)', E('2026-11-12')?.state === 'no' && E('2026-11-12')?.manual === true, e('2026-11-12'));
 reset(); paste(email('2026/10/08', [{ cp: 'STN - LIS', off: '18:00', on: '21:00' }]));
 run(`addUKDayManual('2026-10-08')`);
 x = E('2026-10-08');
@@ -70,8 +70,8 @@ reset(); paste(email('2026/10/08', [{ cp: 'STN - LIS', off: '18:00', on: '21:00'
 ctx.document.getElementById('input').value = 'añade UK days 8 octubre'; run('addDay()');
 check('comando de texto sobre un R2 → UK manual', E('2026-10-08')?.manual === true && E('2026-10-08')?.state === 'uk', e('2026-10-08') + ' · ' + st.at(-1));
 reset(); run(`_ukdays = { '2026-11-15': { state: 'uk', route: '—', onBlock: '--:--', tz: 'GMT', manual: true, source: 'manual' } };`);
-paste(email('2026/11/15', [{ cp: 'STN - LIS', off: '18:00', on: '21:00' }]));
-check('re-pegar no cambia un UK manual', E('2026-11-15')?.manual === true && E('2026-11-15')?.state === 'uk', e('2026-11-15'));
+answer = m => !/marca tuya/.test(m); paste(email('2026/11/15', [{ cp: 'STN - LIS', off: '18:00', on: '21:00' }]));
+check('re-pegar no cambia un UK manual (pregunta y se cancela)', E('2026-11-15')?.manual === true && E('2026-11-15')?.state === 'uk', e('2026-11-15'));
 run(`removeDay('2026-11-15')`);
 check('removeDay no toca la entrada manual', E('2026-11-15')?.manual === true);
 reset(); paste(email('2026/10/08', [{ cp: 'STN - LIS', off: '18:00', on: '21:00' }])); run(`removeDay('2026-10-08')`);

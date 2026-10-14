@@ -21,7 +21,7 @@ export function readFixture(prefix) {
 
 // Commits base de los golden «versión anterior». La purga de historial del 2026-10-05 cambió los SHA:
 // cbbbb44 → fa78eeb (index.html anterior a 04-02, sin pistas) y 33ae9b9 → 6cb4a5a (anterior a 05-01).
-export const BASELINES = { preFase4: 'fa78eeb', preFase5: '6cb4a5a', preFase9: 'a4f135a' };
+export const BASELINES = { preFase4: 'fa78eeb', preFase5: '6cb4a5a', preFase9: 'a4f135a', preFase10: '0819555' };
 
 // index.html de un commit base, con un error claro si falta (clon superficial u otra purga de historial)
 export function indexAt(sha) {

@@ -748,7 +748,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.14-142413';
+const APP_VERSION = '2026.10.14-150501';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -1686,27 +1686,44 @@ function addDay() {
   let dayRole = prev ? prevRole : role();
   const roleName = r => r === 'SP' ? 'SAFETY PILOT' : r;
   const roleNote = prev && role() !== prevRole ? ` Rol ${roleName(role())} ignorado: se mantiene ${roleName(prevRole)}.` : '';
+  // Tras cada confirm: otro dispositivo pudo guardar el día o cambiar sus vuelos mientras preguntaba → no se escribe nada
+  const changedMeanwhile = () => {
+    hist = loadHistory(); // un snapshot pudo sustituir el historial durante el diálogo: no pisarlo con la copia vieja
+    const now = hist[iso] || _excelData[iso];
+    if (!now && !prev) return false;
+    if (!now || !prev) return true;
+    return flightsKey(now.flights || []) !== flightsKey(prev.flights || []);
+  };
+  const otherDevice = () => showStatus('warn', `El ${dateISOToDisplay(iso)} se ha guardado desde otro dispositivo mientras preguntaba. No se ha guardado nada: vuelve a pegarlo.`);
   if (prev) {
     const day = dateISOToDisplay(iso);
     const crewLines = crewDiff(prev.flights, flights);
     if (flightsKey(prev.flights) === flightsKey(flights) && !crewLines.length) {
+      // Marca manual de UK Days contradicha por el email: se pregunta ANTES de escribir (una sola escritura)
+      const ask = ukInScope(iso) ? ukAskEmailRule(iso, prev.flights) : { asked: false };
+      if (ask.aborted) return;
+      if (ask.asked && changedMeanwhile()) { otherDevice(); return; }
+      const prevUK = _ukdays;
+      if (ask.use) setUKDays(ukWithEmailRule(iso, prev.flights));
       let msg, type = 'ok';
       if (hist[iso]) {
         // Idéntico y en la lista: no se toca nada (salvo reparar el Excel si le falta el día)
         const fixExcel = !_excelData[iso] || flightsKey(_excelData[iso].flights) !== flightsKey(hist[iso].flights);
-        if (fixExcel) { _excelData[iso] = { role: prevRole, flights: hist[iso].flights }; if (!saveHistory(hist)) return; }
+        if (fixExcel) { _excelData[iso] = { role: prevRole, flights: hist[iso].flights }; if (!saveHistory(hist)) { setUKDays(prevUK); return; } }
+        else if (ask.use && !saveUKDays(_ukdays)) { setUKDays(prevUK); renderUKDays(); return; }
         msg = `El ${day} ya está en la lista (sin cambios).${fixExcel ? ' Añadido al Excel.' : ''}`;
-        if (!fixExcel) type = 'warn';
+        if (!fixExcel && !ask.use) type = 'warn';
       } else {
         // Idéntico y solo en el Excel (se quitó de la lista tras exportar): vuelve a la lista
         hist[iso] = { addedAt: new Date().toISOString(), role: prevRole, flights: prev.flights };
-        if (!saveHistory(hist)) { renderHistory(); return; }
+        if (!saveHistory(hist)) { setUKDays(prevUK); renderHistory(); return; }
         msg = `El ${day} vuelve a la lista (ya estaba en el Excel).`;
       }
       document.getElementById('input').value = '';
       renderHistory();
+      if (ask.use) renderUKDays();
       const coords = askUnknownAirports(prev.flights);
-      showStatus(type, `${msg}${roleNote}${coords}`);
+      showStatus(type, `${msg}${roleNote}${ukAskNote(ask)}${coords}`);
       return;
     }
     const all = [...crewLines, ...flightsDiff(prev.flights, flights)];
@@ -1716,6 +1733,8 @@ function addDay() {
       lines.join('\n') + '\n\n¿Reemplazar?'
     );
     if (!ok) { showStatus('warn', 'Cancelado. No se ha guardado nada.'); return; }
+    if (!requireHydrated()) return;
+    if (changedMeanwhile()) { otherDevice(); return; }
   }
 
   // SAFETY PILOT: solo en un día nuevo con FO marcado; nunca en silencio. Cancelar = a los mandos (se guarda normal).
@@ -1726,16 +1745,20 @@ function addDay() {
       'Aceptar = safety pilot · Cancelar = a los mandos (normal)'
     );
     if (!requireHydrated()) return; // la nube pudo quedar desfasada mientras el diálogo estaba abierto
-    // Un snapshot pudo sustituir el historial durante el diálogo: releer para no pisarlo con la copia vieja
-    hist = loadHistory();
-    if (hist[iso] || _excelData[iso]) { showStatus('warn', `El ${dateISOToDisplay(iso)} se ha guardado desde otro dispositivo mientras preguntaba. No se ha guardado nada: vuelve a pegarlo.`); return; }
+    if (changedMeanwhile()) { otherDevice(); return; }
     if (sp) dayRole = 'SP';
   }
+
+  // Marca manual de UK Days que el email contradice: se pregunta (aceptar = regla del email; cancelar = se mantiene la marca)
+  const ask = ukInScope(iso) ? ukAskEmailRule(iso, flights) : { asked: false };
+  if (ask.aborted) return;
+  if (ask.asked && changedMeanwhile()) { otherDevice(); return; }
 
   // Año congelado (evidencia ya cerrada): si la regla crearía o cambiaría su UK Day, se pregunta ANTES de guardar nada.
   // Aceptar → entrada manual (ya no se recalcula); cancelar → no se guarda nada (si no, el día quedaría pendiente para siempre).
   const ukFrozen = ukFrozenDay(iso) && applyUKDay({ ..._ukdays }, iso, flights);
   if (ukFrozen && !confirm(ukFrozenConfirmText([iso]))) { showStatus('warn', 'Cancelado. No se ha guardado nada.'); return; }
+  if (ukFrozen) { if (!requireHydrated()) return; if (changedMeanwhile()) { otherDevice(); return; } }
 
   hist[iso] = {
     addedAt: new Date().toISOString(),
@@ -1745,23 +1768,29 @@ function addDay() {
   _excelData[iso] = { role: dayRole, flights };
   // UK Day: se (re)calcula al pegar o re-pegar el día, sea del año que sea (las entradas manuales no se tocan). Una sola escritura con el historial.
   let ukNote = '';
+  const prevUK = _ukdays; // si no se guarda, la marca manual no puede perderse en memoria (el re-pegado aplicaría la regla sin preguntar)
   if (ukInScope(iso)) {
-    const updated = { ..._ukdays };
-    if (applyUKDay(updated, iso, flights)) {
-      if (ukFrozen) updated[iso] = { ...updated[iso], manual: true, source: 'manual', reason: `año cerrado, pegado el ${dateISOToDisplay(londonTodayISO())}: ${updated[iso].reason}` };
-      setUKDays(updated);
+    if (ask.use) setUKDays(ukWithEmailRule(iso, flights));
+    else {
+      const updated = { ..._ukdays };
+      if (applyUKDay(updated, iso, flights)) {
+        if (ukFrozen) updated[iso] = ukFrozenWrap(updated[iso]);
+        setUKDays(updated);
+      }
     }
+    ukNote = ukAskNote(ask);
     const ty = taxYearOf(iso);
-    if (ty.label !== viewTY().label) ukNote = ` Guardado en Tax Year ${ty.label} (no es el visible).`;
+    if (ty.label !== viewTY().label) ukNote += ` Guardado en Tax Year ${ty.label} (no es el visible).`;
   } else {
     ukNote = iso < UK_DAYS_FLOOR
       ? ` UK Day no registrado: anterior al primer año gestionado (${taxYearOf(UK_DAYS_FLOOR).label}).`
       : ` UK Day no registrado: fuera del periodo UK Days (${ukScopeText()}).`;
   }
-  if (!saveHistory(hist)) { renderHistory(); return; } // no guardado (aviso ya mostrado): el texto se queda en el cuadro
+  if (!saveHistory(hist)) { setUKDays(prevUK); renderHistory(); return; } // no guardado (aviso ya mostrado): el texto se queda en el cuadro
 
   document.getElementById('input').value = '';
   renderHistory();
+  if (ask.use) renderUKDays();
   const warnMsg = warnings.length ? ` (${warnings.length} aviso${warnings.length !== 1 ? 's' : ''})` : '';
   const skipMsg = askUnknownAirports(flights);
   const spNote = dayRole === 'SP' ? ' · SAFETY PILOT' : '';
@@ -2164,6 +2193,61 @@ function applyUKDay(uk, iso, flights) {
   return true;
 }
 
+// Entrada de un año congelado escrita por el usuario al pegar: queda manual (ya no se recalcula)
+function ukFrozenWrap(e) {
+  return { ...e, manual: true, source: 'manual', reason: `año cerrado, pegado el ${dateISOToDisplay(londonTodayISO())}: ${e.reason}` };
+}
+function ukStateName(s) { return s === 'uk' ? 'UK Day' : 'No UK'; }
+// Resultado de la regla si el email CONTRADICE una marca manual (estado distinto); null si no hay marca, coincide o faltan datos
+function ukEmailContradicts(iso, flights) {
+  const e = _ukdays[iso];
+  if (!e?.manual) return null;
+  const r = computeUKDay(iso, flights);
+  return r && r.state !== ukEntryState(e) ? r : null;
+}
+// Solo para pintar filas: estado que dice el email guardado del día cuando contradice la marca manual
+function ukEmailSays(iso) { return ukEmailContradicts(iso, ukFlightsOf(iso))?.state; }
+// _ukdays con la regla del email en `iso` en lugar de la marca manual (en año congelado queda manual: lo decide el usuario)
+function ukWithEmailRule(iso, flights) {
+  const updated = { ..._ukdays };
+  delete updated[iso];
+  applyUKDay(updated, iso, flights);
+  if (updated[iso] && ukFrozenDay(iso)) updated[iso] = ukFrozenWrap(updated[iso]);
+  return updated;
+}
+// Pregunta si usar el email cuando contradice una marca manual. { asked, use, changed, aborted, says }
+function ukAskEmailRule(iso, flights) {
+  const r = ukEmailContradicts(iso, flights);
+  if (!r) return { asked: false };
+  const e = _ukdays[iso];
+  const ok = confirm(
+    `El ${dateISOToDisplay(iso)} tiene una marca tuya en UK Days: ${ukStateName(ukEntryState(e))} (${ukReasonText(e.reason || 'añadido a mano')}).\n\n` +
+    `El email dice ${ukStateName(r.state)}: ${r.reason}.\n\n¿Usar lo que dice el email?` +
+    (ukFrozenDay(iso) ? '\n\nAño cerrado: quedará como entrada manual.' : '') +
+    (ukExcMap()[iso] ? '\n\nLa marca de circunstancia excepcional se conserva.' : '') +
+    '\n\nAceptar = usar el email · Cancelar = mantener tu marca (los vuelos se guardan igual)'
+  );
+  if (!requireHydrated()) return { asked: true, aborted: true }; // la nube pudo quedar desfasada con el diálogo abierto
+  const still = ukEmailContradicts(iso, flights); // otro dispositivo pudo cambiar la entrada: se respeta la nueva
+  return { asked: true, use: ok && !!still, changed: !still, says: r.state };
+}
+// Aviso en una fila de UK Days: la marca manual contradice al email guardado (texto fijo, sin datos externos)
+function ukSaysTag(says) {
+  return ` <span style="color:var(--amber)" title="Pulsa ✕ para volver a lo que dice el email">⚠ el email dice ${ukStateName(says)}</span>`;
+}
+// Motivo legible: las decisiones manuales guardadas antes de la Fase 10 llevaban la instrucción del pendiente («pega el email»…)
+function ukReasonText(r) {
+  return String(r || '')
+    .replace(/: DUTY en calendario sin email: pega el email$/, ' · DUTY sin email')
+    .replace(/: email incompleto \(sin On Block\): re-pégalo$/, ' · email sin On Block')
+    .replace(/: (calendario \([A-Z]+\) y email discrepan)$/, ' · $1');
+}
+function ukAskNote(ask) {
+  if (!ask?.asked) return '';
+  if (ask.changed) return ' La entrada de UK Days cambió desde otro dispositivo.';
+  return ask.use ? ` UK Day: se usa el email (${ukStateName(ask.says)}).` : ` UK Day: se mantiene tu marca (el email dice ${ukStateName(ask.says)}).`;
+}
+
 // Vuelos de un día: historial (manda) o, si se borró el historial, los guardados para el Excel
 function ukFlightsOf(iso) { return loadHistory()[iso]?.flights || _excelData[iso]?.flights; }
 
@@ -2503,7 +2587,8 @@ function renderUKDays() {
         const e = _ukdays[x.iso];
         const route = e ? e.route : calLabel((x.source || "").slice(4));
         const ob = e ? `OB ${esc(e.onBlock)} ${esc(e.tz)}` : 'calendario';
-        const warn = x.legacyOutside ? ` <span style="color:var(--amber)" title="Acaba fuera de UK: re-pega el email">⚠ revisar</span>` : '';
+        const says = e?.manual ? ukEmailSays(x.iso) : undefined;
+        const warn = (x.legacyOutside ? ` <span style="color:var(--amber)" title="Acaba fuera de UK: re-pega el email">⚠ revisar</span>` : '') + (says ? ukSaysTag(says) : '');
         const del = `<button class="day-del" title="Marcar como NO UK Day / eliminar" onclick="removeUKDay('${x.iso}')">✕</button>`;
         const ex = excMap[x.iso];
         const excBtn = `<button class="btn btn-ghost btn-sm" style="padding:.15rem .4rem;font-size:.7rem${ex ? ';color:var(--amber);border-color:var(--amber)' : ''}" title="${ex ? 'Quitar la marca de circunstancia excepcional' : 'Marcar como circunstancia excepcional (no computa)'}" onclick="toggleUKExceptional('${x.iso}')">Exc</button>`;
@@ -2534,10 +2619,11 @@ function renderUKDays() {
   if (outList.length || futureNo.length) {
     const nWork = outList.filter(x => x.outKind === 'work').length, nOff = outList.length - nWork;
     const shown = outList.filter(x => x.outKind === _ukOutKind);
+    const saysTag = iso => { const says = _ukdays[iso]?.manual ? ukEmailSays(iso) : undefined; return says ? ukSaysTag(says) : ''; };
     const row = x => `
       <div class="day-item">
         <span class="day-date">${dateISOToDisplay(x.iso)}</span>
-        <span class="day-route" style="font-family:inherit;font-size:.78rem">${esc(x.reason)}${excMap[x.iso] ? ' <span style="color:var(--amber)">(marca exc. conservada)</span>' : ''}</span>
+        <span class="day-route" style="font-family:inherit;font-size:.78rem">${esc(ukReasonText(x.reason))}${excMap[x.iso] ? ' <span style="color:var(--amber)">(marca exc. conservada)</span>' : ''}${saysTag(x.iso)}</span>
         <span class="day-count">${esc(ukSourceLabel(x.source))}</span>
         <button class="btn btn-ghost btn-sm" title="Forzar UK Day" onclick="ukForceUKFromOut('${x.iso}')">UK</button>
         ${_ukdays[x.iso]?.manual ? `<button class="day-del" title="Quitar la marca" onclick="removeUKDay('${x.iso}')">✕</button>` : ''}
@@ -2589,7 +2675,7 @@ function ukDecidePending(iso, state) {
   if (st.state !== 'pending') return;
   if (!requireHydrated({ alert: true })) return;
   const prev = _ukdays[iso];
-  const reason = `decidido a mano (${state === 'uk' ? 'dormí en UK' : 'dormí fuera de UK'}): ${st.reason}`;
+  const reason = ukReasonText(`decidido a mano (${state === 'uk' ? 'dormí en UK' : 'dormí fuera de UK'}): ${st.reason}`);
   saveUKDays({ ..._ukdays, [iso]: { state, route: prev?.route || '—', onBlock: prev?.onBlock || '--:--', tz: prev?.tz || (ukOffsetMin(iso) ? 'BST' : 'GMT'), manual: true, source: 'manual', reason, at: new Date().toISOString() } });
   renderUKDays();
 }
@@ -2636,7 +2722,7 @@ function ukForceUKFromOut(iso) {
   if (!ISO_RE.test(String(iso))) return;
   if (!requireHydrated({ alert: true })) return;
   const st = ukDayStatus(iso);
-  if (!confirm(`¿Pasar el ${dateISOToDisplay(iso)} a UK Day?\n\nAhora: ${st.reason || 'fuera de UK'}.\nQuedará como decisión tuya (manual).`)) return;
+  if (!confirm(`¿Pasar el ${dateISOToDisplay(iso)} a UK Day?\n\nAhora: ${ukReasonText(st.reason) || 'fuera de UK'}.\nQuedará como decisión tuya (manual).`)) return;
   addUKDayManual(iso);
 }
 
@@ -2679,7 +2765,7 @@ function emailUKDaysBackup() {
   });
   if (outList.length) {
     const work = outList.filter(x => x.outKind === 'work'), off = outList.filter(x => x.outKind === 'off');
-    const line = x => `  ${dateISOToDisplay(x.iso)}  ${x.reason || ''}  [${ukSourceLabel(x.source)}]`;
+    const line = x => `  ${dateISOToDisplay(x.iso)}  ${ukReasonText(x.reason)}  [${ukSourceLabel(x.source)}]`;
     lines.push(`── Fuera de UK: ${outList.length} (${work.length} trabajo · ${off.length} libres) — no cuentan ──`);
     if (work.length) { lines.push('  Trabajo:'); work.forEach(x => lines.push(line(x))); }
     if (off.length) {
@@ -2694,7 +2780,7 @@ function emailUKDaysBackup() {
   const futureNo = noList.filter(x => x.iso > londonYesterdayISO());
   if (futureNo.length) {
     lines.push('── No UK marcados para hoy o fechas futuras (aún no cuentan) ──');
-    futureNo.forEach(x => lines.push(`  ${dateISOToDisplay(x.iso)}  ${x.reason || ''}  [${ukSourceLabel(x.source)}]`));
+    futureNo.forEach(x => lines.push(`  ${dateISOToDisplay(x.iso)}  ${ukReasonText(x.reason)}  [${ukSourceLabel(x.source)}]`));
     lines.push('');
   }
   lines.push(`Total: ${uk} confirmados · ${pending.length} pendientes`);

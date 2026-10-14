@@ -48,6 +48,7 @@ async function makeEnv({ mode = 'cloud', auth = true, lsInit = {}, setItemThrows
   const role = makeEl(); role.value = 'FO';
   const ls = new Map([['easylog_mode', mode], ...Object.entries(lsInit)]);
   env.ls = ls; env.byId = byId;
+  env.nav = {}; // 11-02: los tests ponen navigator.clipboard aquí
   const ctx = vm.createContext({
     document: { getElementById: byId, querySelector: s => (s.includes('role') ? role : makeEl()), querySelectorAll: () => [], body: makeEl(), createElement: () => makeEl(), addEventListener() {} },
     localStorage: {
@@ -55,8 +56,8 @@ async function makeEnv({ mode = 'cloud', auth = true, lsInit = {}, setItemThrows
       setItem: (k, v) => { if (setItemThrows(k)) throw new Error('QuotaExceededError'); ls.set(k, String(v)); },
       removeItem: k => ls.delete(k),
     },
-    window: { _ukNowOverride: FIXED_NOW }, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl,
-    confirm: () => { env.confirms++; return env.confirmImpl ? env.confirmImpl() : true; },
+    window: { _ukNowOverride: FIXED_NOW }, navigator: env.nav, location: {}, console, Date, Math, JSON, Promise, Intl,
+    confirm: m => { env.confirms++; env.lastConfirm = String(m); return env.confirmImpl ? env.confirmImpl(m) : true; },
     prompt: () => null, alert: m => env.alerts.push(String(m)),
     setTimeout: (fn, ms) => (ms === 0 ? Promise.resolve().then(fn) : 0), clearTimeout() {}, setInterval: () => 0,
     __fakeImport: async name => { if (env.beforeImport) env.beforeImport(); return fakeMods[name]; },
@@ -255,6 +256,50 @@ check('AC-5 sin «Repite el último cambio si no aparece»', !html.includes('Rep
   check('AC-6 re-pegar idéntico solo-Excel → vuelve a la lista', (E.statuses.at(-1) || '').includes('vuelve a la lista') && Object.keys(E.cloudDoc().history).includes(FIXTURE_DATE), E.statuses.at(-1));
   E.run(`_calSel = '2026-09-26'; setDayStatus('off')`); await tick();
   check('AC-6 calendario con nube cargada se guarda', E.cloudDoc().dayMap['2026-09-26'] === 'off' && E.alerts.length === 0);
+}
+
+// ══ 11-02 AC-4: «Descartar copia dañada» (modo Local) ══
+{
+  const E = await makeEnv({ mode: 'local', lsInit: { easylog_history_v1: '{roto', easylog_days_v1: '[1' } });
+  E.run('loadDayMap()');
+  const box = () => E.byId('corrupt-box').innerHTML;
+  check('11-02 AC-4 botón por cada copia dañada (data-act)', /data-act="discardCorrupt" data-arg="easylog_history_v1"/.test(box()) && /data-arg="easylog_days_v1"/.test(box()) && /la lista de días/.test(box()) && /el calendario/.test(box()), box());
+  const T = k => E.run(`DATA_ACTS.discardCorrupt[0].test(${JSON.stringify(k)})`);
+  check('11-02 AC-4 validador: acepta solo claves dañadas conocidas', T('easylog_history_v1') === true && T('easylog_excel_v1') === false && T('easylog_mode') === false && T('x"><img') === false);
+  // Cancelar → nada cambia; el portapapeles recibe el texto crudo exacto
+  const clip = [];
+  E.nav.clipboard = { writeText: async t => { clip.push(t); } };
+  E.confirmImpl = () => false;
+  await E.run(`discardCorrupt('easylog_history_v1')`); await tick();
+  check('11-02 AC-4 portapapeles = texto original exacto', clip[0] === '{roto', JSON.stringify(clip));
+  check('11-02 AC-4 confirm dice que está en el portapapeles', /ya está en el portapapeles/.test(E.lastConfirm), E.lastConfirm);
+  check('11-02 AC-4 cancelar → sigue dañada y la clave intacta', E.ls.get('easylog_history_v1') === '{roto' && E.run(`_localCorrupt.has('easylog_history_v1')`) === true);
+  // Un día pegado con la copia dañada: queda en pantalla sin guardar
+  E.run(`saveHistory({ '2026-09-19': { addedAt: 'P', role: 'FO', flights: [] } })`);
+  // Aceptar → borrada, fuera de _localCorrupt, y se vuelve a poder guardar
+  E.confirmImpl = () => true;
+  await E.run(`discardCorrupt('easylog_history_v1')`); await tick();
+  check('11-02 AC-4 aceptar → copia dañada sustituida y fuera de _localCorrupt', E.ls.get('easylog_history_v1') !== '{roto' && E.run(`_localCorrupt.has('easylog_history_v1')`) === false);
+  check('11-02 AC-4 aceptar → aviso ok', /Copia dañada descartada/.test(E.statuses.at(-1) || ''), E.statuses.at(-1));
+  check('11-02 AC-4 el botón de esa clave desaparece (queda el del calendario)', !/easylog_history_v1/.test(box()) && /easylog_days_v1/.test(box()), box());
+  check('11-02 G6 al descartar se guarda lo que había en pantalla (día pegado sin poder guardarse)', /2026-09-19/.test(E.ls.get('easylog_history_v1') || ''), E.ls.get('easylog_history_v1'));
+  const ok = E.run(`saveHistory({ ...loadHistory(), '2026-09-20': { addedAt: 'A', role: 'FO', flights: [] } })`);
+  check('11-02 AC-4 persist() vuelve a guardar ese dato', ok === true && /2026-09-20/.test(E.ls.get('easylog_history_v1') || ''));
+  // Sin portapapeles → el confirm avisa de que se pierde
+  delete E.nav.clipboard;
+  E.confirmImpl = () => false;
+  await E.run(`discardCorrupt('easylog_days_v1')`); await tick();
+  check('11-02 AC-4 sin portapapeles → confirm «NO se ha podido copiar»', /NO se ha podido copiar/.test(E.lastConfirm), E.lastConfirm);
+  E.confirmImpl = () => true;
+  await E.run(`discardCorrupt('easylog_days_v1')`); await tick();
+  E.run(`_calSel = '2026-09-26'; setDayStatus('off');`);
+  check('11-02 AC-4 calendario descartado → se vuelve a guardar', /2026-09-26/.test(E.ls.get('easylog_days_v1') || '') && box() === '', E.ls.get('easylog_days_v1'));
+}
+{
+  // Modo Nube: sin botones y el validador lo rechaza aunque la clave conste como dañada
+  const E = await makeEnv(); E.fire(); await tick();
+  E.run(`_localCorrupt.add('easylog_history_v1'); renderCorruptBox();`);
+  check('11-02 AC-4 modo Nube: sin botones y validador rechaza', E.byId('corrupt-box').innerHTML === '' && E.run(`DATA_ACTS.discardCorrupt[0].test('easylog_history_v1')`) === false);
 }
 
 console.log(`\n${fails ? fails + ' FAIL' : 'TODO OK'} (${checks} checks)`);

@@ -628,6 +628,7 @@
       <button class="btn btn-ghost" onclick="clearInput()">Limpiar</button>
       <span id="status" class="status hidden"></span>
     </div>
+    <div id="corrupt-box" class="actions hidden"></div>
     <div class="hint">El día se guarda en la nube y se sincroniza entre tus dispositivos. Pega de uno en uno. <span id="sync-indicator" class="sync-indicator"></span></div>
   </div>
 
@@ -756,7 +757,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.14-200023';
+const APP_VERSION = '2026.10.14-230417';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -1348,6 +1349,7 @@ function runwaysMissing(list) {
 
 // ─── Storage (mode-aware: local | cloud) ─────────────────────────────────────
 const STORAGE_KEY   = 'easylog_history_v1';
+const CAL_KEY       = 'easylog_days_v1'; // calendario (_dayMap)
 const AIRPORTS_KEY  = 'easylog_airports_v1';
 const UK_DAYS_KEY   = 'easylog_ukdays_v1';
 const EXCEL_KEY     = 'easylog_excel_v1';
@@ -1373,6 +1375,11 @@ let _dayMap       = {};    // calendario { 'YYYY-MM-DD': 'off'|'stby'|'duty'|'si
 // Escrituras a Firestore enviadas y aún sin confirmar por el servidor. Solo baja cuando setDoc resuelve o rechaza, NUNCA por
 // tiempo: la auto-actualización no recarga mientras > 0 (recargar perdería la escritura en cola) y onSnapshot la usa (regla D2).
 let _cloudWrites   = 0;
+// 11-02: sesión de nube (sube al cerrar sesión o cambiar de modo). Una escritura de una sesión anterior no toca el contador,
+// el indicador ni los avisos de la nueva. _writesInFlight cuenta TODAS las escrituras aún en la cola del SDK (sin sesión):
+// la auto-actualización no recarga mientras > 0 (recargar perdería la escritura en cola aunque sea de otra sesión)
+let _cloudEpoch    = 0;
+let _writesInFlight = 0;
 
 function getMode() { return localStorage.getItem(MODE_KEY); } // 'local' | 'cloud' | null
 function setMode(m) { localStorage.setItem(MODE_KEY, m); }
@@ -1400,6 +1407,9 @@ function persist() {
   if (mode === 'cloud') {
     // Red de seguridad: los mutadores ya llaman a requireHydrated() antes de tocar nada
     if (!cloudWriteGate()) return false;
+    // 11-02: un dato dañado en la nube con cambios en memoria → no se envía nada (ni un «guardado» parcial)
+    const maps = CLOUD_MAPS();
+    if (cloudCorruptBlocked(Object.keys(maps).filter(f => maps[f] && Object.keys(maps[f]).length))) return false;
     persistCloud();
     return true; // enviado: si falla, persistCloud lo avisa (el error sustituye al «OK»)
   } else {
@@ -1426,7 +1436,25 @@ function persist() {
 
 // Claves locales con JSON ilegible: se cargan vacías y NUNCA se sobrescriben solas (así el texto original se puede recuperar)
 const _localCorrupt = new Set();
-const LOCAL_KEY_NAMES = { [STORAGE_KEY]: 'la lista de días', [EXCEL_KEY]: 'el Excel Tax Year', [AIRPORTS_KEY]: 'los aeropuertos', [UK_DAYS_KEY]: 'los UK Days', [RUNWAYS_KEY]: 'las pistas', [SETTINGS_KEY]: 'la configuración' };
+const LOCAL_KEY_NAMES = { [STORAGE_KEY]: 'la lista de días', [EXCEL_KEY]: 'el Excel Tax Year', [AIRPORTS_KEY]: 'los aeropuertos', [UK_DAYS_KEY]: 'los UK Days', [RUNWAYS_KEY]: 'las pistas', [SETTINGS_KEY]: 'la configuración', [CAL_KEY]: 'el calendario' };
+// 11-02: campos del documento de la nube que no son un objeto (mismo trato que _localCorrupt: vacíos en memoria y nunca se
+// sobrescriben). Se recalcula en cada snapshot (cada snapshot es el documento entero).
+const _cloudCorrupt = new Set();
+const CLOUD_FIELD_NAMES = { history: 'la lista de días', excelData: 'el Excel Tax Year', airports: 'los aeropuertos', ukdays: 'los UK Days', runways: 'las pistas', settings: 'la configuración', dayMap: 'el calendario' };
+const cloudCorruptNames = (only) => [...(only || _cloudCorrupt)].map(f => CLOUD_FIELD_NAMES[f] || f).join(', ');
+const CLOUD_MAPS = () => ({ history: _cache, excelData: _excelData, airports: _airports, ukdays: _ukdays, runways: _runways, settings: _settings });
+// ¿Se intentó cambiar un dato dañado en la nube? (su mapa en memoria ya no está vacío) → no se guarda nada: avisa y false
+function cloudCorruptBlocked(fields) {
+  const touched = fields.filter(f => _cloudCorrupt.has(f));
+  if (!touched.length) return false;
+  showStatus('err', `No se ha guardado ${cloudCorruptNames(touched)}: en la nube está dañado y no se sobrescribe.`);
+  // G6: lo cambiado en un dato dañado nunca se podrá guardar → se descarta de memoria, para que no bloquee los guardados
+  // siguientes de los demás datos
+  const reset = { history: () => { _cache = {}; }, excelData: () => { _excelData = {}; }, airports: () => { _airports = {}; },
+    ukdays: () => { _ukdays = {}; }, runways: () => { _runways = {}; }, settings: () => { _settings = {}; }, dayMap: () => { _dayMap = {}; } };
+  touched.forEach(f => reset[f]?.());
+  return true;
+}
 function hydrateLocal() {
   const read = (k) => {
     try {
@@ -1448,6 +1476,42 @@ function hydrateLocal() {
     const names = [..._localCorrupt].map(k => LOCAL_KEY_NAMES[k] || k).join(', ');
     showStatus('warn', `No se pudo leer: ${names}. El resto de tus datos está cargado; ese dato no se sobrescribe.`);
   }
+  renderCorruptBox();
+}
+
+// 11-02: «dar por perdida» una copia local dañada. Un botón por clave (solo en modo Local); el texto original se copia
+// antes al portapapeles y se pide confirmación.
+const deName = n => (n.startsWith('el ') ? 'del ' + n.slice(3) : 'de ' + n); // «del calendario», «de los UK Days»
+function renderCorruptBox() {
+  const box = document.getElementById('corrupt-box');
+  if (!box) return;
+  const keys = getMode() === 'local' ? [..._localCorrupt] : [];
+  box.classList.toggle('hidden', !keys.length);
+  box.innerHTML = keys.map(k => `<button class="btn btn-ghost" data-act="discardCorrupt" data-arg="${esc(k)}">Descartar copia dañada ${esc(deName(LOCAL_KEY_NAMES[k] || k))}</button>`).join('');
+}
+async function discardCorrupt(k) {
+  const name = LOCAL_KEY_NAMES[k] || k;
+  const raw = localStorage.getItem(k) ?? '';
+  // writeText se llama ya, dentro del toque (iOS exige el gesto del usuario); se espera después
+  let copy;
+  try { copy = navigator.clipboard?.writeText ? navigator.clipboard.writeText(raw) : Promise.reject(new Error('sin portapapeles')); }
+  catch (e) { copy = Promise.reject(e); }
+  const copied = await copy.then(() => true, (e) => { console.warn('Copia al portapapeles fallida:', e); return false; });
+  const msg = copied
+    ? `Se borrará de este dispositivo la copia dañada ${deName(name)}.\n\nSu texto original ya está en el portapapeles: pégalo en una nota si quieres conservarlo.\n\n¿Borrar?`
+    : `NO se ha podido copiar el texto original ${deName(name)}: si sigues, se pierde para siempre.\n\n¿Borrar igualmente?`;
+  if (!confirm(msg)) return;
+  if (getMode() !== 'local' || !_localCorrupt.has(k)) return; // cambió el modo o ya se descartó mientras preguntaba
+  try { localStorage.removeItem(k); }
+  catch (e) { console.warn('removeItem failed:', e); showStatus('err', `No se ha podido borrar la copia dañada ${deName(name)}.`); return; }
+  _localCorrupt.delete(k);
+  // G6: lo que hay en memoria (vacío, o lo pegado después sin poder guardarse) se guarda ya en la clave limpia: no desaparece
+  if (k === CAL_KEY) saveDayMap(); else persist();
+  renderCorruptBox();
+  renderHistory();
+  renderAirports();
+  renderCalendar();
+  showStatus('ok', `Copia dañada descartada: ya se puede volver a guardar ${name}.`);
 }
 
 async function persistCloud() {
@@ -1455,23 +1519,29 @@ async function persistCloud() {
   // ni al volver de segundo plano sin haber releído la nube (stale)
   if (!cloudWriteGate()) return false;
   // Lo que se envía se captura AHORA: un snapshot que llegue durante un await sustituiría _cache… y se perdería este cambio
-  const payload = { history: _cache, excelData: _excelData, airports: _airports, ukdays: _ukdays, runways: _runways, settings: _settings, updatedAt: Date.now() };
+  const payload = { ...CLOUD_MAPS(), updatedAt: Date.now() };
+  // 11-02: los campos dañados en la nube no se envían (mergeFields los dejaría vacíos)
+  const fields = Object.keys(payload).filter(f => !_cloudCorrupt.has(f));
+  _cloudCorrupt.forEach(f => delete payload[f]);
   const uid = cloud.user.uid;
   setSync('syncing', 'Guardando…');
-  _cloudWrites++;
+  _cloudWrites++; _writesInFlight++;
+  const ep = _cloudEpoch;
   let ok = false;
   try {
     // Con el módulo ya cargado (cloud.fs) setDoc se llama en el mismo tick que el cambio en memoria
     const { doc, setDoc } = cloud.fs || await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
     // mergeFields reemplaza cada campo entero (así los borrados llegan a la nube; merge:true conservaba las claves borradas).
     // dayMap no está en la lista → queda intacto; se guarda por separado en saveDayMap()
-    await watchWrite(setDoc(doc(cloud.db, 'users', uid), payload, { mergeFields: ['history', 'excelData', 'airports', 'ukdays', 'runways', 'settings', 'updatedAt'] }));
+    await watchWrite(setDoc(doc(cloud.db, 'users', uid), payload, { mergeFields: fields }), ep);
     ok = true; // «Sincronizado ✓» lo pone cloudWriteDone, solo si no queda nada en vuelo
   } catch (e) {
     console.error('Cloud save failed:', e);
-    setSync('err', 'Error al sincronizar');
-    showStatus('err', `No se ha guardado en la nube (${cloudErrText(e)}). Repite el cambio.`);
-  } finally { cloudWriteDone(ok); }
+    if (ep === _cloudEpoch) {
+      setSync('err', 'Error al sincronizar');
+      showStatus('err', `No se ha guardado en la nube (${cloudErrText(e)}). Repite el cambio.`);
+    }
+  } finally { cloudWriteDone(ok, ep); }
 }
 
 // ── 08-02: escrituras sin confirmar ──
@@ -1479,10 +1549,10 @@ async function persistCloud() {
 // que se pierde al recargar). Pasado el plazo se avisa, pero la escritura sigue contando en _cloudWrites.
 const WRITE_WARN_MS = 20000, WRITE_WARN_OFFLINE_MS = 5000;
 let _unconfirmedWarned = false;
-function watchWrite(p) {
+function watchWrite(p, ep) {
   const ms = (typeof navigator !== 'undefined' && navigator.onLine === false) ? WRITE_WARN_OFFLINE_MS : WRITE_WARN_MS;
   const t = setTimeout(() => {
-    if (_cloudWrites === 0) return;
+    if (_cloudWrites === 0 || ep !== _cloudEpoch) return; // 11-02: la de una sesión anterior no avisa en la nueva
     _unconfirmedWarned = true;
     setSync('err', 'Sin confirmar');
     showStatus('err', 'La nube no ha confirmado el guardado (¿sin conexión?). No recargues ni cierres la app hasta que ponga "Sincronizado ✓"; si se pierde, repite el cambio.');
@@ -1493,7 +1563,9 @@ function watchWrite(p) {
 // algún snapshot mientras tanto (regla D2), relee la nube por si traía cambios de otro dispositivo.
 // «Sincronizado ✓» solo con 0 escrituras en vuelo y sin relectura pendiente: el aviso de «sin confirmar» pide no recargar
 // hasta verlo, así que no puede salir mientras quede otra escritura en cola.
-function cloudWriteDone(ok) {
+function cloudWriteDone(ok, ep) {
+  _writesInFlight--;
+  if (ep !== _cloudEpoch) return; // 11-02: escritura de una sesión anterior (resetCloudSync ya dejó el contador de la nueva en 0)
   _cloudWrites--;
   if (_cloudWrites > 0) return;
   const warned = _unconfirmedWarned;
@@ -1583,6 +1655,13 @@ const CAL_STATES = new Set(['off', 'stby', 'duty', 'sim', 'sd']);
 // Claves de estado guardadas con formato de fecha; las que no lo tienen se omiten al pintar (sin borrarlas)
 function isoKeys(obj, label) {
   return Object.keys(obj).filter(k => ISO_RE.test(k) || (console.warn(`${label}: clave inválida ignorada`, k), false));
+}
+// 11-02: vuelos de una entrada de historial/Excel, o null si la entrada no tiene la forma esperada (dato raro de la nube o de
+// una versión vieja). Esas entradas se saltan al pintar y exportar, pero se quedan en memoria: vuelven intactas a la nube.
+function dayFlights(e) { return e && typeof e === 'object' && Array.isArray(e.flights) ? e.flights : null; }
+// Claves de días con fecha válida y vuelos legibles
+function dayKeys(obj, label) {
+  return isoKeys(obj, label).filter(k => dayFlights(obj[k]) || (console.warn(`${label}: día con formato desconocido ignorado`, k), false));
 }
 
 function routeOfDay(flights) {
@@ -1689,7 +1768,7 @@ function addDay() {
 
   // Día ya existente (en la lista o solo en el Excel): comparar vuelos antes de escribir nada.
   // El rol guardado manda (hoy siempre FO/SIC; un CPT marcado al re-pegar es un clic equivocado).
-  const prev = hist[iso] || _excelData[iso];
+  const prev = (dayFlights(hist[iso]) && hist[iso]) || (dayFlights(_excelData[iso]) && _excelData[iso]) || null; // 11-02: una entrada rara no cuenta como día previo
   const prevRole = prev?.role || 'FO';
   let dayRole = prev ? prevRole : role();
   const roleName = r => r === 'SP' ? 'SAFETY PILOT' : r;
@@ -1697,7 +1776,7 @@ function addDay() {
   // Tras cada confirm: otro dispositivo pudo guardar el día o cambiar sus vuelos mientras preguntaba → no se escribe nada
   const changedMeanwhile = () => {
     hist = loadHistory(); // un snapshot pudo sustituir el historial durante el diálogo: no pisarlo con la copia vieja
-    const now = hist[iso] || _excelData[iso];
+    const now = (dayFlights(hist[iso]) && hist[iso]) || (dayFlights(_excelData[iso]) && _excelData[iso]) || null;
     if (!now && !prev) return false;
     if (!now || !prev) return true;
     return flightsKey(now.flights || []) !== flightsKey(prev.flights || []);
@@ -1714,9 +1793,9 @@ function addDay() {
       const prevUK = _ukdays;
       if (ask.use) setUKDays(ukWithEmailRule(iso, prev.flights));
       let msg, type = 'ok';
-      if (hist[iso]) {
-        // Idéntico y en la lista: no se toca nada (salvo reparar el Excel si le falta el día)
-        const fixExcel = !_excelData[iso] || flightsKey(_excelData[iso].flights) !== flightsKey(hist[iso].flights);
+      if (prev === hist[iso]) {
+        // Idéntico y en la lista: no se toca nada (salvo reparar el Excel si le falta el día o el suyo es ilegible)
+        const fixExcel = !dayFlights(_excelData[iso]) || flightsKey(_excelData[iso].flights) !== flightsKey(hist[iso].flights);
         if (fixExcel) { _excelData[iso] = { role: prevRole, flights: hist[iso].flights }; if (!saveHistory(hist)) { setUKDays(prevUK); return; } }
         else if (ask.use && !saveUKDays(_ukdays)) { setUKDays(prevUK); renderUKDays(); return; }
         msg = `El ${day} ya está en la lista (sin cambios).${fixExcel ? ' Añadido al Excel.' : ''}`;
@@ -1888,7 +1967,7 @@ function removeDay(iso) {
   const hist = loadHistory();
   if (!hist[iso]) return;
   if (!requireHydrated()) return;
-  const n = hist[iso].flights.length;
+  const n = dayFlights(hist[iso])?.length || 0;
   if (!confirm(`¿Quitar el ${dateISOToDisplay(iso)} (${n} vuelo${n !== 1 ? 's' : ''}) de la lista?\n\nSigue en el Excel Tax Year y en UK Days.`)) return;
   delete hist[iso];
   const saved = saveHistory(hist);
@@ -1901,7 +1980,7 @@ function clearHistory() {
   const days = Object.keys(hist).length;
   if (!days) { showStatus('warn', 'El historial ya está vacío.'); return; }
   if (!requireHydrated()) return;
-  const total = Object.values(hist).reduce((s, d) => s + d.flights.length, 0);
+  const total = Object.values(hist).reduce((s, d) => s + (dayFlights(d)?.length || 0), 0);
   if (!confirm(`¿Borrar TODO el historial? (${days} días, ${total} vuelos)\n\nEsta acción no se puede deshacer.`)) return;
   const saved = saveHistory({});
   renderHistory();
@@ -1911,7 +1990,7 @@ function clearHistory() {
 function flightsForMonth(mk) {
   const hist = loadHistory();
   const out = [];
-  Object.keys(hist).sort().forEach(iso => {
+  dayKeys(hist, 'Historial').sort().forEach(iso => {
     if (monthKey(iso) !== mk) return;
     const r = hist[iso].role || 'FO';
     hist[iso].flights.forEach(flight => out.push({ flight, role: r }));
@@ -1922,7 +2001,7 @@ function flightsForMonth(mk) {
 function allFlights() {
   const hist = loadHistory();
   const out = [];
-  Object.keys(hist).sort().forEach(iso => {
+  dayKeys(hist, 'Historial').sort().forEach(iso => {
     const r = hist[iso].role || 'FO';
     hist[iso].flights.forEach(flight => out.push({ flight, role: r }));
   });
@@ -1979,7 +2058,7 @@ let _lastExport = null; // { mk: 'YYYY-MM' | null (todo), n, days: { iso: addedA
 function exportSnapshot(mk, n) {
   const hist = loadHistory();
   const days = {};
-  Object.keys(hist).forEach(iso => { if (!mk || monthKey(iso) === mk) days[iso] = hist[iso].addedAt; });
+  dayKeys(hist, 'Historial').forEach(iso => { if (!mk || monthKey(iso) === mk) days[iso] = hist[iso].addedAt; });
   return { mk, n, days };
 }
 function clearExported() {
@@ -2257,14 +2336,15 @@ function ukAskNote(ask) {
 }
 
 // Vuelos de un día: historial (manda) o, si se borró el historial, los guardados para el Excel
-function ukFlightsOf(iso) { return loadHistory()[iso]?.flights || _excelData[iso]?.flights; }
+function ukFlightsOf(iso) { return dayFlights(loadHistory()[iso]) || dayFlights(_excelData[iso]) || undefined; }
 
 // Crea entradas para días con email y sin entrada, y recalcula las que ya creó la regla (source 'rule:*') por si la regla cambió.
 // No toca las manuales ni las antiguas sin source (sin migración en caliente), ni nada de un año congelado.
 function backfillUKDays() {
+  if (_cloudCorrupt.has('ukdays')) return; // 11-02: UK Days dañados en la nube: no se rellenan (no se podrían guardar)
   const updated = { ..._ukdays };
   let changed = false;
-  new Set([...isoKeys(loadHistory(), 'Historial'), ...isoKeys(_excelData, 'Excel')]).forEach(iso => {
+  new Set([...dayKeys(loadHistory(), 'Historial'), ...dayKeys(_excelData, 'Excel')]).forEach(iso => {
     // Fuera de alcance, o año congelado: solo lectura (en un año cerrado solo escribe el usuario, con confirmación)
     if (!ukInScope(iso) || ukYearFrozen(taxYearOf(iso))) return;
     const e = updated[iso];
@@ -2287,7 +2367,7 @@ function londonTodayISO(now = ukNow()) {
   return new Date(now.getTime() + ukOffsetAt(now) * 60000).toISOString().slice(0, 10);
 }
 function ukHasEmail(iso) {
-  return !!(loadHistory()[iso]?.flights?.length || _excelData[iso]?.flights?.length);
+  return !!(dayFlights(loadHistory()[iso])?.length || dayFlights(_excelData[iso])?.length);
 }
 function ukIsLegacyOutside(e) {
   if (!e || e.source || e.manual || ukEntryState(e) !== 'uk') return false;
@@ -2857,7 +2937,7 @@ function removeUKDay(iso) {
 // ─── Render ───────────────────────────────────────────────────────────────────
 function renderHistory() {
   const hist = loadHistory();
-  const isoList = isoKeys(hist, 'Historial').sort().reverse();
+  const isoList = dayKeys(hist, 'Historial').sort().reverse();
   const totalDays    = isoList.length;
   const totalFlights = isoList.reduce((s, iso) => s + hist[iso].flights.length, 0);
 
@@ -2930,7 +3010,7 @@ function rwyButtonHTML(iso, flights) {
 
 let _rwySel = null; // { iso, token, rows: [{ key, fn, dep, arr, confirmed: {dep, arr}, val: {dep, arr}, sug: {dep, arr} }] }
 function openRwyModal(iso) {
-  const flights = loadHistory()[iso]?.flights;
+  const flights = dayFlights(loadHistory()[iso]);
   if (!flights?.length) return;
   const keys = rwyKeys(flights), offs = sectorDayOffsets(flights), token = Date.now() + Math.random();
   _rwySel = { iso, token, rows: flights.map((f, i) => {
@@ -3043,7 +3123,7 @@ function closeRwyModal() {
 
 // Días que siguen en el Excel Tax Year pero ya no en el historial (p. ej. tras "Borrar historial"): sección plegada para poder borrarlos
 function excelOnlyHTML(hist) {
-  const list = isoKeys(_excelData, 'Excel').filter(iso => !hist[iso]).sort().reverse();
+  const list = dayKeys(_excelData, 'Excel').filter(iso => !dayFlights(hist[iso])).sort().reverse();
   if (!list.length) return '';
   const items = list.map(iso => `
         <div class="day-item">
@@ -3129,6 +3209,7 @@ function applyLocalMode() {
 
 async function applyCloudMode() {
   hideWelcome();
+  renderCorruptBox(); // 11-02: en modo Nube no hay botones de copia local dañada
   setSync('syncing', 'Cargando nube…');
   try {
     const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js');
@@ -3174,7 +3255,7 @@ async function applyCloudMode() {
     };
     // logout
     document.getElementById('btn-logout').onclick = async () => {
-      if (!confirm('¿Cerrar sesión? Tus datos siguen en la nube.')) return;
+      if (!confirm('¿Cerrar sesión? Tus datos siguen en la nube.' + unconfirmedWritesNote())) return;
       _lastExport = null;
       await authMod.signOut(cloud.auth);
     };
@@ -3219,14 +3300,31 @@ function subscribeCloud(u) {
 // resume: viene de releer la nube al volver de segundo plano (el aviso de «ya puedes» es otro)
 const RESUME_OK_MSG = 'Nube comprobada: ya puedes repetir el cambio.';
 function applyCloudData(data, { resume = false } = {}) {
-  _cache      = data.history   || {};
-  _excelData  = data.excelData || {};
-  _airports   = data.airports  || {};
-  _ukdays     = data.ukdays    || {};
-  _runways    = data.runways   || {};
-  _settings   = data.settings && typeof data.settings === 'object' && !Array.isArray(data.settings) ? data.settings : {};
-  _dayMap     = data.dayMap    || {};
-  try { localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap)); } catch {}
+  // 11-02: un campo que no es un objeto se carga vacío y queda en _cloudCorrupt: no se reescribe nunca (así no se borra)
+  _cloudCorrupt.clear();
+  const field = f => {
+    const v = data[f];
+    if (v === undefined) return {};
+    if (v && typeof v === 'object' && !Array.isArray(v)) return v;
+    _cloudCorrupt.add(f);
+    return {};
+  };
+  _cache      = field('history');
+  _excelData  = field('excelData');
+  _airports   = field('airports');
+  _ukdays     = field('ukdays');
+  _runways    = field('runways');
+  _settings   = field('settings');
+  _dayMap     = field('dayMap');
+  if (!_cloudCorrupt.has('dayMap')) { try { localStorage.setItem(CAL_KEY, JSON.stringify(_dayMap)); } catch {} }
+  const bad = [..._cloudCorrupt].sort().join(',');
+  if (bad !== cloud.corruptShown) {
+    cloud.corruptShown = bad;
+    if (bad) {
+      console.warn('Campos de la nube con formato desconocido (no se sobrescriben):', bad);
+      showStatus('warn', `En la nube está dañado: ${cloudCorruptNames()}. No se sobrescribe; los cambios en ese dato no se guardarán.`);
+    }
+  }
   cloud.hydrated = true;
   cloud.loadError = false;
   backfillUKDays();
@@ -3268,6 +3366,13 @@ function resetCloudSync() {
   clearTimeout(cloud.retryT); cloud.retryT = null; cloud.retryDelay = 0; cloud.errShown = false;
   clearTimeout(cloud.revalT); cloud.revalT = null; cloud.revalDelay = 0;
   cloud.stale = false; cloud.skipped = false;
+  _cloudCorrupt.clear(); cloud.corruptShown = '';
+  // 11-02: sesión nueva. Las escrituras aún en vuelo siguen en _writesInFlight (la auto-actualización no recarga)
+  _cloudEpoch++; _cloudWrites = 0; _unconfirmedWarned = false;
+}
+// Línea extra de los confirm de «Salir» y cambio de modo si la nube aún no ha confirmado algo
+function unconfirmedWritesNote() {
+  return _writesInFlight > 0 ? '\n\nHay cambios que la nube aún no ha confirmado: si sigues, podrían perderse.' : '';
 }
 
 // Uso secuencial (F-02-001): tras editar en otro dispositivo, este puede volver de segundo plano con la memoria vieja y,
@@ -3335,7 +3440,7 @@ function switchMode() {
   const msg = other === 'cloud'
     ? 'Cambiar a modo Nube. Tus datos de este navegador NO se suben: se quedan aquí y en la nube verás solo lo que ya tuvieras. Los vuelos se recuperan volviendo a pegar sus emails (o desde PilotLog y tu Excel).\n\n¿Continuar?'
     : 'Cambiar a modo Local. Verás solo los datos guardados en este navegador (no los de la nube).\n\n¿Continuar?';
-  if (!confirm(msg)) return;
+  if (!confirm(msg + unconfirmedWritesNote())) return;
   _lastExport = null;
   // tear down cloud listener if any
   if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
@@ -3428,7 +3533,7 @@ function excelUWFlights(flights) {
 function excelRowsForDay(iso) {
   const serial  = isoToExcelSerial(iso);
   const status  = _dayMap[iso];
-  const flights = (_excelData[iso]?.flights) || [];
+  const flights = dayFlights(_excelData[iso]) || [];
   const U = excelU(iso);
 
   if (flights.length > 0) {
@@ -3562,7 +3667,7 @@ function downloadTaxExcel() {
 }
 
 // ─── Calendar ────────────────────────────────────────────────────────────────
-const CAL_KEY = 'easylog_days_v1';
+// CAL_KEY se declara arriba, con las demás claves locales
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                    'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DAYS_ES   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -3580,12 +3685,13 @@ function loadDayMap() {
     console.warn('loadDayMap failed:', e);
     _dayMap = {};
     // En modo Nube la copia local es solo un espejo (el snapshot la reescribe); en Local es el dato: no se pisa
-    if (getMode() === 'local') { _localCorrupt.add(CAL_KEY); showStatus('warn', 'No se pudo leer: el calendario. El resto de tus datos está cargado; ese dato no se sobrescribe.'); }
+    if (getMode() === 'local') { _localCorrupt.add(CAL_KEY); showStatus('warn', 'No se pudo leer: el calendario. El resto de tus datos está cargado; ese dato no se sobrescribe.'); renderCorruptBox(); }
   }
 }
 // Devuelve true si se guardó (local) o se envió (nube). Un fallo del espejo local no impide la escritura en la nube.
 function saveDayMap() {
   let ok = true;
+  if (getMode() === 'cloud' && cloudCorruptBlocked(['dayMap'])) return false; // 11-02: ni siquiera el espejo local
   if (getMode() === 'local' && _localCorrupt.has(CAL_KEY)) {
     showStatus('err', 'No se ha guardado el calendario: su copia en este dispositivo está dañada y no se sobrescribe. El cambio se perderá al recargar.');
     return false;
@@ -3601,19 +3707,22 @@ function saveDayMap() {
   if (getMode() === 'cloud') {
     if (!cloudWriteGate()) return false;
     const dayMap = _dayMap, uid = cloud.user.uid; // capturado antes de cualquier await (ver persistCloud)
-    _cloudWrites++;
+    _cloudWrites++; _writesInFlight++;
+    const ep = _cloudEpoch;
     (async () => {
       let ok = false;
       try {
         const { doc, setDoc } = cloud.fs || await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js');
-        await watchWrite(setDoc(doc(cloud.db, 'users', uid), { dayMap }, { mergeFields: ['dayMap'] }));
+        await watchWrite(setDoc(doc(cloud.db, 'users', uid), { dayMap }, { mergeFields: ['dayMap'] }), ep);
         ok = true;
       } catch (e) {
         console.warn('saveDayMap cloud failed:', e);
-        setSync('err', 'Error al sincronizar');
-        showStatus('err', `No se ha guardado el calendario en la nube (${cloudErrText(e)}). Repite el cambio.`);
+        if (ep === _cloudEpoch) {
+          setSync('err', 'Error al sincronizar');
+          showStatus('err', `No se ha guardado el calendario en la nube (${cloudErrText(e)}). Repite el cambio.`);
+        }
       }
-      finally { cloudWriteDone(ok); }
+      finally { cloudWriteDone(ok, ep); }
     })();
   }
   return ok;
@@ -3720,6 +3829,8 @@ const DATA_ACTS = {
   ukForceUKFromOut:    [ISO_RE, a => ukForceUKFromOut(a)],
   removeDay:           [ISO_RE, a => removeDay(a)],
   toggleMonth:         [MONTH_RE, a => toggleMonth(a)],
+  // 11-02: solo claves locales conocidas, dañadas y en modo Local (defensa en profundidad ante un botón residual)
+  discardCorrupt:      [{ test: k => getMode() === 'local' && Object.prototype.hasOwnProperty.call(LOCAL_KEY_NAMES, k) && _localCorrupt.has(k) }, a => discardCorrupt(a)],
   downloadMonthCSV:    [MONTH_RE, a => downloadMonthCSV(a)],
   openRwyModal:        [ISO_RE, a => openRwyModal(a)],
   removeExcelOnlyDay:  [ISO_RE, a => removeExcelOnlyDay(a)],
@@ -3756,7 +3867,7 @@ function updateBlockers() {
   if (open('day-modal') || open('ukdate-modal') || open('ukexc-modal') || open('rwy-modal')) r.push('cierra la ventana abierta');
   if (open('auth-overlay') || open('welcome-overlay')) r.push('termina de iniciar sesión');
   if (_lastExport) r.push('cierra la barra de exportación');
-  if (_cloudWrites > 0) r.push('guardando en la nube');
+  if (_writesInFlight > 0) r.push('guardando en la nube');
   if (cloud.pendingWrite) r.push('hay un cambio sin guardar en la nube');
   return r;
 }

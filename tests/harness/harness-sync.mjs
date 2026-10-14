@@ -401,6 +401,87 @@ const D = '2026-09-20', E_ISO = '2026-09-24';
   check('G6#3 sin STALE_MSG engañoso', !E.statuses.some(s => s.includes('Comprobando que no haya')), E.statuses.join(' | '));
 }
 
+// ══ 11-02 AC-1/AC-2: epoch de sesión — una escritura de la sesión anterior no bloquea la nueva ══
+{
+  // Otra cuenta: logout con una escritura sin confirmar → login → la nueva sesión aplica snapshots
+  const E = await hydrated();
+  E.hold = true;
+  await E.paste(EMAIL_E);
+  check('EP entorno: 1 escritura en vuelo', E.run('_cloudWrites') === 1 && E.run('_writesInFlight') === 1);
+  let msg = '';
+  E.confirmImpl = m => { msg = String(m); return true; };
+  await E.run(`document.getElementById('btn-logout').onclick()`); await flush();
+  E.confirmImpl = null;
+  check('EP AC-2 el confirm de «Salir» avisa de cambios sin confirmar', /aún no ha confirmado/.test(msg), msg);
+  E.authCb(null); await flush();
+  check('EP logout: _cloudWrites 0, _writesInFlight sigue en 1', E.run('_cloudWrites') === 0 && E.run('_writesInFlight') === 1);
+  check('EP logout: la auto-actualización sigue bloqueada', E.J('updateBlockers()').includes('guardando en la nube'));
+  E.authCb({ uid: 'u2', displayName: 'Otro', photoURL: '' }); await flush();
+  const other = { history: { [D]: { addedAt: 'X', role: 'FO', flights: [] } }, excelData: {}, airports: {}, ukdays: {}, runways: {}, dayMap: {} };
+  E.fire({ data: other }); await flush();
+  check('EP sesión nueva: el snapshot del servidor se aplica (no se descarta)', has(E, '_cache', D) && !has(E, '_cache', E_ISO) && E.run('cloud.skipped') === false);
+  E.statuses.length = 0;
+  await E.release(false); await E.advance(100);
+  check('EP la vieja rechaza: sin aviso de error en la sesión nueva', !E.statuses.some(s => s.startsWith('err:')), E.statuses.join(' | '));
+  check('EP la vieja rechaza: contadores 0/0 e indicador sin «Error»', E.run('_cloudWrites') === 0 && E.run('_writesInFlight') === 0 && !/Error/.test(E.sync()), `${E.run('_cloudWrites')}/${E.run('_writesInFlight')} ${E.sync()}`);
+  check('EP la auto-actualización ya no está bloqueada por escrituras', !E.J('updateBlockers()').includes('guardando en la nube'));
+  // D2 sigue funcionando en la sesión nueva
+  E.hold = true;
+  await E.paste(EMAIL_E);
+  E.fire({ data: other }); await flush();
+  check('EP D2 en la sesión nueva: snapshot sin pending descartado', has(E, '_cache', E_ISO) && E.run('cloud.skipped') === true);
+  E.hold = false; await E.release(); await E.advance(100);
+  check('EP D2: al confirmar, 0 en vuelo', E.run('_cloudWrites') === 0 && E.run('_writesInFlight') === 0);
+}
+{
+  // Misma cuenta: la vieja resuelve en la sesión nueva sin «Sincronizado ✓» espurio ni contador negativo
+  const E = await hydrated();
+  E.hold = true;
+  await E.paste(EMAIL_E);
+  E.authCb(null); await flush();
+  E.authCb({ uid: 'u1', displayName: 'Test', photoURL: '' }); await flush();
+  // El SDK superpone la escritura vieja aún en cola: el snapshot llega con hasPendingWrites
+  const withOld = clone(E.cloudDoc()); withOld.history = { ...withOld.history, [E_ISO]: { addedAt: 'X', role: 'FO', flights: [] } };
+  E.fire({ pending: true, data: withOld }); await flush();
+  check('EP misma cuenta: snapshot con hasPendingWrites aplicado (día de la escritura vieja presente)', has(E, '_cache', E_ISO));
+  E.run(`setSync('', 'X')`);
+  await E.release(); await E.advance(100);
+  check('EP misma cuenta: la vieja resuelve → contadores 0, sin negativo', E.run('_cloudWrites') === 0 && E.run('_writesInFlight') === 0);
+  check('EP misma cuenta: la vieja no pone «Sincronizado ✓» en la sesión nueva', E.sync() === 'X', E.sync());
+  // watchWrite de la vieja no avisa en la nueva
+  const F = await hydrated();
+  F.hold = true;
+  await F.paste(EMAIL_E);
+  F.authCb(null); await flush();
+  F.authCb({ uid: 'u1', displayName: 'Test', photoURL: '' }); await flush();
+  F.fire(); await flush();
+  F.statuses.length = 0;
+  await F.advance(25000);
+  check('EP watchWrite: la escritura vieja no avisa «No recargues» en la sesión nueva', !F.statuses.some(s => s.includes('No recargues')), F.statuses.join(' | '));
+  await F.release();
+}
+{
+  // switchMode con escritura pendiente → el confirm lo avisa; cancelar no cambia nada
+  const E = await hydrated();
+  E.hold = true;
+  await E.paste(EMAIL_E);
+  let msg = '';
+  E.confirmImpl = m => { msg = String(m); return false; };
+  E.run('switchMode()'); await flush();
+  E.confirmImpl = null;
+  check('EP AC-2 switchMode avisa de cambios sin confirmar', /aún no ha confirmado/.test(msg), msg);
+  check('EP AC-2 cancelar no cambia nada', E.run('getMode()') === 'cloud' && E.run('_cloudWrites') === 1);
+  await E.release();
+}
+{
+  // Sin escrituras en vuelo el confirm no lleva la línea
+  const E = await hydrated();
+  let msg = '';
+  E.confirmImpl = m => { msg = String(m); return false; };
+  E.run('switchMode()'); await flush();
+  check('EP sin escrituras en vuelo: confirm sin la línea extra', msg && !/aún no ha confirmado/.test(msg), msg);
+}
+
 // ══ Modo Local: ni revalidación ni vigilante ══
 {
   const E = await makeEnv({ mode: 'local' });

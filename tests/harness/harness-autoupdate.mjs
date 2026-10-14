@@ -31,7 +31,7 @@ if (bootError) process.exit(1);
 
 const page = v => `<html>\n<script>\n// x\nconst APP_VERSION = '${v}';\nconst MONTH_NAMES = [];\n</script>`;
 const reset = () => { replaced.length = 0; fetches = []; fetchThrows = false; NOW += 120_000;
-  run(`_lastExport = null; _cloudWrites = 0; cloud.pendingWrite = false; _pendingVersion = null; _bootV = null;`);
+  run(`_lastExport = null; _cloudWrites = 0; _writesInFlight = 0; cloud.pendingWrite = false; _pendingVersion = null; _bootV = null;`);
   for (const id of ['input', 'ap-iata', 'ap-lat', 'ap-lon']) el(id).value = '';
   for (const id of ['day-modal', 'ukdate-modal', 'ukexc-modal', 'rwy-modal', 'auth-overlay', 'welcome-overlay', 'update-bar']) el(id).classList.add('hidden'); };
 const check1 = async () => { await run('checkForUpdate()'); };
@@ -67,7 +67,7 @@ const blockers = [
   ['login abierto', () => el('auth-overlay').classList.remove('hidden'), 'sesión'],
   ['bienvenida abierta', () => el('welcome-overlay').classList.remove('hidden'), 'sesión'],
   ['barra de exportación', () => run(`_lastExport = { mk: null, n: 3, days: {} }`), 'exportación'],
-  ['escritura en vuelo', () => run(`_cloudWrites = 1`), 'guardando'],
+  ['escritura en vuelo', () => run(`_writesInFlight = 1`), 'guardando'], // 11-02: contador global (sin sesión)
   ['cambio sin guardar en la nube', () => run(`cloud.pendingWrite = true`), 'sin guardar'],
 ];
 for (const [name, set, word] of blockers) {

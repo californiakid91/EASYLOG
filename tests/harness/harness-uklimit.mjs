@@ -186,13 +186,14 @@ const EXC0 = '2026-04-10';
 }
 
 {
-  // G8: settings que no es un objeto en la nube → se ignora (no se «esparce» en el siguiente guardado)
+  // G8 → 11-02: settings que no es un objeto en la nube → no se usa y NO se sobrescribe (antes se guardaba limpio = se borraba)
   const E = await makeEnv({ mode: 'cloud', cloudInit: { dayMap: calendar(10), settings: 'abc' } });
   E.fire(); await tick();
+  const n0 = E.writes.length;
   E.promptImpl = () => '80';
   E.run('editUKLimit()'); await tick();
-  const w = E.writes.at(-1);
-  check('G8 settings no-objeto en la nube: se guarda limpio', !!w && JSON.stringify(w.data.settings) === JSON.stringify({ ukLimit: { [TY]: 80 } }), JSON.stringify(w?.data.settings));
+  check('11-02 settings no-objeto en la nube: no se escribe nada', E.writes.length === n0, JSON.stringify(E.writes.slice(n0).map(w => w.opts)));
+  check('11-02 settings no-objeto: aviso de error con «la configuración»', /No se ha guardado la configuración/.test(E.byId('status').textContent), E.byId('status').textContent);
   E.run(`ukShowTY('<x>')`);
   check('G8 ukShowTY con etiqueta no válida no cambia el año', E.run('_tyViewLabel') === null);
 }

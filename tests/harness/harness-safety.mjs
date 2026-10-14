@@ -59,6 +59,11 @@ check('AC-1 01 (2 pilotos) → false', det(F01) === false);
 check('AC-1 92 con un Take Off vacío → false', det(F92.replace('Take Off : CPTAAA', 'Take Off : ')) === false);
 check('AC-1 92 con un Landing vacío → false', det(F92.replace('Landing : CPTAAA', 'Landing : ')) === false);
 check('AC-1 92 con VEGRIC en un solo Landing → false', det(F92.replace('Landing : FOBBBB', 'Landing : VEGRIC')) === false);
+// Formato con tabuladores de los emails de 2025 (caso real del usuario, 27/09/2025): mismo resultado que con espacios
+const tabbed = t => t.replace(/ : /g, ' \t:\t').replace(/^(Take Off|Landing)/gm, '\t$1').replace(/FlightNumber \t:\tFR(\d)/g, 'FlightNumber \t:\tFR $1');
+const nFl = t => E.run(`parseText(${JSON.stringify(t)}).flights.length`);
+check('formato con tabuladores: 92 → mismos 4 vuelos y detecta SP', nFl(tabbed(F92)) === 4 && det(tabbed(F92)) === true, nFl(tabbed(F92)));
+check('formato con tabuladores: CSV de 01 == con espacios', E.run(`buildCSV(parseText(${JSON.stringify(tabbed(F01))}).flights.map(flight => ({ flight, role: 'FO' })))`) === E.run(`buildCSV(parseText(${JSON.stringify(F01)}).flights.map(flight => ({ flight, role: 'FO' })))`));
 check('AC-1 92 con el tercero de otro rol (OB) → false', det(F92.replace('FOBBBB : FO :', 'FOBBBB : OB :')) === false);
 
 // ── AC-4: CSV de un día SP

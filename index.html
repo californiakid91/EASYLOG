@@ -748,7 +748,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.14-141008';
+const APP_VERSION = '2026.10.14-141901';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -917,7 +917,8 @@ function getVariant(raw) {
 // ─── Parser ───────────────────────────────────────────────────────────────────
 function parseText(text) {
   const DATE_RE = /^\d{4}\/\d{2}\/\d{2}$/;
-  const lines   = text.split('\n').map(l => l.trim());
+  // Emails antiguos (2025) separan con tabuladores («FlightNumber ⇥:⇥FR 2518»): se tratan como espacios
+  const lines   = text.split('\n').map(l => l.replace(/\t/g, ' ').trim());
 
   const dateIdx = lines.reduce((acc, l, i) => {
     if (DATE_RE.test(l)) acc.push(i);
@@ -960,7 +961,7 @@ function parseText(text) {
     else if (cps.length) { captain = cps[0].name; captainCode = cps[0].code; }
 
     const flightAt = dayLines.reduce((acc, l, i) => {
-      if (l.startsWith('FlightNumber :')) acc.push(i);
+      if (/^FlightNumber\s*:/.test(l)) acc.push(i);
       return acc;
     }, []);
 

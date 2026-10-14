@@ -5,27 +5,27 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.2 — Fase 7.1 [INSERTED] «Fuera de UK» (desglose trabajo/libres) antes de cerrar el milestone
+**Current focus:** v0.2 Seguridad y robustez — todas las fases completas (5, 6, 7, 7.1, 8); siguiente: cerrar milestone
 
 ## Current Position
 
 Version: v0.1.0 (en curso v0.2.0)
 Milestone: v0.2 Seguridad y robustez
-Phase: 7.1 [INSERTED] (UK Days: fuera de UK) — Planning
-Plan: 07.1-01 creado, en revisión adversaria (Fable) / pendiente de aprobación
-Status: PLAN creado, listo para APPLY tras aprobación
-Last activity: 2026-10-14 — Creado .paul/phases/07.1-ukdays-fuera-de-uk/07.1-01-PLAN.md
+Phase: 7.1 [INSERTED] (UK Days: fuera de UK) — ✅ Complete — milestone v0.2: 5/5 fases
+Plan: 07.1-01 completo (UNIFY)
+Status: Loop cerrado — milestone v0.2 listo para /paul:complete-milestone
+Last activity: 2026-10-14 — UNIFY 07.1-01 + transición Fase 7.1; prod v2026.10.14-112255
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
-- v0.2 Seguridad y robustez: [██████████] 100% (Fase 5 ✓, Fase 6 ✓, Fase 7 ✓, Fase 8 ✓)
+- v0.2 Seguridad y robustez: [██████████] 100% (Fase 5 ✓, 6 ✓, 7 ✓, 7.1 ✓, 8 ✓)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 07.1-01 creado, pendiente de aprobación]
+  ✓        ✓        ✓     [Loop 07.1-01 cerrado — Fase 7.1 completa; v0.2 con todas sus fases]
 ```
 
 ## Accumulated Context
@@ -61,6 +61,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 08-01 (aplicado): todo mutador empieza con `if (!requireHydrated(...)) return;` (alert en modales/tarjeta UK, #status en el resto) y solo muestra OK / vacía el cuadro si save*() devolvió true; lo que va a Firestore se captura antes de cualquier await; copia local dañada (_localCorrupt) nunca se sobrescribe sola; OK de nube = enviado (el error async lo sustituye)
 - 08-02 (aplicado; dialéctica Fable, confianza alta): sync = A — LWW por mapa endurecido. Regla D2: con _cloudWrites>0 se descarta el snapshot sin hasPendingWrites (skipped → relectura); _cloudWrites solo baja al resolver/rechazar setDoc (NUNCA por timeout); «Sincronizado ✓» solo con 0 en vuelo y sin stale; setDoc síncrono con cloud.fs; listener con rearme (subscribeCloud/onCloudListenerError); vuelta >60 s sin señal → stale (checkResume en requireHydrated + eventos + tick 15 s), no se escribe hasta releer (revalidateCloud). Tests con reloj: harness-sync (advance/jump) + e2e-sync (Firebase falso por page.route). B/C diferidas: solo si se usa en varios dispositivos a la vez
 - 07-02 (aplicado): _settings = { ukLimit[label], ukExceptional[iso]: {reason, at} } persistido como mapa más (local SETTINGS_KEY + campo Firestore 'settings' en mergeFields); límite = dato del usuario (default genérico 90, nunca su valor ni su criterio en el repo); comp = UK − min(exc, 60); lectores defensivos (ukLimitSet/ukExcMap), escritores desde ukExcRaw; requireHydrated antes y después de prompt/confirm/modal; claves locales no-objeto = dañadas
+- 07.1-01 (aplicado): «Fuera de UK» = ukPastDays con estado no (hoy/futuros nunca); outKind work = email | ruta real guardada | DUTY/SBY/SIM/SD, si no off; solo se pinta la lista activa; apertura desde _ukOutOpen (no del DOM); botón UK de la lista → ukForceUKFromOut con confirm; backup: OFF de calendario en rangos, decisiones a mano con motivo
 - _runways = mapa propio (localStorage + campo Firestore `runways`); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -84,6 +85,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Año congelado con email completo y sin entrada muestra "email incompleto: re-pégalo" (re-pegar idéntico no lo arregla; se decide con UK/No UK) — mensaje engañoso, no alcanzable en la práctica | 07-01 G6 | XS | — |
 | rule:* de años congelados no se recalculan aunque se corrija un bug de la regla → requiere migración explícita revisada | 07-01 dialéctica | S | si cambia la regla |
 | Al pegar un email de un día con marca manual que lo contradice, la app conserva la marca sin avisar (caso 03/10/2026) → avisar y ofrecer volver a la regla del email | 2026-10-14 usuario | XS | — |
+| Motivo de los No UK manuales decididos sin email («DUTY en calendario sin email: pega el email») no explica la causa real (p. ej. calzos tras 00:00) → texto «No UK decidido a mano (DUTY sin email)» o pegar el email y quitar la marca | 07.1 checkpoint | XS | — |
+| G8 07.1: onclick con iso interpolado (seguro hoy por ISO_RE/ukPastDays) → data-iso + addEventListener; reason muy largo podría pasarse del límite de mailto en el backup | 07.1 G8 | XS | — |
 | Detectar vuelos de SAFETY PILOT al pegar (VEGRIC 3er FO, sin PF) → proponer funciones 0:00, Pilot 3 SELF y remarks «SAFETY PILOT» (criterio del usuario) | 2026-10-10 sesión PilotLog | S | fase propia tras 08 |
 | Sync: dos dispositivos editando casi a la vez → gana el último por mapa (F-02-001 mitigado, no cerrado); merge por día (opción B) si cambia el uso | 08-02 dialéctica | M | si usa 2 dispositivos a la vez |
 | 08-02 no verificado en iPhone real + Firebase real (e2e simulado); vigilar «Comprobando…» que no termina o «Sin confirmar» con buena cobertura | 08-02 checkpoint | XS | si el usuario lo ve |
@@ -115,15 +118,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: 678a3ff (fase 07) — prod = v2026.10.13-144210 (verificado byte a byte)
+Last commit: cf881d6 (07.1-01 fix) + commit de fase — prod = v2026.10.14-112255 (verificado byte a byte)
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-14
-Stopped at: Plan 07.1-01 creado (desglose «Fuera de UK», petición del usuario tras revisar UK Days)
-Next action: aprobar plan → /paul:apply .paul/phases/07.1-ukdays-fuera-de-uk/07.1-01-PLAN.md; después /paul:complete-milestone (v0.2)
-Resume file: .paul/phases/07.1-ukdays-fuera-de-uk/07.1-01-PLAN.md
+Stopped at: Fase 7.1 completa (UNIFY 07.1-01 + transición) — v0.2 con todas sus fases
+Next action: /paul:complete-milestone (v0.2); después, fase propia SAFETY PILOT (diferido)
+Resume file: .paul/phases/07.1-ukdays-fuera-de-uk/07.1-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

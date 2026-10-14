@@ -14,8 +14,8 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 |-----------|-------|
 | Type | Application |
 | Version | 0.1.0 (v0.1 Datos fiables, cerrado 2026-10-05) |
-| Status | Production — v0.1.0 cerrado; v0.2: las 4 fases completas (5, 6, 7, 8) — pendiente cerrar milestone |
-| Last Updated | 2026-10-13 (07-02, Fase 7 completa) |
+| Status | Production — v0.1.0 cerrado; v0.2: las 5 fases completas (5, 6, 7, 7.1, 8) — pendiente cerrar milestone |
+| Last Updated | 2026-10-14 (07.1-01, Fase 7.1 completa) |
 
 **Production URLs:**
 - https://californiakid91.github.io/EASYLOG/ — app (deploy automático al push a `main`)
@@ -55,6 +55,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - [x] Sin pérdidas silenciosas: sin nube cargada nada cambia ni se vacía el cuadro y se avisa donde se actúa; OK solo si se guardó; fallos de guardado visibles; copia local dañada nunca se pisa — Phase 8 (08-01)
 - [x] Sync endurecida: sin guardas por temporizador (regla por escrituras en vuelo), «Sin confirmar · no recargues» si la nube no confirma, listener que se rearma solo, relectura del servidor al volver de segundo plano (no se escribe desde memoria vieja) — Phase 8 (08-02)
 - [x] UK Days computables: límite por año fiscal guardado en los datos del usuario, días por circunstancia excepcional con motivo (no computan, máx. 60/año), «máximo posible» con pendientes, sin «bonus»; backup con excepcionales — Phase 7 (07-02)
+- [x] UK Days «Fuera de UK»: total real de días pasados no UK (guardados + OFF de calendario), desglose trabajo / libres con desplegable, backup con el desglose; botón «UK» con confirmación — Phase 7.1 (07.1-01)
 - [x] e2e propios (playwright-core fijado, `npm ci`) + gate git: commit bloqueado si fallan los harness; push (= deploy) bloqueado si fallan harness o e2e — Phase 6 (06-02)
 
 ### Active (In Progress)
@@ -132,6 +133,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Mutadores: guarda requireHydrated al inicio + OK solo si se guardó; payload de Firestore capturado antes de await; copia local dañada nunca se sobrescribe sola | Aegis F-02-006/F-RG-003/F-02-004 + revisión Fable (carrera real del await; backfill pisaba la clave dañada) | 2026-10-11 | Active |
 | Sync = gana el último por mapa, endurecido: con escrituras en vuelo se descarta el snapshot sin hasPendingWrites; _cloudWrites solo baja al confirmar/rechazar (nunca por tiempo); al volver de >60 s sin señal no se escribe hasta releer el servidor | Dialéctica Fable (un usuario, online, un dispositivo cada vez); merge por día añadiría una base que diverge justo cuando algo falla; G6 Fable | 2026-10-11 | Active |
 | UK Days: límite = ajuste del usuario por año (en sus datos, nunca en el código; default genérico 90); computables = UK − excepcionales (máx. 60); la app registra la marca con motivo, no la valida | El criterio fiscal es del usuario y su asesor y cambia por año; el repo es público; Sch 45 para 22(6) | 2026-10-13 | Active |
+| «Fuera de UK» = días pasados no UK; trabajo = email / ruta real / DUTY-SBY-SIM-SD, resto libre; acciones de la lista con confirm | La lista «No UK» solo mostraba entradas guardadas y se leyó como total; un toque accidental en «UK» cambió un día | 2026-10-14 | Active |
 | Año fiscal derivado de la fecha, sin estado; FLOOR 06/04/2026; año congelado a +30 días (solo el usuario escribe, con confirm) | Dialéctica Fable: un flag "closed" en Firestore añade carreras y migración; la evidencia declarada no se recalcula sola | 2026-10-06 | Active |
 
 ## Success Metrics
@@ -139,7 +141,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
 | CSV importa en PilotLog con night, pistas, T/O-LDG y delays correctos | 100% de vuelos de prueba | Night/T-O-LDG/delays OK (0 errores); pistas confirmadas importan (Fase 4) | Done |
-| UK Days usa on-block correcto del último vuelo | 100% de días de prueba | 54/91 calculados; 47 días previos de 2026/27 aún sin revisar uno a uno (Aegis F-RG-002) | Parcial |
+| UK Days usa on-block correcto del último vuelo | 100% de días de prueba | 2026/27 revisado día a día por el usuario (2026-10-14; cifras solo en memoria local) | Done |
 
 ## Tech Stack / Tools
 
@@ -161,4 +163,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-13 after Phase 7 (UK Days año y límite) — milestone v0.2 con todas sus fases*
+*Last updated: 2026-10-14 after Phase 7.1 (UK Days fuera de UK) — milestone v0.2 con todas sus fases*

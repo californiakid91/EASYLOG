@@ -7,8 +7,8 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 ## Current Milestone
 
 **v0.2 Seguridad y robustez** (v0.2.0)
-Status: 🔄 Fase 7.1 [INSERTED] en planificación — después /paul:complete-milestone
-Phases: 4 of 5 complete
+Status: ✅ Fases completas — pendiente /paul:complete-milestone
+Phases: 5 of 5 complete
 Theme: Cerrar los hallazgos de la auditoría Aegis (2026-10-05) sin cambiar el flujo de uso: que nadie pueda inyectar código, que nada se pierda en silencio, que UK Days siga bien el año que viene y que los tests frenen regresiones.
 Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 
@@ -17,7 +17,7 @@ Source: .aegis/report/05-remediation-roadmap.md (local, no versionado)
 | 5 | Seguridad: XSS aeropuerto, SRI/CSP, reglas Firestore en repo | 2/2 | ✅ Complete | 2026-10-05 |
 | 6 | Barrera de tests: runner único + fixtures anonimizadas + gate | 2/2 | ✅ Complete | 2026-10-05 |
 | 7 | UK Days: año fiscal dinámico + límite configurable + máximo posible | 2/2 | ✅ Complete | 2026-10-13 |
-| 7.1 | [INSERTED] UK Days: «Fuera de UK» (total real + desglose trabajo/libres) | 0/1 | 📝 Planning | — |
+| 7.1 | [INSERTED] UK Days: «Fuera de UK» (total real + desglose trabajo/libres) | 1/1 | ✅ Complete | 2026-10-14 |
 | 8 | Sin pérdidas silenciosas: avisos de escritura bloqueada + estado tras confirm() + sync endurecida | 2/2 | ✅ Complete | 2026-10-11 |
 
 ### Phase 5: Seguridad
@@ -45,7 +45,8 @@ Status: ✅ Complete 2026-10-13
 ### Phase 7.1: [INSERTED] UK Days — fuera de UK
 Focus: la lista «No UK» solo enseña entradas guardadas; el usuario necesita el total real de días fuera de UK desglosado en trabajo / libres (OFF), con desplegable, y el mismo desglose en el backup.
 Plans:
-- [ ] 07.1-01: clasificador + sección «Fuera de UK» con select + backup + harness-ukfuera + e2e
+- [x] 07.1-01 (prod v2026.10.14-112255): «Fuera de UK» con desplegable trabajo/libres + backup con desglose + confirm en el botón UK; harness-ukfuera + e2e
+Status: ✅ Complete 2026-10-14
 
 ### Phase 8: Sin pérdidas silenciosas
 Focus: F-02-006 + F-RG-003 (escritura bloqueada tapada por "ok"), F-02-001 (estado obsoleto tras confirm()), F-02-004/005/007 (fallos de localStorage/nube solo en consola), F-RG-004 (textos que prometen importar). Política de sync (LWW vs merge por día) se decide en el plan.
@@ -82,4 +83,4 @@ Detalle completo: .paul/milestones/v0.1.0-ROADMAP.md
 </details>
 
 ---
-*Roadmap created: 2026-10-03 · Updated: 2026-10-13 (Fase 7 completa — v0.2 con todas sus fases)*
+*Roadmap created: 2026-10-03 · Updated: 2026-10-14 (Fase 7.1 completa — v0.2 con todas sus fases)*

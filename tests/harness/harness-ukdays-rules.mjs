@@ -192,7 +192,7 @@ run(`_dayMap['2026-11-18'] = 'off'; _dayMap['2026-11-19'] = 'off';`);
 run('renderUKDays()');
 check('cabecera "1 / 90 · 4 pend." (hueco 12–15/11)', count() === '1 / 90 · 4 pend.', count());
 check('texto neutro "sin decidir", sin clase danger por P', /4 días sin decidir/.test(body()) && /uk-status safe/.test(body()), '');
-check('el R2 aparece en "Fuera de UK" con su motivo y botón Forzar UK', /<span>Fuera de UK<\/span>/.test(body()) && /LIS \(fuera de UK\)/.test(body()) && /addUKDayManual\('2026-11-17'\)/.test(body()));
+check('el R2 aparece en "Fuera de UK" con su motivo y botón Forzar UK', /<span>Fuera de UK<\/span>/.test(body()) && /LIS \(fuera de UK\)/.test(body()) && /ukForceUKFromOut\('2026-11-17'\)/.test(body()));
 check('UK listado con procedencia R1', /OB 18:10 GMT · R1/.test(body()));
 check('el botón OFF identifica el hueco por su primer día', /ukMarkBlockOff\('2026-11-12'\)/.test(body()));
 run(`ukMarkBlockOff('2026-11-12')`);

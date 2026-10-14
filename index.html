@@ -747,7 +747,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.14-110938';
+const APP_VERSION = '2026.10.14-112255';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -2496,7 +2496,7 @@ function renderUKDays() {
         <span class="day-date">${dateISOToDisplay(x.iso)}</span>
         <span class="day-route" style="font-family:inherit;font-size:.78rem">${esc(x.reason)}${excMap[x.iso] ? ' <span style="color:var(--amber)">(marca exc. conservada)</span>' : ''}</span>
         <span class="day-count">${esc(ukSourceLabel(x.source))}</span>
-        <button class="btn btn-ghost btn-sm" title="Forzar UK Day" onclick="addUKDayManual('${x.iso}')">UK</button>
+        <button class="btn btn-ghost btn-sm" title="Forzar UK Day" onclick="ukForceUKFromOut('${x.iso}')">UK</button>
         ${_ukdays[x.iso]?.manual ? `<button class="day-del" title="Quitar la marca" onclick="removeUKDay('${x.iso}')">✕</button>` : ''}
       </div>`;
     const opt = (k, label) => `<option value="${k}"${_ukOutKind === k ? ' selected' : ''}>${label}</option>`;
@@ -2588,6 +2588,15 @@ function ukManualEntry(iso) {
 }
 
 // Añade un UK Day manual en la fecha elegida
+// Botón «UK» de la lista «Fuera de UK»: pide confirmación (con 139 filas en el móvil es fácil tocarlo sin querer)
+function ukForceUKFromOut(iso) {
+  if (!ISO_RE.test(String(iso))) return;
+  if (!requireHydrated({ alert: true })) return;
+  const st = ukDayStatus(iso);
+  if (!confirm(`¿Pasar el ${dateISOToDisplay(iso)} a UK Day?\n\nAhora: ${st.reason || 'fuera de UK'}.\nQuedará como decisión tuya (manual).`)) return;
+  addUKDayManual(iso);
+}
+
 function addUKDayManual(iso) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
   if (!ukInScope(iso)) {

@@ -7,10 +7,11 @@ const SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const els = new Map();
 const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', textContent: '' }, { get: (t, k) => k in t ? t[k] : k === 'classList' ? { add() {}, remove() {}, toggle() {}, contains() { return false; } } : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mk(), set: (t, k, v) => (t[k] = v, true) });
 const ls = new Map([['easylog_mode', 'local']]);
+const __confirms = []; let __answer = true;
 const win = { location: {}, _ukNowOverride: FIXED_NOW };
 const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) || els.set(id, mk()), els.get(id)), querySelector: () => mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener() {} },
   localStorage: { getItem: k => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) },
-  window: win, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, Blob: class { constructor(p) { this.p = p; } }, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }, confirm: () => true, prompt: () => null, alert() {},
+  window: win, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, Blob: class { constructor(p) { this.p = p; } }, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }, confirm: m => (__confirms.push(m), __answer), prompt: () => null, alert() {},
   setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0 });
 let bootError = null;
 try { vm.runInContext(SCRIPT, ctx); } catch (e) { bootError = e; }
@@ -88,8 +89,16 @@ run('renderUKDays()');
 check('AC-3 opción y apertura sobreviven a un repintado', /<option value="off" selected>/.test(sec()) && /style="display:">/.test(sec()));
 run(`setUKOutKind('x<script>')`);
 check('AC-3 valor inválido ignorado', run('_ukOutKind') === 'off');
-check('AC-3 filas con botón UK y ✕ solo en manuales', /addUKDayManual\('2026-09-04'\)/.test(sec()) && /removeUKDay\('2026-09-06'\)/.test(sec()) && !/removeUKDay\('2026-09-04'\)/.test(sec()));
-// «Ninguno»: sin días de trabajo fuera
+check('AC-3 filas con botón UK y ✕ solo en manuales', /ukForceUKFromOut\('2026-09-04'\)/.test(sec()) && /removeUKDay\('2026-09-06'\)/.test(sec()) && !/removeUKDay\('2026-09-04'\)/.test(sec()));
+// Botón «UK» de la lista: pide confirmación; cancelar no cambia nada, aceptar → UK manual
+__answer = false; run(`ukForceUKFromOut('2026-09-04')`);
+check('UK en «Fuera de UK» pide confirmación con fecha y estado actual', /¿Pasar el 04\/09\/26 a UK Day\?/.test(__confirms.at(-1) || '') && /OFF en calendario/.test(__confirms.at(-1) || ''), __confirms.at(-1));
+check('cancelar → el día sigue fuera de UK', J(`ukDayStatus('2026-09-04').state`) === 'no');
+__answer = true; run(`ukForceUKFromOut('2026-09-04')`);
+check('aceptar → UK manual', J(`ukDayStatus('2026-09-04')`).state === 'uk' && J(`_ukdays['2026-09-04'].manual`) === true);
+run(`delete _ukdays['2026-09-04']; ukForceUKFromOut('x'); renderUKDays();`);
+check('fecha inválida ignorada', __confirms.length === 2);
+
 run(`delete _excelData['2026-09-02']; delete _cache['2026-09-02']; delete _ukdays['2026-09-02'];
      delete _excelData['2026-09-03']; delete _cache['2026-09-03']; delete _ukdays['2026-09-03'];
      ['2026-09-07','2026-09-08','2026-09-09'].forEach(i => { delete _ukdays[i]; delete _dayMap[i]; });

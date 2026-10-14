@@ -130,7 +130,7 @@ Branch: main
 Last session: 2026-10-14
 Stopped at: Fase 9 completa (SAFETY PILOT verificado en PilotLog real), listo para planificar Fase 10
 Next action: /paul:plan para Fase 10 (UK Days: avisos al pegar)
-Resume file: .paul/phases/09-safety-pilot/09-01-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-14-fase9-safety-pilot.md
 
 ---
 *STATE.md — Updated after every significant action*

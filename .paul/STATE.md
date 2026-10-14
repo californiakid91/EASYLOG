@@ -5,27 +5,28 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.2 cerrado — definir siguiente milestone
+**Current focus:** v0.3 Pegar sin sorpresas — Fase 9 SAFETY PILOT
 
 ## Current Position
 
-Version: v0.2.0
-Milestone: Awaiting next milestone
-Phase: None active
-Plan: None
-Status: Milestone v0.2 Seguridad y robustez complete — ready for next
-Last activity: 2026-10-14 — Milestone v0.2 completado (tag v0.2.0)
+Version: v0.2.0 (v0.3.0 en curso)
+Milestone: v0.3 Pegar sin sorpresas
+Phase: 9 (1 of 3 del milestone) — SAFETY PILOT al pegar — Planning
+Plan: 09-01 created, awaiting approval (revisión adversaria Fable incorporada: B1-B2, I1-I5, M1-M3)
+Status: PLAN created, ready for APPLY
+Last activity: 2026-10-14 — Created .paul/phases/09-safety-pilot/09-01-PLAN.md
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
 - v0.2 Seguridad y robustez: [██████████] 100% ✓
+- v0.3 Pegar sin sorpresas: [░░░░░░░░░░] 0%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ○        ○        ○     [Milestone complete - ready for next]
+  ✓        ○        ○     [Plan created, awaiting approval]
 ```
 
 ## Accumulated Context
@@ -62,6 +63,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 08-02 (aplicado; dialéctica Fable, confianza alta): sync = A — LWW por mapa endurecido. Regla D2: con _cloudWrites>0 se descarta el snapshot sin hasPendingWrites (skipped → relectura); _cloudWrites solo baja al resolver/rechazar setDoc (NUNCA por timeout); «Sincronizado ✓» solo con 0 en vuelo y sin stale; setDoc síncrono con cloud.fs; listener con rearme (subscribeCloud/onCloudListenerError); vuelta >60 s sin señal → stale (checkResume en requireHydrated + eventos + tick 15 s), no se escribe hasta releer (revalidateCloud). Tests con reloj: harness-sync (advance/jump) + e2e-sync (Firebase falso por page.route). B/C diferidas: solo si se usa en varios dispositivos a la vez
 - 07-02 (aplicado): _settings = { ukLimit[label], ukExceptional[iso]: {reason, at} } persistido como mapa más (local SETTINGS_KEY + campo Firestore 'settings' en mergeFields); límite = dato del usuario (default genérico 90, nunca su valor ni su criterio en el repo); comp = UK − min(exc, 60); lectores defensivos (ukLimitSet/ukExcMap), escritores desde ukExcRaw; requireHydrated antes y después de prompt/confirm/modal; claves locales no-objeto = dañadas
 - 07.1-01 (aplicado): «Fuera de UK» = ukPastDays con estado no (hoy/futuros nunca); outKind work = email | ruta real guardada | DUTY/SBY/SIM/SD, si no off; solo se pinta la lista activa; apertura desde _ukOutOpen (no del DOM); botón UK de la lista → ukForceUKFromOut con confirm; backup: OFF de calendario en rangos, decisiones a mano con motivo
+- 09 (usuario 2026-10-14): SAFETY PILOT = 3+ pilotos en cabina y VEGRIC ausente de todos los Take Off/Landing del día → SP todo el día (nunca cambio de asiento a mitad de día); siempre con confirm; rol del email no distingue (ambos FO), Verified By siempre CP, Captain Remarks no fiable
 - _runways = mapa propio (localStorage + campo Firestore `runways`); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -124,9 +126,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-14
-Stopped at: Milestone v0.2 Seguridad y robustez complete
-Next action: /paul:milestone (siguiente milestone; candidato principal: SAFETY PILOT al pegar)
-Resume file: .paul/MILESTONES.md
+Stopped at: Plan 09-01 created
+Next action: Review and approve plan, then run /paul:apply .paul/phases/09-safety-pilot/09-01-PLAN.md
+Resume file: .paul/phases/09-safety-pilot/09-01-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

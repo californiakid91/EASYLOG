@@ -128,7 +128,9 @@ check('(e) sin claves __…__ ni de >500 chars', !keys.some(k => /__.*__/.test(k
 const base = load(scriptOf(indexAt(BASE_SHA)));
 const normal = email('2026/10/09', [{ cp: 'STN - DUB', off: '06:00', on: '07:15' }, { cp: 'DUB - STN', off: '08:00', on: '09:10', fn: 'FR201' }]);
 const csvOf = env => env.run(`buildCSV(parseText(${JSON.stringify(normal)}).flights.map(flight => ({ flight, role: 'FO' })))`);
-check('(f) CSV de email normal idéntico a ' + BASE_SHA, csvOf(app) === csvOf(base));
+// Fase 9 añade PILOT3_ID;PILOT3_NAME al final (vacías en un día normal): se quitan antes de comparar byte a byte
+const dropP3 = c => c.replace(/;PILOT3_ID;PILOT3_NAME(\r\n)/, '$1').split('\r\n').map((l, i) => i && l ? l.replace(/;;$/, '') : l).join('\r\n');
+check('(f) CSV de email normal idéntico a ' + BASE_SHA + ' (sin las columnas PILOT3 vacías)', csvOf(app).includes('PILOT3_ID') && dropP3(csvOf(app)) === csvOf(base));
 
 console.log(fails ? `\n${fails} FAIL` : '\nTODO OK');
 process.exit(fails ? 1 : 0);

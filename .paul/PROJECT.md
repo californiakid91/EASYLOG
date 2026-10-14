@@ -14,7 +14,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 |-----------|-------|
 | Type | Application |
 | Version | 0.2.0 (v0.2 Seguridad y robustez, cerrado 2026-10-14) |
-| Status | Production — v0.2.0 cerrado; siguiente milestone por definir |
+| Status | Production — v0.2.0; v0.3 Pegar sin sorpresas en curso |
 | Last Updated | 2026-10-14 (milestone v0.2 completo) |
 
 **Production URLs:**

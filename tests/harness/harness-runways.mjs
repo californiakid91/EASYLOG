@@ -206,7 +206,9 @@ const okResp = text => Promise.resolve({ ok: true, text: () => Promise.resolve(t
   // valor manipulado en la nube/localStorage no sale al CSV
   E.run(`_runways['2026-10-06|FR100|STN-ALC'] = { dep: '=HYPERLINK("x")', arr: '10', depAp: 'STN', arrAp: 'ALC', at: 1 }`);
   const row = E.run('buildCSV(allFlights())').split('\r\n')[1];
-  check('valor no válido (fórmula) → vacío en el CSV', !row.includes('HYPERLINK') && row.endsWith(';10'), row.slice(-30));
+  // columnas de pista localizadas por nombre (Fase 9 añade PILOT3_* detrás)
+  const H = E.run('HEADER').split(';'), cells = row.split(';');
+  check('valor no válido (fórmula) → vacío en el CSV', !row.includes('HYPERLINK') && cells[H.indexOf('RWY_DEP')] === '' && cells[H.indexOf('RWY_ARR')] === '10', row.slice(-30));
 }
 
 // ══ Sobrevive a re-pegar idéntico, a corregir horas, a «Quitar de la lista» y a recargar
@@ -241,17 +243,19 @@ const okResp = text => Promise.resolve({ ok: true, text: () => Promise.resolve(t
   E.run(`_runways = { '2026-10-06|FR100|STN-ALC': { dep: '22', arr: '10', depAp: 'STN', arrAp: 'ALC', at: 1 } }`);
   const nw = E.run('buildCSV(allFlights())').split('\r\n'), od = O.run('buildCSV(allFlights())').split('\r\n');
   const hN = nw[0].replace(/^﻿/, '').split(';'), hO = od[0].replace(/^﻿/, '').split(';');
-  check('HEADER termina en …;AC_ENGTYPE;RWY_DEP;RWY_ARR', hN.slice(-3).join(';') === 'AC_ENGTYPE;RWY_DEP;RWY_ARR', hN.slice(-3).join(';'));
-  check('columnas anteriores idénticas y en el mismo orden', hN.slice(0, -2).join(';') === hO.join(';'));
+  // Por nombre: después de las pistas pueden ir columnas posteriores (PILOT3_* desde Fase 9)
+  const iR = hN.indexOf('RWY_DEP');
+  check('HEADER: …;AC_ENGTYPE;RWY_DEP;RWY_ARR seguidas', hN.slice(iR - 1, iR + 2).join(';') === 'AC_ENGTYPE;RWY_DEP;RWY_ARR', hN.slice(iR - 1, iR + 2).join(';'));
+  check('columnas anteriores idénticas y en el mismo orden', iR === hO.length && hN.slice(0, iR).join(';') === hO.join(';'));
   const split = l => { const out = []; let cur = '', q = false;
     for (let i = 0; i < l.length; i++) { const c = l[i];
       if (q) { if (c === '"' && l[i + 1] === '"') { cur += '"'; i++; } else if (c === '"') q = false; else cur += c; }
       else if (c === '"') q = true; else if (c === ';') { out.push(cur); cur = ''; } else cur += c; }
     out.push(cur); return out; };
   const r1 = split(nw[1]), r2 = split(nw[2]), o1 = split(od[1]);
-  check('fila con pistas confirmadas → 22 / 10', r1.at(-2) === '22' && r1.at(-1) === '10', r1.slice(-2).join('|'));
-  check('fila sin confirmar → vacías', r2.at(-2) === '' && r2.at(-1) === '', r2.slice(-2).join('|'));
-  check('resto de la fila idéntico al de antes', r1.slice(0, -2).join(';') === o1.join(';'));
+  check('fila con pistas confirmadas → 22 / 10', r1[iR] === '22' && r1[iR + 1] === '10', r1.slice(iR, iR + 2).join('|'));
+  check('fila sin confirmar → vacías', r2[iR] === '' && r2[iR + 1] === '', r2.slice(iR, iR + 2).join('|'));
+  check('resto de la fila idéntico al de antes', r1.slice(0, iR).join(';') === o1.join(';'));
   E.run(`showDownloadStatus(allFlights(), 'OK.')`);
   check('aviso de descarga: 1 sector sin pista (warn, no bloquea)', E.st.at(-1).startsWith('warn: OK. 1 sector sin pista confirmada'), E.st.at(-1));
 }

@@ -6,13 +6,31 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 
 ## Current Milestone
 
-**v0.2 Seguridad y robustez** (v0.2.0)
-Status: ✅ Complete
-Completed: 2026-10-14
+**v0.3 Pegar sin sorpresas** (v0.3.0)
+Status: 🚧 In Progress
+Phases: 0 of 3 complete
+Theme: Que al pegar un email la app detecte los casos especiales (SAFETY PILOT, contradicciones con marcas manuales de UK Days) y avise, y cerrar los diferidos XS de G6/G8.
 
-## Next Milestone
+| Phase | Name | Plans | Status | Completed |
+|-------|------|-------|--------|-----------|
+| 9 | SAFETY PILOT al pegar | 0/1 | Planning | - |
+| 10 | UK Days: avisos al pegar (marca manual vs email + motivo No UK) | TBD | Not started | - |
+| 11 | Limpieza XS (diferidos G6/G8) | TBD | Not started | - |
 
-Por definir con /paul:milestone. Candidatos (diferidos en STATE.md): SAFETY PILOT al pegar; aviso al pegar un email que contradice una marca manual; texto del motivo de los No UK manuales; diferidos XS de G8/G6.
+### Phase 9: SAFETY PILOT al pegar
+
+Focus: detectar al pegar los vuelos en que el usuario va de SAFETY PILOT (3er FO, sin PF) y proponer funciones 0:00, Pilot 3 SELF y remarks «SAFETY PILOT», con confirmación del usuario (criterio del usuario, memoria local).
+Plans: TBD (defined during /paul:plan)
+
+### Phase 10: UK Days: avisos al pegar
+
+Focus: al pegar un email de un día con marca manual que lo contradice, avisar y ofrecer volver a la regla del email (caso 03/10/2026); texto correcto del motivo de los «No UK» decididos a mano sin email.
+Plans: TBD (defined during /paul:plan)
+
+### Phase 11: Limpieza XS (diferidos G6/G8)
+
+Focus: onclick con iso → data-iso + addEventListener; epoch de sesión para `_cloudWrites`; validación mínima de forma en applyCloudData; límite de longitud del motivo en el backup (mailto); «dar por perdida» la copia local dañada; selección final al planificar.
+Plans: TBD (defined during /paul:plan)
 
 ## Version Overview
 
@@ -20,6 +38,7 @@ Por definir con /paul:milestone. Candidatos (diferidos en STATE.md): SAFETY PILO
 |---------|------|--------|
 | v0.1.0 | Datos fiables | ✅ Complete 2026-10-05 |
 | v0.2.0 | Seguridad y robustez | ✅ Complete 2026-10-14 |
+| v0.3.0 | Pegar sin sorpresas | 🚧 In Progress |
 
 ## Completed Milestones
 
@@ -57,4 +76,4 @@ Detalle completo: .paul/milestones/v0.1.0-ROADMAP.md
 </details>
 
 ---
-*Roadmap created: 2026-10-03 · Updated: 2026-10-14 (milestone v0.2 completo)*
+*Roadmap created: 2026-10-03 · Updated: 2026-10-14 (milestone v0.3 creado)*

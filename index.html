@@ -298,6 +298,7 @@
     padding: .15rem .5rem;
     border-radius: 4px;
   }
+  .day-sp { font-weight: 700; color: var(--accent); margin-left: .3rem; }
   .day-del {
     background: none;
     border: none;
@@ -747,7 +748,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.14-112255';
+const APP_VERSION = '2026.10.14-141008';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -988,6 +989,18 @@ function parseText(text) {
   return { flights, warnings };
 }
 
+// SAFETY PILOT (criterio del usuario): 3+ pilotos CP/FO en cabina y VEGRIC (FO) no sale en ningún Take Off ni Landing
+// del día → iba detrás todo el día (nunca se cambia de asiento a mitad). Sin PF completo en algún vuelo no se infiere.
+function detectSafetyPilot(flights) {
+  if (!flights || !flights.length) return false;
+  const crew = (flights[0].allCrew || []).filter(c => c.role === 'CP' || c.role === 'FO');
+  if (crew.length < 3 || !crew.some(c => c.code === 'VEGRIC' && c.role === 'FO')) return false;
+  return flights.every(f => {
+    const to = f.d['Take Off'] || '', ldg = f.d['Landing'] || '';
+    return to && ldg && to !== 'VEGRIC' && ldg !== 'VEGRIC';
+  });
+}
+
 // ─── CSV ──────────────────────────────────────────────────────────────────────
 const SEP = ';';
 const HEADER = [
@@ -1001,6 +1014,7 @@ const HEADER = [
   'PAX','FUEL','FUELUSED','DELAY',
   'AC_MAKE','AC_MODEL','AC_VARIANT','AC_REG','AC_ENGTYPE',
   'RWY_DEP','RWY_ARR', // nombres del IMPORTER (el export de PilotLog usa DEP_RWY/ARR_RWY y el importer los rechaza); al final por si acaso (AUDIT H8)
+  'PILOT3_ID','PILOT3_NAME', // SAFETY PILOT (Fase 9): VEGRIC/SELF; vacías en el resto. Al final para no mover columnas
 ].join(SEP);
 
 function csv(v) {
@@ -1091,6 +1105,7 @@ function nightMinutes(off, on, a, b) {
 
 function toRow(f, r, dayOffset = 0, rwy = null) {
   const isCPT   = r === 'CPT';
+  const isSP    = r === 'SP'; // safety pilot: iba detrás → funciones a 0, Pilot 3 SELF (criterio del usuario)
   const d       = f.d;
   const t       = sectorUTC(f, dayOffset);
   const date    = (t.off ? t.off.toISOString().slice(0, 10) : addDaysRaw(f.date, dayOffset).replace(/\//g, '-'));
@@ -1100,8 +1115,8 @@ function toRow(f, r, dayOffset = 0, rwy = null) {
   const blockMin = hmToMin(d['Total Block']);
   const airHM    = stripLeadingZero(d['Total flight'] || '');
   const flightNo = (d['FlightNumber'] || '').replace(/\s+/g, '');
-  const isMyTO  = (d['Take Off']  || '') === 'VEGRIC';
-  const isMyLDG = (d['Landing']   || '') === 'VEGRIC';
+  const isMyTO  = !isSP && (d['Take Off']  || '') === 'VEGRIC';
+  const isMyLDG = !isSP && (d['Landing']   || '') === 'VEGRIC';
 
   // ── Day/Night TO+LDG ──
   let toDay  = isMyTO  ? '1' : '0';
@@ -1128,13 +1143,22 @@ function toRow(f, r, dayOffset = 0, rwy = null) {
   crewLines.push(`VEGRIC : ${meRole} : RICARDO VEGA BURGUENO`);
   const crewList = crewLines.join('\n');
 
+  // SP: Pilot 2 = el FO que vuela este sector (sale en Take Off/Landing y no es el CP); si solo sale el CP, el primer FO ≠ VEGRIC
+  let sp2 = null;
+  if (isSP) {
+    const crew = f.allCrew || [];
+    const flyer = [d['Take Off'], d['Landing']].find(c => c && c !== f.captainCode && c !== 'VEGRIC');
+    sp2 = (flyer && crew.find(c => c.code === flyer)) || crew.find(c => c.role === 'FO' && c.code !== 'VEGRIC') || null;
+  }
   const pilot1Id   = isCPT ? 'VEGRIC'        : f.captainCode;
   const pilot1Name = isCPT ? 'SELF'          : f.captain;
-  const pilot2Id   = isCPT ? ''              : 'VEGRIC';
-  const pilot2Name = isCPT ? ''              : 'SELF';
+  const pilot2Id   = isCPT ? ''              : isSP ? (sp2?.code || '') : 'VEGRIC';
+  const pilot2Name = isCPT ? ''              : isSP ? (sp2?.name || '') : 'SELF';
+  const pilot3Id   = isSP ? 'VEGRIC' : '';
+  const pilot3Name = isSP ? 'SELF'   : '';
 
   const timePic = isCPT ? blockMin : '';
-  const timeSic = isCPT ? ''       : blockMin;
+  const timeSic = isCPT ? ''       : isSP ? 0 : blockMin;
 
   // El importer de PilotLog solo acepta UN código IATA numérico: el de más minutos.
   // Todos los códigos con sus minutos van en la primera línea de FLIGHTLOG.
@@ -1171,15 +1195,16 @@ function toRow(f, r, dayOffset = 0, rwy = null) {
     dep || '', arr || '',
     d['Off Block'] || '', d['STD'] || '', d['On Block'] || '', d['STA'] || '',
     d['Airborne'] || '', d['Landed'] || '',
-    airHM, blockMin, timePic, timeSic, blockMin, timeNight,
+    isSP ? '0:00' : airHM, isSP ? 0 : blockMin, timePic, timeSic, isSP ? 0 : blockMin, isSP ? '0:00' : timeNight,
     'RYANAIR',
     pilot1Id, pilot1Name, pilot2Id, pilot2Name,
     toDay, toNight, ldgDay, ldgNight,
     (isMyTO || isMyLDG) ? 'TRUE' : 'FALSE',
-    flightNo, crewList, flightLog,
+    isSP ? `${flightNo} SAFETY PILOT` : flightNo, crewList, flightLog,
     d['Actual Pax'] || '', d['Dep'] || '', d['Burn Off'] || '', delayCode,
     'Boeing', 'B737', variant, reg, 'Jet',
     RWY_RE.test(rwy?.dep || '') ? rwy.dep : '', RWY_RE.test(rwy?.arr || '') ? rwy.arr : '',
+    pilot3Id, pilot3Name,
   ];
 
   return vals.map(csv).join(SEP);
@@ -1650,14 +1675,15 @@ function addDay() {
   if (!requireHydrated()) return;
 
   const iso = dateRawToISO(dates[0]);
-  const hist = loadHistory();
+  let hist = loadHistory();
 
   // Día ya existente (en la lista o solo en el Excel): comparar vuelos antes de escribir nada.
   // El rol guardado manda (hoy siempre FO/SIC; un CPT marcado al re-pegar es un clic equivocado).
   const prev = hist[iso] || _excelData[iso];
   const prevRole = prev?.role || 'FO';
-  const dayRole = prev ? prevRole : role();
-  const roleNote = prev && role() !== prevRole ? ` Rol ${role()} ignorado: se mantiene ${prevRole}.` : '';
+  let dayRole = prev ? prevRole : role();
+  const roleName = r => r === 'SP' ? 'SAFETY PILOT' : r;
+  const roleNote = prev && role() !== prevRole ? ` Rol ${roleName(role())} ignorado: se mantiene ${roleName(prevRole)}.` : '';
   if (prev) {
     const day = dateISOToDisplay(iso);
     const crewLines = crewDiff(prev.flights, flights);
@@ -1688,6 +1714,20 @@ function addDay() {
       lines.join('\n') + '\n\n¿Reemplazar?'
     );
     if (!ok) { showStatus('warn', 'Cancelado. No se ha guardado nada.'); return; }
+  }
+
+  // SAFETY PILOT: solo en un día nuevo con FO marcado; nunca en silencio. Cancelar = a los mandos (se guarda normal).
+  if (!prev && dayRole === 'FO' && detectSafetyPilot(flights)) {
+    const sp = confirm(
+      `El ${dateISOToDisplay(iso)} sois ${flights[0].allCrew.filter(c => c.role === 'CP' || c.role === 'FO').length} pilotos y VEGRIC no sale en ningún despegue ni aterrizaje.\n\n` +
+      `¿Ibas de SAFETY PILOT los ${flights.length} vuelo${flights.length !== 1 ? 's' : ''}? (funciones 0:00, Pilot 3 SELF, remarks SAFETY PILOT)\n\n` +
+      'Aceptar = safety pilot · Cancelar = a los mandos (normal)'
+    );
+    if (!requireHydrated()) return; // la nube pudo quedar desfasada mientras el diálogo estaba abierto
+    // Un snapshot pudo sustituir el historial durante el diálogo: releer para no pisarlo con la copia vieja
+    hist = loadHistory();
+    if (hist[iso] || _excelData[iso]) { showStatus('warn', `El ${dateISOToDisplay(iso)} se ha guardado desde otro dispositivo mientras preguntaba. No se ha guardado nada: vuelve a pegarlo.`); return; }
+    if (sp) dayRole = 'SP';
   }
 
   // Año congelado (evidencia ya cerrada): si la regla crearía o cambiaría su UK Day, se pregunta ANTES de guardar nada.
@@ -1722,7 +1762,8 @@ function addDay() {
   renderHistory();
   const warnMsg = warnings.length ? ` (${warnings.length} aviso${warnings.length !== 1 ? 's' : ''})` : '';
   const skipMsg = askUnknownAirports(flights);
-  showStatus('ok', `${flights.length} vuelo${flights.length !== 1 ? 's' : ''} añadidos al ${dateISOToDisplay(iso)}${warnMsg}${skipMsg}.${roleNote}${ukNote}`);
+  const spNote = dayRole === 'SP' ? ' · SAFETY PILOT' : '';
+  showStatus('ok', `${flights.length} vuelo${flights.length !== 1 ? 's' : ''} añadidos al ${dateISOToDisplay(iso)}${spNote}${warnMsg}${skipMsg}.${roleNote}${ukNote}`);
 }
 
 // Confirmación para escribir en un año fiscal congelado (la entrada queda manual)
@@ -2758,7 +2799,7 @@ function renderHistory() {
         <div class="day-item">
           <span class="day-date">${dateISOToDisplay(iso)}</span>
           <span class="day-route">${esc(route || '—')}</span>
-          <span class="day-count">${count} vuelo${count !== 1 ? 's' : ''}</span>
+          <span class="day-count">${count} vuelo${count !== 1 ? 's' : ''}${day.role === 'SP' ? ' <span class="day-sp" title="Safety pilot">SP</span>' : ''}</span>
           ${rwyButtonHTML(iso, day.flights)}
           <button class="day-del" title="Borrar día" onclick="removeDay('${iso}')">✕</button>
         </div>`;
@@ -2908,7 +2949,7 @@ function excelOnlyHTML(hist) {
         <div class="day-item">
           <span class="day-date">${dateISOToDisplay(iso)}</span>
           <span class="day-route">${esc(routeOfDay(_excelData[iso].flights || []) || '—')}</span>
-          <span class="day-count">solo Excel</span>
+          <span class="day-count">solo Excel${_excelData[iso].role === 'SP' ? ' <span class="day-sp" title="Safety pilot">SP</span>' : ''}</span>
           <button class="day-del" title="Borrar del Excel" onclick="removeExcelOnlyDay('${iso}')">✕</button>
         </div>`).join('');
   return `

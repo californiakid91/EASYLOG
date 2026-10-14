@@ -5,28 +5,28 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.3 Pegar sin sorpresas — Fase 11 Limpieza XS (diferidos G6/G8)
+**Current focus:** v0.3 Pegar sin sorpresas — 3/3 fases completas; decidir fase pilotCode antes de cerrar el milestone
 
 ## Current Position
 
 Version: v0.2.0 (v0.3.0 en curso)
 Milestone: v0.3 Pegar sin sorpresas
-Phase: 11 (3 of 3 del milestone) — Limpieza XS (diferidos G6/G8)
-Plan: 11-01 ✓ completo; 11-02 (datos/sync) sin planificar
-Status: Ready for next PLAN (11-02)
-Last activity: 2026-10-14 — 11-01 cerrado (UNIFY); comprobado en prod con WebKit por Claude (25/25), aprobado por el usuario
+Phase: 11 (3 of 3 del milestone) — Limpieza XS ✅ Complete
+Plan: 11-01 ✓, 11-02 ✓ (fase cerrada)
+Status: Phase 11 complete — milestone v0.3 con todas sus fases hechas
+Last activity: 2026-10-15 — 11-02 UNIFY + transición Fase 11 (G7 + G8); prod v2026.10.14-230928
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
 - v0.2 Seguridad y robustez: [██████████] 100% ✓
-- v0.3 Pegar sin sorpresas: [████████░░] 83% (Fases 9 y 10 ✓; Fase 11: 1/2 planes)
+- v0.3 Pegar sin sorpresas: [██████████] 100% (Fases 9, 10 y 11 ✓)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [11-01 cerrado — listo para /paul:plan 11-02]
+  ✓        ✓        ✓     [Fase 11 cerrada — decidir fase pilotCode / cerrar v0.3]
 ```
 
 ## Accumulated Context
@@ -67,6 +67,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 09-01 (aplicado): detectSafetyPilot por día (≥3 CP/FO, VEGRIC FO, TO y LDG no vacíos en todos, VEGRIC en ninguno) → confirm solo en día nuevo con FO; rol 'SP' en hist/_excelData; CSV SP: TIME_AIR/NIGHT '0:00', TOTAL/SIC/IFR 0, PIC '', TIME_TO/TIME_LDG VACÍAS (PilotLog rechaza AIR > TOTAL), TO/LDG 0, PF FALSE, PILOT2 = FO que vuela el sector, PILOT3 VEGRIC/SELF, REMARKS «FRxxxx SAFETY PILOT»; PILOT3_* al final; tests localizan columnas por nombre; tras cada confirm en addDay: requireHydrated + releer historial; parseText: tabuladores → espacios (emails 2025); BASELINES.preFase9 = a4f135a
 - 10-01 (aplicado): marca manual de UK Days contradicha por el email → ukAskEmailRule (confirm; Aceptar = regla del email, Cancelar = marca) en día nuevo, reemplazo e idéntico; tras CADA confirm de addDay requireHydrated + changedMeanwhile/otherDevice; _ukdays se restaura si falla el guardado; «⚠ el email dice …» solo al pintar (ukEmailSays); motivos con ukReasonText (normaliza los 3 textos viejos al pintar, sin migrar); stub de confirm de los harness acepta función; BASELINES.preFase10 = 0819555; #csp-watch: img-src www.google.com (host exacto) solo a consola
 - 11-01 (aplicado): #csp-watch QUIET = por directiva lista de {host, path?} (connect-src apis.google.com + /js/gen_204 exacto; origen solo → se muestra); e2e-csp tolera solo gen_204 (connect-src / «Refused to connect to»); botones con dato → data-act/data-arg(+arg2) + DATA_ACTS (tabla cerrada con validador; nunca window[act]); tests localizan por [data-act][data-arg]; backup UK Days = mismo mailto + portapapeles (sin umbral)
+- 11-02 (aplicado): _cloudEpoch sube en resetCloudSync (logout/switchMode) y pone _cloudWrites=0; cada escritura captura ep y cloudWriteDone/watchWrite/catch ignoran las de otra sesión; updateBlockers usa _writesInFlight (global); _cloudCorrupt = campos de Firestore no-objeto (vacíos en memoria, fuera de mergeFields, cambiarlos → err y se descartan de memoria); vuelos SIEMPRE vía dayFlights()/dayKeys(); modo Local: #corrupt-box + discardCorrupt (portapapeles → confirm → removeItem → persist + backfill); CAL_KEY declarado con las demás claves
 - _runways = mapa propio (localStorage + campo Firestore `runways`); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -91,12 +92,13 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | rule:* de años congelados no se recalculan aunque se corrija un bug de la regla → requiere migración explícita revisada | 07-01 dialéctica | S | si cambia la regla |
 | Sync: dos dispositivos editando casi a la vez → gana el último por mapa (F-02-001 mitigado, no cerrado); merge por día (opción B) si cambia el uso | 08-02 dialéctica | M | si usa 2 dispositivos a la vez |
 | 08-02 no verificado en iPhone real + Firebase real (e2e simulado); vigilar «Comprobando…» que no termina o «Sin confirmar» con buena cobertura | 08-02 checkpoint | XS | si el usuario lo ve |
-| G8 08: `_cloudWrites` de una sesión anterior (escritura sin confirmar) no se resetea en logout/switchMode → la sesión nueva descarta snapshots hasta que resuelva (solo disponibilidad, no cruza datos) → epoch de sesión | 08 G8 | XS | — |
-| G8 08: validación mínima de forma en applyCloudData (objetos, claves ISO, CAL_STATES, role ∈ {FO,CPT,SP} — G8 09) antes de asignar y del espejo CAL_KEY (defensa en profundidad) | 08 G8 | XS | — |
+| Campo dañado en Firestore: sin botón para repararlo desde la app (solo aviso; nunca se reescribe) | 11-02 | XS | si ocurre |
+| Logout no vacía _excelData/_airports/_ukdays en memoria (preexistente, visto en G6 11-02) | 11-02 G6 | XS | — |
+| G8 11: al cancelar «Descartar copia dañada» el portapapeles se queda con el texto dañado (lo copió el usuario; writeText('') al cancelar lo cerraría) | 11 G8 | XS | — |
+| renderAirports: _airports[k].lat.toFixed() lanza si la nube trae lat como texto (preexistente, disponibilidad) | 11 G8 | XS | — |
 | Cambiar el rol (FO/SP) de un día ya guardado desde la lista (hoy: borrar y re-pegar) | 09-01 | XS | si hace falta |
 | G8 09: fórmulas CSV (=,+,-,@) sin neutralizar en PILOT2_NAME/REMARKS (mismo patrón que F-04-007; CSV va a PilotLog) | 09 G8 | XS | monitor |
 | Vigilar en el iPhone: aviso rojo «Bloqueado (connect-src): apis.google.com» (Safari daría solo el origen → no se silencia) o correo de backup cortado (texto completo en el portapapeles) | 11-01 checkpoint | XS | si el usuario lo ve |
-| Copia local dañada: no se puede «dar por perdida» desde la app (_localCorrupt no se limpia) | 08-01 G6 | XS | — |
 | GitHub: ticket de purga de caché de commits (abierto 2026-10-05) → comprobar que los SHA antiguos dan 404 | 05 post | XS | cuando responda GitHub |
 
 ### Preguntas pendientes al usuario — de UNA en UNA
@@ -122,15 +124,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: 9284576 (docs 11-01) / 46ec3a4 (feat 11-01) — prod = v2026.10.14-200023
+Last commit: e6b135b (fix 11-02) / 19a0504 (feat 11-02) — prod = v2026.10.14-230928
 Branch: main
 
 ## Session Continuity
 
-Last session: 2026-10-14
-Stopped at: 11-01 cerrado (SUMMARY escrito)
-Next action: /paul:plan 11 → plan 11-02 (epoch _cloudWrites, validación applyCloudData, «dar por perdida» copia local)
-Resume file: .paul/HANDOFF-2026-10-14-plan11-01.md
+Last session: 2026-10-15
+Stopped at: Fase 11 cerrada (11-02 UNIFY + transición)
+Next action: decidir dónde va la fase pilotCode (antes de cerrar v0.3 → /paul:add-phase, o en v0.4 → /paul:complete-milestone)
+Resume file: .paul/phases/11-limpieza-xs/11-02-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

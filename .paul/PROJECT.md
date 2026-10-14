@@ -15,7 +15,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Type | Application |
 | Version | 0.2.0 (v0.2 Seguridad y robustez, cerrado 2026-10-14) |
 | Status | Production — v0.2.0; v0.3 Pegar sin sorpresas en curso |
-| Last Updated | 2026-10-14 (Fase 10 UK Days: avisos al pegar completa) |
+| Last Updated | 2026-10-15 (Fase 11 Limpieza XS completa) |
 
 **Production URLs:**
 - https://californiakid91.github.io/EASYLOG/ — app (deploy automático al push a `main`)
@@ -58,6 +58,8 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - [x] UK Days «Fuera de UK»: total real de días pasados no UK (guardados + OFF de calendario), desglose trabajo / libres con desplegable, backup con el desglose; botón «UK» con confirmación — Phase 7.1 (07.1-01)
 - [x] SAFETY PILOT al pegar: 3 pilotos y VEGRIC en ningún despegue/aterrizaje → pregunta; CSV con total 0:00, Pilot 3 SELF y remarks «FRxxxx SAFETY PILOT» (importado en PilotLog con 0 errores); emails de 2025 con tabuladores se pueden pegar — Phase 9 (09-01)
 - [x] UK Days: avisos al pegar — email que contradice una marca manual → pregunta (también al re-pegar); «⚠ el email dice …» en la lista; motivos de decisiones a mano sin instrucciones («DUTY sin email») — Phase 10 (10-01)
+- [x] Limpieza de pantalla: aviso de Google (gen_204) solo a consola con host+ruta exactos; botones con datos por data-act (tabla cerrada, sin onclick con datos); backup UK Days también al portapapeles — Phase 11 (11-01)
+- [x] Sync y datos: una escritura de una sesión anterior no bloquea la nueva (epoch) ni deja recargar con algo en cola; campos de la nube con forma rara ni rompen la app ni se borran; «Descartar copia dañada» en modo Local (texto al portapapeles + confirmación) — Phase 11 (11-02)
 - [x] e2e propios (playwright-core fijado, `npm ci`) + gate git: commit bloqueado si fallan los harness; push (= deploy) bloqueado si fallan harness o e2e — Phase 6 (06-02)
 
 ### Active (In Progress)
@@ -77,7 +79,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ### Planned (Next)
 
-- [ ] Limpieza XS de diferidos G6/G8 (Fase 11)
+- [x] Limpieza XS de diferidos G6/G8 (Fase 11, 2026-10-15)
 - [ ] (opcional) Pistas exactas: FR24 API (token + 9 $/mes del usuario) o ADS-B adsb.lol vía proxy — decisión del usuario
 
 ### Out of Scope
@@ -139,6 +141,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | «Fuera de UK» = días pasados no UK; trabajo = email / ruta real / DUTY-SBY-SIM-SD, resto libre; acciones de la lista con confirm | La lista «No UK» solo mostraba entradas guardadas y se leyó como total; un toque accidental en «UK» cambió un día | 2026-10-14 | Active |
 | SAFETY PILOT = día entero (3+ CP/FO y VEGRIC sin TO/LDG) con confirm; CSV sin TIME_TO/TIME_LDG y total 0 | Criterio del usuario (nunca cambio de asiento a mitad); PilotLog rechaza AIR > TOTAL si van despegue/aterrizaje (import real 27/09/2025) | 2026-10-14 | Active |
 | Marca manual de UK Days contradicha por el email → confirm (Aceptar = email, Cancelar = marca), también al re-pegar idéntico; relectura tras cada confirm; avisos de la CSP: el píxel img-src www.google.com solo a consola | La marca manual ganaba en silencio (03/10/2026); re-pegar es como el usuario comprueba un día; el aviso rojo de Google alarmaba sin ser un riesgo | 2026-10-14 | Active |
+| Sesión de nube con epoch (escrituras viejas no tocan la sesión nueva; recarga bloqueada por un contador global); campo de Firestore no-objeto = dañado (no se usa, nunca se reescribe, cambiarlo = error); sin cuarentena por entrada | Disponibilidad tras logout (G8 08) y defensa en profundidad sin poder borrar datos de la nube (Fable: la cuarentena por entrada reimplementaba lo que ya había y abría un bloqueo silencioso) | 2026-10-15 | Active |
 | Año fiscal derivado de la fecha, sin estado; FLOOR 06/04/2026; año congelado a +30 días (solo el usuario escribe, con confirm) | Dialéctica Fable: un flag "closed" en Firestore añade carreras y migración; la evidencia declarada no se recalcula sola | 2026-10-06 | Active |
 
 ## Success Metrics
@@ -168,4 +171,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-14 after Phase 10*
+*Last updated: 2026-10-15 after Phase 11*

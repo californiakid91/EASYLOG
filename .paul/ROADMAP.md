@@ -8,14 +8,14 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 
 **v0.3 Pegar sin sorpresas** (v0.3.0)
 Status: 🚧 In Progress
-Phases: 2 of 3 complete
+Phases: 3 of 3 complete
 Theme: Que al pegar un email la app detecte los casos especiales (SAFETY PILOT, contradicciones con marcas manuales de UK Days) y avise, y cerrar los diferidos XS de G6/G8.
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 9 | SAFETY PILOT al pegar | 1/1 | ✅ Complete | 2026-10-14 |
 | 10 | UK Days: avisos al pegar (marca manual vs email + motivo No UK) | 1/1 | ✅ Complete | 2026-10-14 |
-| 11 | Limpieza XS (diferidos G6/G8) | 1/2 | In progress | - |
+| 11 | Limpieza XS (diferidos G6/G8) | 2/2 | ✅ Complete | 2026-10-15 |
 
 ### Phase 9: SAFETY PILOT al pegar
 
@@ -30,7 +30,7 @@ Plans: 10-01 ✅ (SUMMARY: .paul/phases/10-ukdays-avisos-al-pegar/10-01-SUMMARY.
 ### Phase 11: Limpieza XS (diferidos G6/G8)
 
 Focus: onclick con iso → data-iso + addEventListener; epoch de sesión para `_cloudWrites`; validación mínima de forma en applyCloudData; límite de longitud del motivo en el backup (mailto); «dar por perdida» la copia local dañada; selección final al planificar.
-Plans: 11-01 ✅ (pantalla: gen_204, onclick → data-act, backup al portapapeles) · 11-02 (datos: epoch _cloudWrites, validación applyCloudData, «dar por perdida» copia local)
+Plans: 11-01 ✅ (pantalla: gen_204, onclick → data-act, backup al portapapeles) · 11-02 ✅ (datos: epoch de sesión, campos de la nube dañados, descartar copia local dañada)
 
 ## Version Overview
 
@@ -76,4 +76,4 @@ Detalle completo: .paul/milestones/v0.1.0-ROADMAP.md
 </details>
 
 ---
-*Roadmap created: 2026-10-03 · Updated: 2026-10-14 (Fase 10 completa)*
+*Roadmap created: 2026-10-03 · Updated: 2026-10-15 (Fase 11 completa)*

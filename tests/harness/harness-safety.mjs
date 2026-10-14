@@ -77,10 +77,11 @@ check('AC-4 PILOT1 = capitán', lit('PILOT1_ID', 'CPTAAA') && lit('PILOT1_NAME',
 check('AC-4 PILOT2 = el otro FO (vuele él o el CP)', lit('PILOT2_ID', 'FOBBBB') && lit('PILOT2_NAME', 'FIRST OFFICER BRAVO'), sp.map(r => r.PILOT2_ID).join(','));
 check('AC-4 PILOT3 = VEGRIC / SELF', lit('PILOT3_ID', 'VEGRIC') && lit('PILOT3_NAME', 'SELF'));
 check('AC-4 REMARKS «<vuelo> SAFETY PILOT»', sp.every(r => r.REMARKS === `${r.FLIGHTNUMBER} SAFETY PILOT`), sp.map(r => r.REMARKS).join(' | '));
-const SAME = ['PILOTLOG_DATE', 'FLIGHTNUMBER', 'AF_DEP', 'AF_ARR', 'TIME_DEP', 'TIME_DEPSCH', 'TIME_ARR', 'TIME_ARRSCH', 'TIME_TO', 'TIME_LDG', 'OPERATOR',
+check("AC-4 TIME_TO y TIME_LDG vacías (PilotLog rechaza AIR > TOTAL si van)", lit('TIME_TO', '') && lit('TIME_LDG', '') && fo.every(r => r.TIME_TO && r.TIME_LDG), sp.map(r => r.TIME_TO + '/' + r.TIME_LDG).join(' '));
+const SAME = ['PILOTLOG_DATE', 'FLIGHTNUMBER', 'AF_DEP', 'AF_ARR', 'TIME_DEP', 'TIME_DEPSCH', 'TIME_ARR', 'TIME_ARRSCH', 'OPERATOR',
   'CREWLIST', 'FLIGHTLOG', 'PAX', 'FUEL', 'FUELUSED', 'DELAY', 'AC_MAKE', 'AC_MODEL', 'AC_VARIANT', 'AC_REG', 'AC_ENGTYPE', 'RWY_DEP', 'RWY_ARR'];
 const diffSame = sp.flatMap((r, i) => SAME.filter(k => r[k] !== fo[i][k]).map(k => `${i}:${k}`));
-check('AC-4 calzos, STD/STA, TO/LDG, CREWLIST, FLIGHTLOG, fuel, pax, avión y pistas == mismo día con FO', diffSame.length === 0, diffSame.join(','));
+check('AC-4 calzos, STD/STA, CREWLIST, FLIGHTLOG, fuel, pax, avión y pistas == mismo día con FO', diffSame.length === 0, diffSame.join(','));
 check('AC-4 calzos rellenos (no vacíos)', sp.every(r => r.TIME_DEP && r.TIME_ARR), sp.map(r => r.TIME_DEP + '-' + r.TIME_ARR).join(' '));
 // 4 en cabina: CP + 2 FO + VEGRIC → PILOT2 = el FO que vuela cada sector
 const F4 = F92.replace('FOBBBB : FO : FIRST OFFICER BRAVO', 'FOBBBB : FO : FIRST OFFICER BRAVO\nFOCCCC : FO : FIRST OFFICER CHARLIE')

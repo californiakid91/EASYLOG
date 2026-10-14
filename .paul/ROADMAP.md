@@ -8,12 +8,12 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 
 **v0.3 Pegar sin sorpresas** (v0.3.0)
 Status: 🚧 In Progress
-Phases: 0 of 3 complete
+Phases: 1 of 3 complete
 Theme: Que al pegar un email la app detecte los casos especiales (SAFETY PILOT, contradicciones con marcas manuales de UK Days) y avise, y cerrar los diferidos XS de G6/G8.
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
-| 9 | SAFETY PILOT al pegar | 0/1 | Planning | - |
+| 9 | SAFETY PILOT al pegar | 1/1 | ✅ Complete | 2026-10-14 |
 | 10 | UK Days: avisos al pegar (marca manual vs email + motivo No UK) | TBD | Not started | - |
 | 11 | Limpieza XS (diferidos G6/G8) | TBD | Not started | - |
 
@@ -76,4 +76,4 @@ Detalle completo: .paul/milestones/v0.1.0-ROADMAP.md
 </details>
 
 ---
-*Roadmap created: 2026-10-03 · Updated: 2026-10-14 (milestone v0.3 creado)*
+*Roadmap created: 2026-10-03 · Updated: 2026-10-14 (Fase 9 completa)*

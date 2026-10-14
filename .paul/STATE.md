@@ -5,28 +5,28 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.3 Pegar sin sorpresas — Fase 9 SAFETY PILOT
+**Current focus:** v0.3 Pegar sin sorpresas — Fase 10 UK Days: avisos al pegar
 
 ## Current Position
 
 Version: v0.2.0 (v0.3.0 en curso)
 Milestone: v0.3 Pegar sin sorpresas
-Phase: 9 (1 of 3 del milestone) — SAFETY PILOT al pegar — Planning
-Plan: 09-01 created, awaiting approval (revisión adversaria Fable incorporada: B1-B2, I1-I5, M1-M3)
-Status: PLAN created, ready for APPLY
-Last activity: 2026-10-14 — Created .paul/phases/09-safety-pilot/09-01-PLAN.md
+Phase: 10 (2 of 3 del milestone) — UK Days: avisos al pegar
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-14 — Fase 9 completa (09-01 UNIFY), transición a Fase 10
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
 - v0.2 Seguridad y robustez: [██████████] 100% ✓
-- v0.3 Pegar sin sorpresas: [░░░░░░░░░░] 0%
+- v0.3 Pegar sin sorpresas: [███░░░░░░░] 33% (Fase 9 ✓)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan created, awaiting approval]
+  ○        ○        ○     [Fase 9 cerrada — ready for first PLAN de Fase 10]
 ```
 
 ## Accumulated Context
@@ -64,6 +64,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 07-02 (aplicado): _settings = { ukLimit[label], ukExceptional[iso]: {reason, at} } persistido como mapa más (local SETTINGS_KEY + campo Firestore 'settings' en mergeFields); límite = dato del usuario (default genérico 90, nunca su valor ni su criterio en el repo); comp = UK − min(exc, 60); lectores defensivos (ukLimitSet/ukExcMap), escritores desde ukExcRaw; requireHydrated antes y después de prompt/confirm/modal; claves locales no-objeto = dañadas
 - 07.1-01 (aplicado): «Fuera de UK» = ukPastDays con estado no (hoy/futuros nunca); outKind work = email | ruta real guardada | DUTY/SBY/SIM/SD, si no off; solo se pinta la lista activa; apertura desde _ukOutOpen (no del DOM); botón UK de la lista → ukForceUKFromOut con confirm; backup: OFF de calendario en rangos, decisiones a mano con motivo
 - 09 (usuario 2026-10-14): SAFETY PILOT = 3+ pilotos en cabina y VEGRIC ausente de todos los Take Off/Landing del día → SP todo el día (nunca cambio de asiento a mitad de día); siempre con confirm; rol del email no distingue (ambos FO), Verified By siempre CP, Captain Remarks no fiable
+- 09-01 (aplicado): detectSafetyPilot por día (≥3 CP/FO, VEGRIC FO, TO y LDG no vacíos en todos, VEGRIC en ninguno) → confirm solo en día nuevo con FO; rol 'SP' en hist/_excelData; CSV SP: TIME_AIR/NIGHT '0:00', TOTAL/SIC/IFR 0, PIC '', TIME_TO/TIME_LDG VACÍAS (PilotLog rechaza AIR > TOTAL), TO/LDG 0, PF FALSE, PILOT2 = FO que vuela el sector, PILOT3 VEGRIC/SELF, REMARKS «FRxxxx SAFETY PILOT»; PILOT3_* al final; tests localizan columnas por nombre; tras cada confirm en addDay: requireHydrated + releer historial; parseText: tabuladores → espacios (emails 2025); BASELINES.preFase9 = a4f135a
 - _runways = mapa propio (localStorage + campo Firestore `runways`); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -89,11 +90,12 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Al pegar un email de un día con marca manual que lo contradice, la app conserva la marca sin avisar (caso 03/10/2026) → avisar y ofrecer volver a la regla del email | 2026-10-14 usuario | XS | — |
 | Motivo de los No UK manuales decididos sin email («DUTY en calendario sin email: pega el email») no explica la causa real (p. ej. calzos tras 00:00) → texto «No UK decidido a mano (DUTY sin email)» o pegar el email y quitar la marca | 07.1 checkpoint | XS | — |
 | G8 07.1: onclick con iso interpolado (seguro hoy por ISO_RE/ukPastDays) → data-iso + addEventListener; reason muy largo podría pasarse del límite de mailto en el backup | 07.1 G8 | XS | — |
-| Detectar vuelos de SAFETY PILOT al pegar (VEGRIC 3er FO, sin PF) → proponer funciones 0:00, Pilot 3 SELF y remarks «SAFETY PILOT» (criterio del usuario) | 2026-10-10 sesión PilotLog | S | fase propia tras 08 |
 | Sync: dos dispositivos editando casi a la vez → gana el último por mapa (F-02-001 mitigado, no cerrado); merge por día (opción B) si cambia el uso | 08-02 dialéctica | M | si usa 2 dispositivos a la vez |
 | 08-02 no verificado en iPhone real + Firebase real (e2e simulado); vigilar «Comprobando…» que no termina o «Sin confirmar» con buena cobertura | 08-02 checkpoint | XS | si el usuario lo ve |
 | G8 08: `_cloudWrites` de una sesión anterior (escritura sin confirmar) no se resetea en logout/switchMode → la sesión nueva descarta snapshots hasta que resuelva (solo disponibilidad, no cruza datos) → epoch de sesión | 08 G8 | XS | — |
-| G8 08: validación mínima de forma en applyCloudData (objetos, claves ISO, CAL_STATES) antes de asignar y del espejo CAL_KEY (defensa en profundidad) | 08 G8 | XS | — |
+| G8 08: validación mínima de forma en applyCloudData (objetos, claves ISO, CAL_STATES, role ∈ {FO,CPT,SP} — G8 09) antes de asignar y del espejo CAL_KEY (defensa en profundidad) | 08 G8 | XS | — |
+| Cambiar el rol (FO/SP) de un día ya guardado desde la lista (hoy: borrar y re-pegar) | 09-01 | XS | si hace falta |
+| G8 09: fórmulas CSV (=,+,-,@) sin neutralizar en PILOT2_NAME/REMARKS (mismo patrón que F-04-007; CSV va a PilotLog) | 09 G8 | XS | monitor |
 | Copia local dañada: no se puede «dar por perdida» desde la app (_localCorrupt no se limpia) | 08-01 G6 | XS | — |
 | GitHub: ticket de purga de caché de commits (abierto 2026-10-05) → comprobar que los SHA antiguos dan 404 | 05 post | XS | cuando responda GitHub |
 
@@ -120,15 +122,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: cierre milestone v0.2 (tag v0.2.0) — prod = v2026.10.14-112255
+Last commit: fase 9 (09-01) — prod = v2026.10.14-142413
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-14
-Stopped at: Plan 09-01 created
-Next action: Review and approve plan, then run /paul:apply .paul/phases/09-safety-pilot/09-01-PLAN.md
-Resume file: .paul/phases/09-safety-pilot/09-01-PLAN.md
+Stopped at: Fase 9 completa (SAFETY PILOT verificado en PilotLog real), listo para planificar Fase 10
+Next action: /paul:plan para Fase 10 (UK Days: avisos al pegar)
+Resume file: .paul/phases/09-safety-pilot/09-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

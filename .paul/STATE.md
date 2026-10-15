@@ -5,28 +5,28 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.3 Pegar sin sorpresas — 4/4 fases completas; falta cerrar el milestone
+**Current focus:** v0.3 cerrado — siguiente milestone por definir
 
 ## Current Position
 
-Version: v0.2.0 (v0.3.0 en curso)
-Milestone: v0.3 Pegar sin sorpresas
-Phase: 12 (4 of 4 del milestone) — Código de piloto fuera del repo público — ✅ Complete
-Plan: 12-01 ✅ (d18ee1e feat + 1517094 fix G6); prod v2026.10.15-105223; checkpoint WebKit 16/16
-Status: Milestone v0.3 con todas sus fases completas — listo para /paul:complete-milestone
-Last activity: 2026-10-15 — UNIFY 12-01 + transición de Fase 12 (G7 + G8)
+Version: v0.3.0
+Milestone: Awaiting next milestone
+Phase: None active
+Plan: None
+Status: Milestone v0.3 Pegar sin sorpresas complete — ready for next
+Last activity: 2026-10-15 — Milestone v0.3 completed (tag v0.3.0)
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
 - v0.2 Seguridad y robustez: [██████████] 100% ✓
-- v0.3 Pegar sin sorpresas: [██████████] 100% (Fases 9, 10, 11 y 12 ✓)
+- v0.3 Pegar sin sorpresas: [██████████] 100% ✓
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — Fase 12 cerrada; siguiente: complete-milestone v0.3]
+  ○        ○        ○     [Milestone complete - ready for next]
 ```
 
 ## Accumulated Context
@@ -76,7 +76,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Issue | Origin | Effort | Revisit |
 |-------|--------|--------|---------|
 | PilotLog histórico 2023-05→2026-09 comparado con el plan ROCS completo (2026-10-08/10): checklist privada en curso por el usuario; al terminar, re-exportar CSV de PilotLog y re-verificar (scripts fuera del repo) | 2026-10-08 | S | cuando avise el usuario |
-| Histórico ya importado en PilotLog: sin NIGHT y posibles fechas post-medianoche → informe sobre export de PilotLog (no reimportar meses) | Phase 2 | S | antes de Fase 3 |
+| Histórico ya importado en PilotLog: sin NIGHT y posibles fechas post-medianoche → informe sobre export de PilotLog (no reimportar meses) | Phase 2 | S | absorbido por la fila anterior (2026-10-08) |
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
 | Barra «Hay una versión nueva» (fija abajo) tapa el final del botón de exportar mientras está visible → padding-bottom al body cuando se muestra | 03.1 checkpoint | XS | — |
 | UK Days: reconstrucción de tax years anteriores desde el plan ROCS (2024/25 falta plan abr–dic 2024) | Phase 2 | M | — |
@@ -127,19 +127,20 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - [x] Límite de la app: el asesor respondió 2026-10-13 (detalle SOLO en memoria local). 07-02: límite configurable por año guardado en los datos del usuario + días excepcionales (no computables, tope 60)
 
 ### Blockers/Concerns
-- Ninguno. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
+- Pendiente del usuario (desde 2026-10-15 tarde): en el iPhone con la nube, el primer pegado pide el código UNA vez; importar el primer CSV en PilotLog y mirar CREWLIST y TO/LDG
+- Ninguno más. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: 0ce9646 (fase 12) / 1517094 (fix 12-01) / d18ee1e (feat 12-01) — prod = v2026.10.15-105223
+Last commit: cierre v0.3 (tag v0.3.0) — prod = v2026.10.15-105223
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-15
-Stopped at: Fase 12 cerrada (UNIFY + transición); v0.3 4/4 fases
-Next action: /paul:complete-milestone (v0.3)
-Resume file: .paul/HANDOFF-2026-10-15-fase12-cerrada.md
+Stopped at: Milestone v0.3 Pegar sin sorpresas complete
+Next action: /paul:milestone (definir v0.4); el usuario comprueba en el iPhone (pendiente desde 2026-10-15 tarde) el prompt del código y el primer CSV en PilotLog
+Resume file: .paul/MILESTONES.md
 
 ---
 *STATE.md — Updated after every significant action*

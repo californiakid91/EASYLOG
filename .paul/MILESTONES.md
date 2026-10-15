@@ -6,6 +6,43 @@ Completed milestone log for this project.
 |-----------|-----------|----------|-------|
 | v0.1 Datos fiables | 2026-10-05 | 3 días | 8 phases, 11 plans |
 | v0.2 Seguridad y robustez | 2026-10-14 | 10 días | 5 phases, 9 plans |
+| v0.3 Pegar sin sorpresas | 2026-10-15 | 2 días | 4 phases, 5 plans |
+
+---
+
+## ✅ v0.3 Pegar sin sorpresas
+
+**Completed:** 2026-10-15
+**Duration:** 2 días (2026-10-14 → 2026-10-15)
+
+### Stats
+
+| Metric | Value |
+|--------|-------|
+| Phases | 4 (9, 10, 11, 12) |
+| Plans | 5 |
+| Files changed | 38 fuera de .paul/ (+1699 / −233; index.html +466 / −105) |
+| Commits | 22 |
+
+### Key Accomplishments
+
+- SAFETY PILOT al pegar: día entero detectado (3+ pilotos, el usuario sin despegue/aterrizaje) con confirmación; CSV con total 0:00, Pilot 3 SELF y remarks «FRxxxx SAFETY PILOT», importado en PilotLog con 0 errores
+- Emails de 2025 con tabuladores se pueden pegar
+- UK Days: el email que contradice una marca manual pregunta (también al re-pegar idéntico); «⚠ el email dice …» en la lista; motivos de decisiones a mano legibles
+- Pantalla limpia: aviso de Google gen_204 solo a consola (host + ruta exactos); botones con datos por data-act (tabla cerrada, sin onclick con datos); backup de UK Days también al portapapeles
+- Sync y datos: epoch de sesión (escrituras viejas no bloquean la sesión nueva), campos de la nube con forma rara ni rompen la app ni se borran, «Descartar copia dañada» en modo Local
+- Código de piloto fuera del repo público: ajuste del usuario (se pide una vez), nombre desde el email, CSV idéntico byte a byte; hooks locales bloquean commitear palabras privadas
+- Barrera de tests ampliada: 24/24 (20 harness + 4 e2e); harness 20/20 también con `--now` en otro año; CSV comparado de forma permanente contra el index anterior a cada fase (BASELINES.preFase9/10/12)
+- Checkpoints en producción hechos por Claude con WebKit/iPhone 13 (11-01 25/25, 11-02 21/21, 12-01 16/16)
+
+### Key Decisions
+
+- SAFETY PILOT = día entero, siempre con confirm; sin TIME_TO/TIME_LDG (PilotLog rechaza AIR > TOTAL)
+- Marca manual vs email → pregunta al usuario; nunca gana nadie en silencio
+- CSP nunca se relaja: solo se silencian avisos con coincidencia exacta directiva + host + ruta
+- Campo de Firestore dañado = no se usa ni se reescribe (sin cuarentena por entrada, Fable)
+- Código/nombre del piloto: solo hacia adelante, sin purga del historial (Fable + usuario)
+- Código del piloto sin botón de cambio: se corrige desde el confirm al pegar; el nombre nunca se guarda en settings (Fable + usuario)
 
 ---
 

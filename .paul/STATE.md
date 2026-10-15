@@ -11,10 +11,10 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 
 Version: v0.2.0 (v0.3.0 en curso)
 Milestone: v0.3 Pegar sin sorpresas
-Phase: 12 (4 of 4 del milestone) — Código de piloto fuera del repo público — Not started
-Plan: — (por planificar)
-Status: Ready to plan
-Last activity: 2026-10-15 — Added Phase 12: Código de piloto fuera del repo público (usuario: en v0.3, antes de cerrar el milestone)
+Phase: 12 (4 of 4 del milestone) — Código de piloto fuera del repo público — Planning
+Plan: 12-01 created, awaiting approval (revisado por Fable: 13 hallazgos incorporados)
+Status: PLAN created, ready for APPLY
+Last activity: 2026-10-15 — Created .paul/phases/12-codigo-piloto-fuera-del-repo/12-01-PLAN.md
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
@@ -26,7 +26,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ○        ○        ○     [Fase 12 añadida — listo para /paul:plan 12]
+  ✓        ○        ○     [Plan 12-01 creado, pendiente de aprobación]
 ```
 
 ## Accumulated Context
@@ -67,6 +67,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 09-01 (aplicado): detectSafetyPilot por día (≥3 CP/FO, VEGRIC FO, TO y LDG no vacíos en todos, VEGRIC en ninguno) → confirm solo en día nuevo con FO; rol 'SP' en hist/_excelData; CSV SP: TIME_AIR/NIGHT '0:00', TOTAL/SIC/IFR 0, PIC '', TIME_TO/TIME_LDG VACÍAS (PilotLog rechaza AIR > TOTAL), TO/LDG 0, PF FALSE, PILOT2 = FO que vuela el sector, PILOT3 VEGRIC/SELF, REMARKS «FRxxxx SAFETY PILOT»; PILOT3_* al final; tests localizan columnas por nombre; tras cada confirm en addDay: requireHydrated + releer historial; parseText: tabuladores → espacios (emails 2025); BASELINES.preFase9 = a4f135a
 - 10-01 (aplicado): marca manual de UK Days contradicha por el email → ukAskEmailRule (confirm; Aceptar = regla del email, Cancelar = marca) en día nuevo, reemplazo e idéntico; tras CADA confirm de addDay requireHydrated + changedMeanwhile/otherDevice; _ukdays se restaura si falla el guardado; «⚠ el email dice …» solo al pintar (ukEmailSays); motivos con ukReasonText (normaliza los 3 textos viejos al pintar, sin migrar); stub de confirm de los harness acepta función; BASELINES.preFase10 = 0819555; #csp-watch: img-src www.google.com (host exacto) solo a consola
 - 11-01 (aplicado): #csp-watch QUIET = por directiva lista de {host, path?} (connect-src apis.google.com + /js/gen_204 exacto; origen solo → se muestra); e2e-csp tolera solo gen_204 (connect-src / «Refused to connect to»); botones con dato → data-act/data-arg(+arg2) + DATA_ACTS (tabla cerrada con validador; nunca window[act]); tests localizan por [data-act][data-arg]; backup UK Days = mismo mailto + portapapeles (sin umbral)
+- 12 (usuario 2026-10-15): nombre de la fila NAME del Excel = el de la línea propia del email (mayúsculas, sin ñ); no se guarda en settings
 - 11-02 (aplicado): _cloudEpoch sube en resetCloudSync (logout/switchMode) y pone _cloudWrites=0; cada escritura captura ep y cloudWriteDone/watchWrite/catch ignoran las de otra sesión; updateBlockers usa _writesInFlight (global); _cloudCorrupt = campos de Firestore no-objeto (vacíos en memoria, fuera de mergeFields, cambiarlos → err y se descartan de memoria); vuelos SIEMPRE vía dayFlights()/dayKeys(); modo Local: #corrupt-box + discardCorrupt (portapapeles → confirm → removeItem → persist + backfill); CAL_KEY declarado con las demás claves
 - _runways = mapa propio (localStorage + campo Firestore `runways`); clave duty|vuelo|DEP-ARR(#n)
 
@@ -130,9 +131,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-15
-Stopped at: Fase 12 añadida al ROADMAP
-Next action: /paul:plan 12 (Fable adversario)
-Resume file: —
+Stopped at: Plan 12-01 creado
+Next action: aprobar el plan → /paul:apply .paul/phases/12-codigo-piloto-fuera-del-repo/12-01-PLAN.md
+Resume file: .paul/phases/12-codigo-piloto-fuera-del-repo/12-01-PLAN.md
 
 ---
 *STATE.md — Updated after every significant action*

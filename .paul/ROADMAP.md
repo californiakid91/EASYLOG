@@ -16,7 +16,7 @@ Theme: Que al pegar un email la app detecte los casos especiales (SAFETY PILOT, 
 | 9 | SAFETY PILOT al pegar | 1/1 | ✅ Complete | 2026-10-14 |
 | 10 | UK Days: avisos al pegar (marca manual vs email + motivo No UK) | 1/1 | ✅ Complete | 2026-10-14 |
 | 11 | Limpieza XS (diferidos G6/G8) | 2/2 | ✅ Complete | 2026-10-15 |
-| 12 | Código de piloto fuera del repo público | TBD | Not started | - |
+| 12 | Código de piloto fuera del repo público | 0/1 | Planning | - |
 
 ### Phase 9: SAFETY PILOT al pegar
 
@@ -36,8 +36,8 @@ Plans: 11-01 ✅ (pantalla: gen_204, onclick → data-act, backup al portapapele
 ### Phase 12: Código de piloto fuera del repo público
 
 Focus: dejar de publicar el código y el nombre del piloto a partir de ahora, sin purgar el historial. El código pasa a ser un ajuste del usuario (`settings.pilotCode` en `_settings`, se pide una vez tras `requireHydrated`); `myCode()` sustituye a los literales; CREWLIST sale del email; fixtures y golden con código/nombre sintéticos; docs de .paul/ solo hacia adelante.
-Plans: TBD (defined during /paul:plan)
-Status: Not started
+Plans: 12-01 (plan creado, pendiente de aprobación)
+Status: Planning
 
 ## Version Overview
 

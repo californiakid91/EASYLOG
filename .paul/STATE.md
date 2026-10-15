@@ -131,7 +131,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: 1517094 (fix 12-01) / d18ee1e (feat 12-01) — prod = v2026.10.15-105223
+Last commit: 0ce9646 (fase 12) / 1517094 (fix 12-01) / d18ee1e (feat 12-01) — prod = v2026.10.15-105223
 Branch: main
 
 ## Session Continuity
@@ -139,7 +139,7 @@ Branch: main
 Last session: 2026-10-15
 Stopped at: Fase 12 cerrada (UNIFY + transición); v0.3 4/4 fases
 Next action: /paul:complete-milestone (v0.3)
-Resume file: .paul/phases/12-codigo-piloto-fuera-del-repo/12-01-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-15-fase12-cerrada.md
 
 ---
 *STATE.md — Updated after every significant action*

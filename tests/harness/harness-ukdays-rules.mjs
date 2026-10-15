@@ -116,7 +116,7 @@ check('antigua automática que acaba fuera (STN→HAM) → marca de revisar', S(
 reset(); run(`_dayMap = { '2026-11-01': 'off', '2026-11-02': 'stby', '2026-11-03': 'sim', '2026-11-04': 'duty' };`);
 check('calendario off → NO', S('2026-11-01').state === 'no' && S('2026-11-01').source === 'cal:off');
 check('calendario stby → UK', S('2026-11-02').state === 'uk' && S('2026-11-02').source === 'cal:stby');
-check('calendario sim → UK', S('2026-11-03').state === 'uk');
+check('13-01: calendario sim sin email → pendiente cal-ask', S('2026-11-03').state === 'pending' && S('2026-11-03').kind === 'cal-ask');
 check('calendario duty sin email → pendiente', S('2026-11-04').state === 'pending' && S('2026-11-04').kind === 'duty');
 reset(); paste(email('2026/11/05', [{ cp: 'STN - DUB', off: '15:00', on: '16:10' }, { cp: 'DUB - STN', off: '17:00', on: '18:10' }]));
 run(`_dayMap['2026-11-05'] = 'off';`);

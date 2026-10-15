@@ -35,15 +35,15 @@ Documento de referencia para rellenar el Excel TAX YEAR desde emails de vuelo Ry
 |---|---|
 | FLIGHT NO | `SBY` |
 | UW | 1 (primera fila) |
-| U | 1 (primera fila) |
+| U | 1 (primera fila); si hay email (SBY activado) manda la regla del email |
 
 ### SIM
 | Columna | Valor |
 |---|---|
 | FLIGHT NO | `SIM` |
 | UK TRAINING | rellenar manualmente (variable) |
-| UW | 1 (primera fila) |
-| U | 1 (primera fila) |
+| UW | 1 si el día anterior acabó en UK (UK Day); vacío si acabó fuera (primera fila) |
+| U | la decide el usuario en UK Days (UK / No UK): el SIM puede ser fuera de base |
 
 ### E (Exceptional days)
 - Siempre en blanco
@@ -97,12 +97,14 @@ Documento de referencia para rellenar el Excel TAX YEAR desde emails de vuelo Ry
 ## Columnas UW / U / E
 
 ### UW — UK Working Day
-- `1` en la primera fila de todos los días **excepto OFF**
+- `1` en la primera fila de todos los días **excepto OFF**, siempre que el día **empiece en UK**:
+  - Con vuelos: el primer sector sale de UK
+  - Sin vuelos: SBY → 1 siempre; SIM / SD / DUTY → 1 si el día anterior es UK Day, vacío si es No UK, `?` si está sin decidir
 
 ### U — UK Day
 `1` en la primera fila si se cumple alguna de estas condiciones:
-- Día de **SIM**
-- Día de **STBY**
+- Día de **STBY** sin email (con email manda la regla del email)
+- Día de **SIM** / **SD**: lo decide el usuario (UK / No UK)
 - Día de **DUTY** donde el On Block del último vuelo es **antes de las 00:00 hora local de Londres**
 
 **Conversión horaria (horas del email son UTC/Zulu):**

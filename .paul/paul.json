@@ -2,14 +2,14 @@
   "name": "EasyLog",
   "version": "0.3.0",
   "milestone": {
-    "name": "v0.3 Pegar sin sorpresas",
-    "version": "0.3.0",
-    "status": "complete"
+    "name": "v0.4 Datos y fiscal",
+    "version": "0.4.0",
+    "status": "in_progress"
   },
   "phase": {
-    "number": 12,
-    "name": "Código de piloto fuera del repo público",
-    "status": "complete"
+    "number": 13,
+    "name": "Días SBY con email y días sin vuelo (UW)",
+    "status": "not_started"
   },
   "loop": {
     "plan": null,
@@ -17,7 +17,7 @@
   },
   "timestamps": {
     "created_at": "2026-10-03T12:31:08+01:00",
-    "updated_at": "2026-10-15T18:00:00+01:00"
+    "updated_at": "2026-10-15T23:10:00+01:00"
   },
   "satellite": {
     "groom": true

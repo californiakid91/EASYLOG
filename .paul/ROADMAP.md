@@ -6,13 +6,26 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 
 ## Current Milestone
 
-**v0.3 Pegar sin sorpresas** (v0.3.0)
-Status: ✅ Complete
-Completed: 2026-10-15
+**v0.4 Datos y fiscal** (v0.4.0)
+Status: 🚧 In Progress
+Phases: 0 of 2 complete
 
-## Next Milestone
+| Phase | Name | Plans | Status | Completed |
+|-------|------|-------|--------|-----------|
+| 13 | Días SBY con email y días sin vuelo (UW) | TBD | Not started | - |
+| 14 | Mismo vuelo pegado con otra fecha | TBD | Not started | - |
 
-Por definir: /paul:milestone (o /paul:discuss-milestone).
+### Phase 13: Días SBY con email y días sin vuelo (UW)
+
+Focus: conflicto SBY del calendario + email de vuelo resuelto con la regla del usuario (activado → manda el email; pendiente de confirmar la regla exacta al planificar); UW del Excel en días sin vuelos con UK marcado a mano (DUTY sin email). Diferidos 03.2-01.
+Plans: TBD (defined during /paul:plan)
+
+### Phase 14: Mismo vuelo pegado con otra fecha
+
+Focus: detectar al pegar un vuelo ya guardado con otra fecha (PilotLog lo duplicaría en el logbook) y avisar con confirmación. Diferido 03.2-02.
+Plans: TBD (defined during /paul:plan)
+
+Fuera de alcance: reconstruir tax years anteriores desde ROCS (años ya declarados; mandan los registros del usuario).
 
 ## Version Overview
 
@@ -21,6 +34,7 @@ Por definir: /paul:milestone (o /paul:discuss-milestone).
 | v0.1.0 | Datos fiables | ✅ Complete 2026-10-05 |
 | v0.2.0 | Seguridad y robustez | ✅ Complete 2026-10-14 |
 | v0.3.0 | Pegar sin sorpresas | ✅ Complete 2026-10-15 |
+| v0.4.0 | Datos y fiscal | 🚧 In Progress |
 
 ## Completed Milestones
 
@@ -72,4 +86,4 @@ Detalle completo: .paul/milestones/v0.1.0-ROADMAP.md
 </details>
 
 ---
-*Roadmap created: 2026-10-03 · Updated: 2026-10-15 (v0.3 cerrado)*
+*Roadmap created: 2026-10-03 · Updated: 2026-10-15 (v0.4 creado)*

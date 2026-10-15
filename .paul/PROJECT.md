@@ -14,7 +14,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 |-----------|-------|
 | Type | Application |
 | Version | 0.3.0 (v0.3 Pegar sin sorpresas, cerrado 2026-10-15) |
-| Status | Production — v0.3.0; siguiente milestone por definir |
+| Status | Production — v0.3.0; v0.4 Datos y fiscal en curso |
 | Last Updated | 2026-10-15 (v0.3 cerrado) |
 
 **Production URLs:**
@@ -75,11 +75,11 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ### Active (In Progress)
 
-- — (nada en curso; siguiente milestone por definir)
+- [ ] v0.4 Datos y fiscal: SBY + email y UW en días sin vuelo (Fase 13); mismo vuelo pegado con otra fecha (Fase 14)
 
 ### Planned (Next)
 
-- [ ] Siguiente milestone por definir. Candidatos con señal de uso real (diferidos de STATE.md): cambiar el rol FO/SP de un día guardado desde la lista (09-01); hook de palabras privadas solo sobre líneas añadidas en los exentos (12 G8); logout no vacía la memoria (11-02 G6); campo dañado en la nube sin botón de reparar (11-02)
+- [ ] Candidatos para después de v0.4 con señal de uso real (diferidos de STATE.md): cambiar el rol FO/SP de un día guardado desde la lista (09-01); hook de palabras privadas solo sobre líneas añadidas en los exentos (12 G8); logout no vacía la memoria (11-02 G6); campo dañado en la nube sin botón de reparar (11-02)
 - [ ] Re-verificar el histórico de PilotLog (export completo, scripts fuera del repo) cuando el usuario termine su checklist privada — no es trabajo de la app
 - [ ] (opcional) Pistas exactas: FR24 API (token + 9 $/mes del usuario) o ADS-B adsb.lol vía proxy — decisión del usuario
 

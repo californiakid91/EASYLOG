@@ -5,28 +5,29 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.3 cerrado — siguiente milestone por definir
+**Current focus:** v0.4 Datos y fiscal — Fase 13 lista para planificar
 
 ## Current Position
 
 Version: v0.3.0
-Milestone: Awaiting next milestone
-Phase: None active
-Plan: None
-Status: Milestone v0.3 Pegar sin sorpresas complete — ready for next
-Last activity: 2026-10-15 — Milestone v0.3 completed (tag v0.3.0)
+Milestone: v0.4 Datos y fiscal (v0.4.0)
+Phase: 13 (1 de 2) — Días SBY con email y días sin vuelo (UW)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-15 — Milestone v0.4 created
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
 - v0.2 Seguridad y robustez: [██████████] 100% ✓
 - v0.3 Pegar sin sorpresas: [██████████] 100% ✓
+- v0.4 Datos y fiscal: [░░░░░░░░░░] 0%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ○        ○        ○     [Milestone complete - ready for next]
+  ○        ○        ○     [Ready for first PLAN]
 ```
 
 ## Accumulated Context
@@ -138,9 +139,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-15
-Stopped at: Milestone v0.3 Pegar sin sorpresas complete
-Next action: /paul:milestone (definir v0.4); el usuario comprueba en el iPhone (pendiente desde 2026-10-15 tarde) el prompt del código y el primer CSV en PilotLog
-Resume file: .paul/HANDOFF-2026-10-15-v0.3-cerrado.md
+Stopped at: Milestone v0.4 Datos y fiscal created, ready to plan
+Next action: /paul:plan para la Fase 13 (antes: preguntar al usuario la regla exacta SBY + email); el usuario comprueba en el iPhone (pendiente desde 2026-10-15 tarde) el prompt del código y el primer CSV en PilotLog
+Resume file: .paul/ROADMAP.md
 
 ---
 *STATE.md — Updated after every significant action*

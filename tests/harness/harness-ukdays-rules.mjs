@@ -133,9 +133,9 @@ paste(email('2026/11/16', [{ cp: 'STN - DUB', off: '15:00', on: '16:10' }, { cp:
 paste(email('2026/11/17', [{ cp: 'STN - DUB', off: '15:00', on: '16:10' }, { cp: 'DUB - STN', off: '17:00' }]));
 run(`_dayMap['2026-11-18'] = 'off';`);
 const pend = JSON.parse(run('JSON.stringify(pendingUKDays().map(x => x.iso))'));
-check('P = 12,13,14,15,17,19/11 (hoy 20/11 excluido)', JSON.stringify(pend) === JSON.stringify(['2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15', '2026-11-17', '2026-11-19']), JSON.stringify(pend));
+check('P = 12,13,14,15,17/11 (hoy 20/11 y ayer 19/11 en gracia, 13.1)', JSON.stringify(pend) === JSON.stringify(['2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15', '2026-11-17']), JSON.stringify(pend));
 const blocks = JSON.parse(run('JSON.stringify(pendingUKBlocks().map(b => b.days))'));
-check('huecos = [12–15/11], [19/11]; el 17/11 (email incompleto) no entra', JSON.stringify(blocks) === JSON.stringify([['2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15'], ['2026-11-19']]), JSON.stringify(blocks));
+check('huecos = [12–15/11] (19/11 en gracia, 13.1); el 17/11 (email incompleto) no entra', JSON.stringify(blocks) === JSON.stringify([['2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15']]), JSON.stringify(blocks));
 now('2026-10-24T23:30:00Z'); // 00:30 BST del 25 → ayer Londres = 24/10
 check('"ayer" se calcula en hora de Londres (23:30Z 24/10 BST → ayer = 24/10)', run('londonYesterdayISO()') === '2026-10-24', run('londonYesterdayISO()'));
 now('2027-06-01T12:00:00Z');

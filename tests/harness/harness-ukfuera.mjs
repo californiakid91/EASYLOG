@@ -50,10 +50,10 @@ run(`
   renderUKDays();`);
 
 // ── AC-1: total
-const S = J('(() => { const s = ukSummary(); return { out: s.outList.map(x => x.iso), outKind: Object.fromEntries(s.outList.map(x => [x.iso, x.outKind])), uk: s.ukList.map(x => x.iso), pend: s.pending.length, past: ukPastDays().length, yest: londonYesterdayISO() }; })()');
+const S = J('(() => { const s = ukSummary(); return { out: s.outList.map(x => x.iso), outKind: Object.fromEntries(s.outList.map(x => [x.iso, x.outKind])), uk: s.ukList.map(x => x.iso), pend: s.pending.length, past: ukPastDays().length, yest: londonYesterdayISO(), grace: ukDayStatus(londonYesterdayISO()).state === "pending" ? 1 : 0 }; })()');
 const ukPast = S.uk.filter(i => i <= S.yest).length;
-check('AC-1 fuera + UK pasados + pendientes = días pasados', S.out.length + ukPast + S.pend === S.past, `${S.out.length} + ${ukPast} + ${S.pend} vs ${S.past}`);
-check('AC-1 la identidad falla con ukList.length (SBY futuro): el test no es vacío', S.out.length + S.uk.length + S.pend !== S.past, `${S.uk.length} vs ${ukPast}`);
+check('AC-1 fuera + UK pasados + pendientes + ayer en gracia (13.1) = días pasados', S.grace === 1 && S.out.length + ukPast + S.pend + S.grace === S.past, `${S.out.length} + ${ukPast} + ${S.pend} + ${S.grace} vs ${S.past}`);
+check('AC-1 la identidad falla con ukList.length (SBY futuro): el test no es vacío', S.out.length + S.uk.length + S.pend + S.grace !== S.past, `${S.uk.length} vs ${ukPast}`);
 check('AC-1 hoy y futuros excluidos', !S.out.some(i => i >= '2026-10-05'), S.out.join(','));
 check('AC-1 outList = días pasados en estado no', JSON.stringify(S.out) === JSON.stringify(['2026-09-02', '2026-09-03', '2026-09-04', '2026-09-06', '2026-09-07', '2026-09-08', '2026-09-09', '2026-09-10', '2026-09-11']), S.out.join(','));
 

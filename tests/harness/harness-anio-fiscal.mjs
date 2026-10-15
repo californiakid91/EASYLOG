@@ -126,7 +126,7 @@ check('(vii) 2026-27 visible (hoy 2027-28, con huecos en 2027-28) → se descarg
 check('(vii) título "Tax Year 2026-2027" y 365 días', xl.rows?.[2]?.[4] === 'Tax Year 2026-2027' && days.size === 365, `${xl.rows?.[2]?.[4]} · ${days.size}`);
 check('(vii) mensaje "Excel 2026-27 descargado."', st.at(-1) === 'ok: Excel 2026-27 descargado.', st.at(-1));
 xl.file = null; view(null); run('downloadTaxExcel()');
-check('(vii) 2027-28 visible con huecos pasados → bloqueado solo por los de 2027-28', xl.file === null && /No se descarga el Excel 2027-28: 14 días sin decidir/.test(st.at(-1)), st.at(-1));
+check('(vii) 2027-28 visible con huecos pasados → bloqueado solo por los de 2027-28 (13.1: ayer en gracia)', xl.file === null && /No se descarga el Excel 2027-28: 13 días sin decidir/.test(st.at(-1)), st.at(-1));
 
 // ── G6: el botón OFF pintado antes del 06/04 sigue marcando SU hueco aunque el año visible cambie solo
 reset(); now('2027-04-05T12:00:00Z');

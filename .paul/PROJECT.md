@@ -62,6 +62,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - [x] Sync y datos: una escritura de una sesión anterior no bloquea la nueva (epoch) ni deja recargar con algo en cola; campos de la nube con forma rara ni rompen la app ni se borran; «Descartar copia dañada» en modo Local (texto al portapapeles + confirmación) — Phase 11 (11-02)
 - [x] Código de piloto fuera del repo público: el código es un ajuste del usuario (se pide una vez al pegar/exportar), el nombre de CREWLIST y del Excel sale del email, CSV idéntico byte a byte; hooks locales bloquean commitear las palabras privadas — Phase 12 (12-01)
 - [x] Días de calendario: SBY activado (con email) manda el email; SIM/SD se preguntan (UK / No UK); Excel UW sin vuelos según dónde acabó el día anterior (SBY = 1) — Phase 13 (13-01)
+- [x] Ayer no se pide hasta pasadas 24 h (el email llega a la mañana siguiente): ni pendiente ni bloqueo del Excel; «máximo posible» y backup lo muestran en espera — Phase 13.1 (13.1-01)
 - [x] Seguridad y robustez post-Aegis (informe 2026-10-05) — v0.2:
   - [x] Documento único de Firestore: medido 127 KiB (12 %) y ~1,9k entradas de índice (5 %) → ~2,5 años de margen; deja de ser HIGH (vigilar)
   - [x] XSS por código de aeropuerto + SRI/CSP para CDNs — Phase 5
@@ -177,4 +178,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-15 after Phase 13*
+*Last updated: 2026-10-16 after Phase 13.1*

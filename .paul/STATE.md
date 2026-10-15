@@ -11,16 +11,16 @@ See: .paul/PROJECT.md (updated 2026-10-03)
 
 Version: v0.3.0
 Milestone: v0.4 Datos y fiscal (v0.4.0)
-Phase: 14 (2 de 2) — Mismo vuelo pegado con otra fecha
+Phase: 14 (3 de 3) — Mismo vuelo pegado con otra fecha
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-15 — Phase 13 complete (13-01, da202b9), transitioned to Phase 14
+Last activity: 2026-10-16 — Phase 13.1 complete (edbed0b, prod 2026.10.15-231555), ready for Phase 14
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
 - v0.2 Seguridad y robustez: [██████████] 100% ✓
 - v0.3 Pegar sin sorpresas: [██████████] 100% ✓
-- v0.4 Datos y fiscal: [█████░░░░░] 50%
+- v0.4 Datos y fiscal: [███████░░░] 67%
 
 ## Loop Position
 
@@ -73,6 +73,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 11-02 (aplicado): _cloudEpoch sube en resetCloudSync (logout/switchMode) y pone _cloudWrites=0; cada escritura captura ep y cloudWriteDone/watchWrite/catch ignoran las de otra sesión; updateBlockers usa _writesInFlight (global); _cloudCorrupt = campos de Firestore no-objeto (vacíos en memoria, fuera de mergeFields, cambiarlos → err y se descartan de memoria); vuelos SIEMPRE vía dayFlights()/dayKeys(); modo Local: #corrupt-box + discardCorrupt (portapapeles → confirm → removeItem → persist + backfill); CAL_KEY declarado con las demás claves
 - 13 (usuario 2026-10-15): SBY + email → manda la regla del email; SIM/SD sin email → pendiente siempre (todo 2026/27, re-decidir); UW sin vuelos: SBY = 1, SIM/SD/DUTY = día anterior UK Day (1) / No UK (vacío); SIM puede ser fuera de base (BGY, MAD…)
 - 13-01 (aplicado): ukDayStatus — conflicto solo OFF/SIM/SD + email; SIM/SD sin email → pending kind 'cal-ask' (después de `if (e)`/`if (email)`); excelUWPrevDay(iso) para SIM/SD/DUTY sin vuelos; ukDecidePending en año congelado = confirm + requireHydrated + re-check pending; ukReasonText normaliza «· SIM en calendario»; harness-sby-uw
+- 13.1 (usuario 2026-10-16): ayer (Londres) nunca es pendiente hasta pasadas 24 h (todos los tipos); pendingUKDays filtra iso < londonYesterdayISO; ukGraceCount(now, ty) = ayer pendiente en el año → máximo posible, nota «Fuera de UK» y backup; ukPastDays sin cambios; borde 06/04 aceptado
 - _runways = mapa propio (localStorage + campo Firestore `runways`); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -131,21 +132,20 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - [x] Límite de la app: el asesor respondió 2026-10-13 (detalle SOLO en memoria local). 07-02: límite configurable por año guardado en los datos del usuario + días excepcionales (no computables, tope 60)
 
 ### Blockers/Concerns
-- Pendiente del usuario (2026-10-15 noche): marcar UK el OFF de víspera de un DUTY tras dormir en UK (Fuera de UK → UK) — detalle solo en memoria local
 - Pendiente del usuario (desde 2026-10-15 tarde): en el iPhone con la nube, el primer pegado pide el código UNA vez; importar el primer CSV en PilotLog y mirar CREWLIST y TO/LDG
 - Ninguno más. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: Fase 13 (da202b9) — prod = v2026.10.15-222246
+Last commit: Fase 13.1 (edbed0b) — prod = v2026.10.15-231555
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-15
-Stopped at: Phase 13 complete (G6 limpio, G7 hook, G8 sin vulnerabilidades, checkpoint con el Excel real)
+Stopped at: Phase 13.1 complete (G6 aplicado, desplegado); 13/04 marcado UK por el usuario (54/90)
 Next action: /paul:plan 14; el usuario comprueba en el iPhone (pendiente desde 2026-10-15 tarde) el prompt del código y el primer CSV en PilotLog
-Resume file: .paul/phases/13-sby-y-dias-sin-vuelo/13-01-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-10-16-fase13.1-cerrada.md
 
 ---
 *STATE.md — Updated after every significant action*

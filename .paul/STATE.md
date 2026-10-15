@@ -5,29 +5,29 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.4 Datos y fiscal — Fase 13 lista para planificar
+**Current focus:** v0.4 Datos y fiscal — Fase 14 lista para planificar
 
 ## Current Position
 
 Version: v0.3.0
 Milestone: v0.4 Datos y fiscal (v0.4.0)
-Phase: 13 (1 de 2) — Días SBY con email y días sin vuelo (UW)
+Phase: 14 (2 de 2) — Mismo vuelo pegado con otra fecha
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-15 — Milestone v0.4 created
+Last activity: 2026-10-15 — Phase 13 complete (13-01, da202b9), transitioned to Phase 14
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
 - v0.2 Seguridad y robustez: [██████████] 100% ✓
 - v0.3 Pegar sin sorpresas: [██████████] 100% ✓
-- v0.4 Datos y fiscal: [░░░░░░░░░░] 0%
+- v0.4 Datos y fiscal: [█████░░░░░] 50%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ○        ○        ○     [Ready for first PLAN]
+  ✓        ✓        ✓     [Loop complete - ready for next PLAN]
 ```
 
 ## Accumulated Context
@@ -71,6 +71,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 12 (usuario 2026-10-15): nombre de la fila NAME del Excel = el de la línea propia del email (mayúsculas, sin ñ); no se guarda en settings
 - 12-01 (aplicado): código = settings.pilotCode vía myCode() (PILOT_CODE_RE); askPilotCode → {code, saved, blocked} (requireHydrated antes y después del prompt); buildCSV/toRow lanzan sin código; CREWLIST propia al final con nombre del email o SELF; tests con TEST_PILOT/TEST_PILOT_NAME y legacyAsTest() para index viejos; BASELINES.preFase12 = 30f53e6 (comparación permanente del CSV); .private-words local + .githooks/pre-commit y commit-msg (exentos fijos en .githooks/private-words-exempt); nunca escribir código ni nombre reales en repo/planes/commits
 - 11-02 (aplicado): _cloudEpoch sube en resetCloudSync (logout/switchMode) y pone _cloudWrites=0; cada escritura captura ep y cloudWriteDone/watchWrite/catch ignoran las de otra sesión; updateBlockers usa _writesInFlight (global); _cloudCorrupt = campos de Firestore no-objeto (vacíos en memoria, fuera de mergeFields, cambiarlos → err y se descartan de memoria); vuelos SIEMPRE vía dayFlights()/dayKeys(); modo Local: #corrupt-box + discardCorrupt (portapapeles → confirm → removeItem → persist + backfill); CAL_KEY declarado con las demás claves
+- 13 (usuario 2026-10-15): SBY + email → manda la regla del email; SIM/SD sin email → pendiente siempre (todo 2026/27, re-decidir); UW sin vuelos: SBY = 1, SIM/SD/DUTY = día anterior UK Day (1) / No UK (vacío); SIM puede ser fuera de base (BGY, MAD…)
+- 13-01 (aplicado): ukDayStatus — conflicto solo OFF/SIM/SD + email; SIM/SD sin email → pending kind 'cal-ask' (después de `if (e)`/`if (email)`); excelUWPrevDay(iso) para SIM/SD/DUTY sin vuelos; ukDecidePending en año congelado = confirm + requireHydrated + re-check pending; ukReasonText normaliza «· SIM en calendario»; harness-sby-uw
 - _runways = mapa propio (localStorage + campo Firestore `runways`); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -81,8 +83,6 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | FLIGHTLOG > 250 chars: Report se trunca (preexistente) | Phase 2 | S | — |
 | Barra «Hay una versión nueva» (fija abajo) tapa el final del botón de exportar mientras está visible → padding-bottom al body cuando se muestra | 03.1 checkpoint | XS | — |
 | UK Days: reconstrucción de tax years anteriores desde el plan ROCS (2024/25 falta plan abr–dic 2024) | Phase 2 | M | — |
-| SBY + email = conflicto; quizá debería mandar el email (regla usuario: SBY no cuenta solo si activado y acaba fuera/después de 00:00) | 03.2-01 checkpoint | S | — |
-| UW en blanco en días sin vuelos con UK manual (DUTY sin email) → ¿UW=1? | 03.2-01 | XS | — |
 | Regla de rol al re-pegar (rol guardado manda) → revisar al ascender a CPT | 03.2-02 | XS | ascenso |
 | Mismo vuelo pegado con OTRA fecha (PilotLog lo duplicaría) no se detecta | 03.2-02 | S | — |
 | Pistas exactas: FR24 API (token + 9 $/mes) o ADS-B adsb.lol vía proxy (sin CORS) — decisión del usuario | 04 dialéctica | M | si el usuario lo pide |
@@ -107,6 +107,9 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | CREWLIST propia cambia si el email escribe el nombre con otra grafía o sale SELF sin tripulación (aceptado en el plan) | 12-01 | XS | si PilotLog lo nota |
 | G8 12: los ficheros exentos del hook de palabras privadas podrían recibir palabras NUEVAS sin detectarse → comprobar solo las líneas añadidas (`git diff --cached -U0`) en esos ficheros | 12 G8 | XS | — |
 | G8 12: .githooks/private-words-exempt (público) indica qué ficheros históricos llevan datos personales (ya públicos; forward-only aceptado) | 12 G8 | XS | si se purga |
+| G8 13: _dayMap de la nube no se filtra con CAL_STATES al hidratar (hoy seguro: solo comparaciones estrictas) → filtrar en hydrate | 13 G8 | XS | — |
+| OFF seguido de DUTY temprano en STN = el usuario durmió en UK la víspera (commute) → hoy se decide a mano en «Fuera de UK»; ¿regla/aviso? | 13 checkpoint | S | si se repite |
+| (usuario) Emails sin pegar en días DUTY que fueron de vuelo (UW vacío en el Excel) → pegar o corregir a mano | 13 checkpoint | XS | usuario |
 | GitHub: ticket de purga de caché de commits (abierto 2026-10-05) → comprobar que los SHA antiguos dan 404 | 05 post | XS | cuando responda GitHub |
 
 ### Preguntas pendientes al usuario — de UNA en UNA
@@ -128,20 +131,21 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - [x] Límite de la app: el asesor respondió 2026-10-13 (detalle SOLO en memoria local). 07-02: límite configurable por año guardado en los datos del usuario + días excepcionales (no computables, tope 60)
 
 ### Blockers/Concerns
+- Pendiente del usuario (2026-10-15 noche): marcar UK el OFF de víspera de un DUTY tras dormir en UK (Fuera de UK → UK) — detalle solo en memoria local
 - Pendiente del usuario (desde 2026-10-15 tarde): en el iPhone con la nube, el primer pegado pide el código UNA vez; importar el primer CSV en PilotLog y mirar CREWLIST y TO/LDG
 - Ninguno más. Nota: CRG (G7) no parsea JS embebido en index.html → su risk score no es informativo
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: cierre v0.3 (tag v0.3.0) — prod = v2026.10.15-105223
+Last commit: Fase 13 (da202b9) — prod = v2026.10.15-222246
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-15
-Stopped at: Milestone v0.4 Datos y fiscal created, ready to plan
-Next action: /paul:plan para la Fase 13 (antes: preguntar al usuario la regla exacta SBY + email); el usuario comprueba en el iPhone (pendiente desde 2026-10-15 tarde) el prompt del código y el primer CSV en PilotLog
-Resume file: .paul/ROADMAP.md
+Stopped at: Phase 13 complete (G6 limpio, G7 hook, G8 sin vulnerabilidades, checkpoint con el Excel real)
+Next action: /paul:plan 14; el usuario comprueba en el iPhone (pendiente desde 2026-10-15 tarde) el prompt del código y el primer CSV en PilotLog
+Resume file: .paul/phases/13-sby-y-dias-sin-vuelo/13-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

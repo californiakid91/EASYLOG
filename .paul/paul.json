@@ -7,8 +7,8 @@
     "status": "in_progress"
   },
   "phase": {
-    "number": 13,
-    "name": "Días SBY con email y días sin vuelo (UW)",
+    "number": 14,
+    "name": "Mismo vuelo pegado con otra fecha",
     "status": "not_started"
   },
   "loop": {
@@ -17,7 +17,7 @@
   },
   "timestamps": {
     "created_at": "2026-10-03T12:31:08+01:00",
-    "updated_at": "2026-10-15T23:10:00+01:00"
+    "updated_at": "2026-10-16T00:05:00+01:00"
   },
   "satellite": {
     "groom": true

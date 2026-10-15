@@ -15,7 +15,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Type | Application |
 | Version | 0.3.0 (v0.3 Pegar sin sorpresas, cerrado 2026-10-15) |
 | Status | Production — v0.3.0; v0.4 Datos y fiscal en curso |
-| Last Updated | 2026-10-15 (v0.3 cerrado) |
+| Last Updated | 2026-10-15 (Fase 13) |
 
 **Production URLs:**
 - https://californiakid91.github.io/EASYLOG/ — app (deploy automático al push a `main`)
@@ -61,6 +61,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - [x] Limpieza de pantalla: aviso de Google (gen_204) solo a consola con host+ruta exactos; botones con datos por data-act (tabla cerrada, sin onclick con datos); backup UK Days también al portapapeles — Phase 11 (11-01)
 - [x] Sync y datos: una escritura de una sesión anterior no bloquea la nueva (epoch) ni deja recargar con algo en cola; campos de la nube con forma rara ni rompen la app ni se borran; «Descartar copia dañada» en modo Local (texto al portapapeles + confirmación) — Phase 11 (11-02)
 - [x] Código de piloto fuera del repo público: el código es un ajuste del usuario (se pide una vez al pegar/exportar), el nombre de CREWLIST y del Excel sale del email, CSV idéntico byte a byte; hooks locales bloquean commitear las palabras privadas — Phase 12 (12-01)
+- [x] Días de calendario: SBY activado (con email) manda el email; SIM/SD se preguntan (UK / No UK); Excel UW sin vuelos según dónde acabó el día anterior (SBY = 1) — Phase 13 (13-01)
 - [x] Seguridad y robustez post-Aegis (informe 2026-10-05) — v0.2:
   - [x] Documento único de Firestore: medido 127 KiB (12 %) y ~1,9k entradas de índice (5 %) → ~2,5 años de margen; deja de ser HIGH (vigilar)
   - [x] XSS por código de aeropuerto + SRI/CSP para CDNs — Phase 5
@@ -75,7 +76,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ### Active (In Progress)
 
-- [ ] v0.4 Datos y fiscal: SBY + email y UW en días sin vuelo (Fase 13); mismo vuelo pegado con otra fecha (Fase 14)
+- [ ] v0.4 Datos y fiscal: mismo vuelo pegado con otra fecha (Fase 14)
 
 ### Planned (Next)
 
@@ -146,6 +147,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | SAFETY PILOT = día entero (3+ CP/FO y el usuario sin TO/LDG) con confirm; CSV sin TIME_TO/TIME_LDG y total 0 | Criterio del usuario (nunca cambio de asiento a mitad); PilotLog rechaza AIR > TOTAL si van despegue/aterrizaje (import real 27/09/2025) | 2026-10-14 | Active |
 | Marca manual de UK Days contradicha por el email → confirm (Aceptar = email, Cancelar = marca), también al re-pegar idéntico; relectura tras cada confirm; avisos de la CSP: el píxel img-src www.google.com solo a consola | La marca manual ganaba en silencio (03/10/2026); re-pegar es como el usuario comprueba un día; el aviso rojo de Google alarmaba sin ser un riesgo | 2026-10-14 | Active |
 | Sesión de nube con epoch (escrituras viejas no tocan la sesión nueva; recarga bloqueada por un contador global); campo de Firestore no-objeto = dañado (no se usa, nunca se reescribe, cambiarlo = error); sin cuarentena por entrada | Disponibilidad tras logout (G8 08) y defensa en profundidad sin poder borrar datos de la nube (Fable: la cuarentena por entrada reimplementaba lo que ya había y abría un bloqueo silencioso) | 2026-10-15 | Active |
+| SBY + email → regla del email; SIM/SD sin email → pendiente (todo el año); UW sin vuelos: SBY 1, SIM/SD/DUTY = día anterior (UK 1 / No UK vacío / otro '?'); solo cálculo al leer, sin migrar datos | SIM puede ser fuera de base (BGY, MAD…) y contaba UK sin avisar; SBY activado quedaba bloqueado como conflicto (usuario + Fable) | 2026-10-15 | Active |
 | Año fiscal derivado de la fecha, sin estado; FLOOR 06/04/2026; año congelado a +30 días (solo el usuario escribe, con confirm) | Dialéctica Fable: un flag "closed" en Firestore añade carreras y migración; la evidencia declarada no se recalcula sola | 2026-10-06 | Active |
 
 ## Success Metrics
@@ -175,4 +177,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-15 after v0.3 Pegar sin sorpresas*
+*Last updated: 2026-10-15 after Phase 13*

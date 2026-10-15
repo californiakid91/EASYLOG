@@ -8,11 +8,11 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 
 **v0.4 Datos y fiscal** (v0.4.0)
 Status: 🚧 In Progress
-Phases: 0 of 2 complete
+Phases: 1 of 2 complete
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
-| 13 | Días SBY con email y días sin vuelo (UW) | TBD | Not started | - |
+| 13 | Días SBY con email y días sin vuelo (UW) | 1/1 | ✅ Complete | 2026-10-15 |
 | 14 | Mismo vuelo pegado con otra fecha | TBD | Not started | - |
 
 ### Phase 13: Días SBY con email y días sin vuelo (UW)
@@ -86,4 +86,4 @@ Detalle completo: .paul/milestones/v0.1.0-ROADMAP.md
 </details>
 
 ---
-*Roadmap created: 2026-10-03 · Updated: 2026-10-15 (v0.4 creado)*
+*Roadmap created: 2026-10-03 · Updated: 2026-10-15 (Fase 13 cerrada)*

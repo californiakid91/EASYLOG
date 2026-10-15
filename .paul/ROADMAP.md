@@ -7,8 +7,8 @@ Corregir los datos que EasyLog genera para que el CSV de PilotLog y el tracker d
 ## Current Milestone
 
 **v0.3 Pegar sin sorpresas** (v0.3.0)
-Status: 🚧 In Progress
-Phases: 3 of 4 complete
+Status: ✅ Phases complete (4 of 4) — pendiente /paul:complete-milestone
+Phases: 4 of 4 complete
 Theme: Que al pegar un email la app detecte los casos especiales (SAFETY PILOT, contradicciones con marcas manuales de UK Days) y avise, y cerrar los diferidos XS de G6/G8.
 
 | Phase | Name | Plans | Status | Completed |
@@ -16,7 +16,7 @@ Theme: Que al pegar un email la app detecte los casos especiales (SAFETY PILOT, 
 | 9 | SAFETY PILOT al pegar | 1/1 | ✅ Complete | 2026-10-14 |
 | 10 | UK Days: avisos al pegar (marca manual vs email + motivo No UK) | 1/1 | ✅ Complete | 2026-10-14 |
 | 11 | Limpieza XS (diferidos G6/G8) | 2/2 | ✅ Complete | 2026-10-15 |
-| 12 | Código de piloto fuera del repo público | 0/1 | Planning | - |
+| 12 | Código de piloto fuera del repo público | 1/1 | ✅ Complete | 2026-10-15 |
 
 ### Phase 9: SAFETY PILOT al pegar
 
@@ -36,8 +36,7 @@ Plans: 11-01 ✅ (pantalla: gen_204, onclick → data-act, backup al portapapele
 ### Phase 12: Código de piloto fuera del repo público
 
 Focus: dejar de publicar el código y el nombre del piloto a partir de ahora, sin purgar el historial. El código pasa a ser un ajuste del usuario (`settings.pilotCode` en `_settings`, se pide una vez tras `requireHydrated`); `myCode()` sustituye a los literales; CREWLIST sale del email; fixtures y golden con código/nombre sintéticos; docs de .paul/ solo hacia adelante.
-Plans: 12-01 (plan creado, pendiente de aprobación)
-Status: Planning
+Plans: 12-01 ✅ (SUMMARY: .paul/phases/12-codigo-piloto-fuera-del-repo/12-01-SUMMARY.md)
 
 ## Version Overview
 
@@ -45,7 +44,7 @@ Status: Planning
 |---------|------|--------|
 | v0.1.0 | Datos fiables | ✅ Complete 2026-10-05 |
 | v0.2.0 | Seguridad y robustez | ✅ Complete 2026-10-14 |
-| v0.3.0 | Pegar sin sorpresas | 🚧 In Progress |
+| v0.3.0 | Pegar sin sorpresas | 🚧 Fases completas — por cerrar |
 
 ## Completed Milestones
 
@@ -83,4 +82,4 @@ Detalle completo: .paul/milestones/v0.1.0-ROADMAP.md
 </details>
 
 ---
-*Roadmap created: 2026-10-03 · Updated: 2026-10-15 (Fase 12 añadida)*
+*Roadmap created: 2026-10-03 · Updated: 2026-10-15 (Fase 12 completa)*

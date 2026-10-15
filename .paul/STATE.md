@@ -5,28 +5,28 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.3 Pegar sin sorpresas — Fase 12 (código de piloto fuera del repo público) añadida; por planificar
+**Current focus:** v0.3 Pegar sin sorpresas — 4/4 fases completas; falta cerrar el milestone
 
 ## Current Position
 
 Version: v0.2.0 (v0.3.0 en curso)
 Milestone: v0.3 Pegar sin sorpresas
-Phase: 12 (4 of 4 del milestone) — Código de piloto fuera del repo público — Planning
-Plan: 12-01 created, awaiting approval (revisado por Fable: 13 hallazgos incorporados)
-Status: PLAN created, ready for APPLY
-Last activity: 2026-10-15 — Created .paul/phases/12-codigo-piloto-fuera-del-repo/12-01-PLAN.md
+Phase: 12 (4 of 4 del milestone) — Código de piloto fuera del repo público — ✅ Complete
+Plan: 12-01 ✅ (d18ee1e feat + 1517094 fix G6); prod v2026.10.15-105223; checkpoint WebKit 16/16
+Status: Milestone v0.3 con todas sus fases completas — listo para /paul:complete-milestone
+Last activity: 2026-10-15 — UNIFY 12-01 + transición de Fase 12 (G7 + G8)
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
 - v0.2 Seguridad y robustez: [██████████] 100% ✓
-- v0.3 Pegar sin sorpresas: [███████░░░] 75% (Fases 9, 10 y 11 ✓; 12 pendiente)
+- v0.3 Pegar sin sorpresas: [██████████] 100% (Fases 9, 10, 11 y 12 ✓)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 12-01 creado, pendiente de aprobación]
+  ✓        ✓        ✓     [Loop complete — Fase 12 cerrada; siguiente: complete-milestone v0.3]
 ```
 
 ## Accumulated Context
@@ -68,6 +68,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 10-01 (aplicado): marca manual de UK Days contradicha por el email → ukAskEmailRule (confirm; Aceptar = regla del email, Cancelar = marca) en día nuevo, reemplazo e idéntico; tras CADA confirm de addDay requireHydrated + changedMeanwhile/otherDevice; _ukdays se restaura si falla el guardado; «⚠ el email dice …» solo al pintar (ukEmailSays); motivos con ukReasonText (normaliza los 3 textos viejos al pintar, sin migrar); stub de confirm de los harness acepta función; BASELINES.preFase10 = 0819555; #csp-watch: img-src www.google.com (host exacto) solo a consola
 - 11-01 (aplicado): #csp-watch QUIET = por directiva lista de {host, path?} (connect-src apis.google.com + /js/gen_204 exacto; origen solo → se muestra); e2e-csp tolera solo gen_204 (connect-src / «Refused to connect to»); botones con dato → data-act/data-arg(+arg2) + DATA_ACTS (tabla cerrada con validador; nunca window[act]); tests localizan por [data-act][data-arg]; backup UK Days = mismo mailto + portapapeles (sin umbral)
 - 12 (usuario 2026-10-15): nombre de la fila NAME del Excel = el de la línea propia del email (mayúsculas, sin ñ); no se guarda en settings
+- 12-01 (aplicado): código = settings.pilotCode vía myCode() (PILOT_CODE_RE); askPilotCode → {code, saved, blocked} (requireHydrated antes y después del prompt); buildCSV/toRow lanzan sin código; CREWLIST propia al final con nombre del email o SELF; tests con TEST_PILOT/TEST_PILOT_NAME y legacyAsTest() para index viejos; BASELINES.preFase12 = 30f53e6 (comparación permanente del CSV); .private-words local + .githooks/pre-commit y commit-msg (exentos fijos en .githooks/private-words-exempt); nunca escribir código ni nombre reales en repo/planes/commits
 - 11-02 (aplicado): _cloudEpoch sube en resetCloudSync (logout/switchMode) y pone _cloudWrites=0; cada escritura captura ep y cloudWriteDone/watchWrite/catch ignoran las de otra sesión; updateBlockers usa _writesInFlight (global); _cloudCorrupt = campos de Firestore no-objeto (vacíos en memoria, fuera de mergeFields, cambiarlos → err y se descartan de memoria); vuelos SIEMPRE vía dayFlights()/dayKeys(); modo Local: #corrupt-box + discardCorrupt (portapapeles → confirm → removeItem → persist + backfill); CAL_KEY declarado con las demás claves
 - _runways = mapa propio (localStorage + campo Firestore `runways`); clave duty|vuelo|DEP-ARR(#n)
 
@@ -100,6 +101,11 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Cambiar el rol (FO/SP) de un día ya guardado desde la lista (hoy: borrar y re-pegar) | 09-01 | XS | si hace falta |
 | G8 09: fórmulas CSV (=,+,-,@) sin neutralizar en PILOT2_NAME/REMARKS (mismo patrón que F-04-007; CSV va a PilotLog) | 09 G8 | XS | monitor |
 | Vigilar en el iPhone: aviso rojo «Bloqueado (connect-src): apis.google.com» (Safari daría solo el origen → no se silencia) o correo de backup cortado (texto completo en el portapapeles) | 11-01 checkpoint | XS | si el usuario lo ve |
+| Sugerencia del prompt del código asume FO aunque el rol marcado sea CPT (hoy siempre FO) | 12-01 G6 | XS | ascenso |
+| Aviso «No se ha podido guardar tu código» tapado por el OK del pegado (se vuelve a pedir; sin pérdida) | 12-01 G6 | XS | — |
+| CREWLIST propia cambia si el email escribe el nombre con otra grafía o sale SELF sin tripulación (aceptado en el plan) | 12-01 | XS | si PilotLog lo nota |
+| G8 12: los ficheros exentos del hook de palabras privadas podrían recibir palabras NUEVAS sin detectarse → comprobar solo las líneas añadidas (`git diff --cached -U0`) en esos ficheros | 12 G8 | XS | — |
+| G8 12: .githooks/private-words-exempt (público) indica qué ficheros históricos llevan datos personales (ya públicos; forward-only aceptado) | 12 G8 | XS | si se purga |
 | GitHub: ticket de purga de caché de commits (abierto 2026-10-05) → comprobar que los SHA antiguos dan 404 | 05 post | XS | cuando responda GitHub |
 
 ### Preguntas pendientes al usuario — de UNA en UNA
@@ -125,15 +131,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: d4be428 (fase 11) / e6b135b (fix 11-02) / 19a0504 (feat 11-02) — prod = v2026.10.14-230928
+Last commit: 1517094 (fix 12-01) / d18ee1e (feat 12-01) — prod = v2026.10.15-105223
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-10-15
-Stopped at: Plan 12-01 creado
-Next action: aprobar el plan → /paul:apply .paul/phases/12-codigo-piloto-fuera-del-repo/12-01-PLAN.md
-Resume file: .paul/phases/12-codigo-piloto-fuera-del-repo/12-01-PLAN.md
+Stopped at: Fase 12 cerrada (UNIFY + transición); v0.3 4/4 fases
+Next action: /paul:complete-milestone (v0.3)
+Resume file: .paul/phases/12-codigo-piloto-fuera-del-repo/12-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

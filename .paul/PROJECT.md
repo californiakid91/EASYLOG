@@ -15,7 +15,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Type | Application |
 | Version | 0.2.0 (v0.2 Seguridad y robustez, cerrado 2026-10-14) |
 | Status | Production — v0.2.0; v0.3 Pegar sin sorpresas en curso |
-| Last Updated | 2026-10-15 (Fase 11 Limpieza XS completa) |
+| Last Updated | 2026-10-15 (Fase 12 código de piloto fuera del repo completa) |
 
 **Production URLs:**
 - https://californiakid91.github.io/EASYLOG/ — app (deploy automático al push a `main`)
@@ -60,6 +60,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - [x] UK Days: avisos al pegar — email que contradice una marca manual → pregunta (también al re-pegar); «⚠ el email dice …» en la lista; motivos de decisiones a mano sin instrucciones («DUTY sin email») — Phase 10 (10-01)
 - [x] Limpieza de pantalla: aviso de Google (gen_204) solo a consola con host+ruta exactos; botones con datos por data-act (tabla cerrada, sin onclick con datos); backup UK Days también al portapapeles — Phase 11 (11-01)
 - [x] Sync y datos: una escritura de una sesión anterior no bloquea la nueva (epoch) ni deja recargar con algo en cola; campos de la nube con forma rara ni rompen la app ni se borran; «Descartar copia dañada» en modo Local (texto al portapapeles + confirmación) — Phase 11 (11-02)
+- [x] Código de piloto fuera del repo público: el código es un ajuste del usuario (se pide una vez al pegar/exportar), el nombre de CREWLIST y del Excel sale del email, CSV idéntico byte a byte; hooks locales bloquean commitear las palabras privadas — Phase 12 (12-01)
 - [x] e2e propios (playwright-core fijado, `npm ci`) + gate git: commit bloqueado si fallan los harness; push (= deploy) bloqueado si fallan harness o e2e — Phase 6 (06-02)
 
 ### Active (In Progress)
@@ -133,6 +134,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Meta CSP con hosts concretos ('unsafe-inline' necesario): control de salida, no anti-XSS | *.googleapis.com permitiría exfiltrar a otro proyecto Firebase; residuales documentados | 2026-10-05 | Active |
 | Reglas Firestore = copia de prod en repo, nunca se despliegan desde aquí | El repo audita; prod manda; check-firestore-rules.mjs detecta divergencia | 2026-10-05 | Active |
 | Tests en tests/ con golden absoluto en fichero (no git HEAD); cambios legítimos con --update-golden | Un fallo commiteado no puede pasar a ser «lo correcto» (F-06-003) | 2026-10-05 | Active |
+| Código de piloto = settings.pilotCode (myCode()); nombre desde el email; solo hacia adelante, sin purga; .private-words local + hooks pre-commit/commit-msg | Repo público; el CSV legal no puede cambiar (comparación permanente con preFase12) | 2026-10-15 | Active |
 | Gate git: pre-commit = harness; pre-push = harness + e2e; e2e-csp (terceros) con reintento y escape EASYLOG_PUSH_SKIP_NET=1; nunca --no-verify | Push = deploy; no bloquear un arreglo urgente por Google caído (flake gen_204 demostrado, Fable) | 2026-10-05 | Active |
 | e2e con reloj fijo (FIXED_NOW) solo sin Firebase | Resultado independiente del día; Firestore/Auth se cuelgan con Date fijo (Fable) | 2026-10-05 | Active |
 | Mutadores: guarda requireHydrated al inicio + OK solo si se guardó; payload de Firestore capturado antes de await; copia local dañada nunca se sobrescribe sola | Aegis F-02-006/F-RG-003/F-02-004 + revisión Fable (carrera real del await; backfill pisaba la clave dañada) | 2026-10-11 | Active |
@@ -171,4 +173,4 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-10-15 after Phase 11*
+*Last updated: 2026-10-15 after Phase 12*

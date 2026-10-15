@@ -5,28 +5,28 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.3 Pegar sin sorpresas — 3/3 fases completas; decidir fase pilotCode antes de cerrar el milestone
+**Current focus:** v0.3 Pegar sin sorpresas — Fase 12 (código de piloto fuera del repo público) añadida; por planificar
 
 ## Current Position
 
 Version: v0.2.0 (v0.3.0 en curso)
 Milestone: v0.3 Pegar sin sorpresas
-Phase: 11 (3 of 3 del milestone) — Limpieza XS ✅ Complete
-Plan: 11-01 ✓, 11-02 ✓ (fase cerrada)
-Status: Phase 11 complete — milestone v0.3 con todas sus fases hechas
-Last activity: 2026-10-15 — 11-02 UNIFY + transición Fase 11 (G7 + G8); prod v2026.10.14-230928
+Phase: 12 (4 of 4 del milestone) — Código de piloto fuera del repo público — Not started
+Plan: — (por planificar)
+Status: Ready to plan
+Last activity: 2026-10-15 — Added Phase 12: Código de piloto fuera del repo público (usuario: en v0.3, antes de cerrar el milestone)
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
 - v0.2 Seguridad y robustez: [██████████] 100% ✓
-- v0.3 Pegar sin sorpresas: [██████████] 100% (Fases 9, 10 y 11 ✓)
+- v0.3 Pegar sin sorpresas: [███████░░░] 75% (Fases 9, 10 y 11 ✓; 12 pendiente)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Fase 11 cerrada — decidir fase pilotCode / cerrar v0.3]
+  ○        ○        ○     [Fase 12 añadida — listo para /paul:plan 12]
 ```
 
 ## Accumulated Context
@@ -110,7 +110,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - (pendiente personal del usuario — detalle en memoria local)
 - [x] ¿Push de los commits de Fase 6? → SÍ, hecho 2026-10-06 (3c93a22..193e7ce, gate pre-push 13/13 + e2e-csp OK)
 - [x] ¿Tolerar el beacon `connect-src https://apis.google.com/js/gen_204`? → SÍ (Fable + usuario 2026-10-14): en e2e-csp Y en #csp-watch (solo consola), coincidencia exacta directiva+host+ruta; nunca relajar la CSP; antes confirmar en iPhone que WebKit entrega la ruta (si solo da origen → se sigue mostrando). Entra en Fase 11
-- [x] ¿Sacar del repo público el código de piloto/nombre? → SÍ hacia adelante, NO purgar (Fable + usuario 2026-10-14): nombre irrecuperable (handle/autoría); código = settings.pilotCode en _settings (prompt 1 vez tras requireHydrated), myCode() en vez de literales, CREWLIST desde el email, fixtures/golden con código/nombre sintéticos, docs .paul/ forward-only. Coste S → fase propia tras la 11 (antes de cerrar v0.3 o en v0.4)
+- [x] ¿Sacar del repo público el código de piloto/nombre? → SÍ hacia adelante, NO purgar (Fable + usuario 2026-10-14): nombre irrecuperable (handle/autoría); código = settings.pilotCode en _settings (prompt 1 vez tras requireHydrated), myCode() en vez de literales, CREWLIST desde el email, fixtures/golden con código/nombre sintéticos, docs .paul/ forward-only. Coste S → fase propia tras la 11 → usuario 2026-10-15: en v0.3 como Fase 12 (antes de cerrar el milestone)
 
 ### Post-Aegis (2026-10-05)
 - Reglas Firestore en producción = per-uid (request.auth.uid == uid) ✓ — versionadas en el repo (05-02), comprobador check-firestore-rules.mjs
@@ -130,9 +130,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-10-15
-Stopped at: Fase 11 cerrada (11-02 UNIFY + transición)
-Next action: decidir dónde va la fase pilotCode (antes de cerrar v0.3 → /paul:add-phase, o en v0.4 → /paul:complete-milestone)
-Resume file: .paul/HANDOFF-2026-10-15-fase11-cerrada.md
+Stopped at: Fase 12 añadida al ROADMAP
+Next action: /paul:plan 12 (Fable adversario)
+Resume file: —
 
 ---
 *STATE.md — Updated after every significant action*

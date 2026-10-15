@@ -8,7 +8,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
-import { INDEX_PATH, FIXED_NOW } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW, PILOT_SEED } from '../lib.mjs';
 const INDEX = process.argv[2] || INDEX_PATH;
 const html = fs.readFileSync(INDEX, 'utf8');
 let SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
@@ -63,7 +63,7 @@ function makeEl() {
 }
 const els = new Map(); const byId = id => (els.has(id) || els.set(id, makeEl()), els.get(id));
 const role = makeEl(); role.value = 'FO';
-const ls = new Map([['easylog_mode', 'cloud']]);
+const ls = new Map([['easylog_mode', 'cloud'], PILOT_SEED]);
 const statuses = [];
 const ctx = vm.createContext({
   document: { getElementById: byId, querySelector: s => (s.includes('role') ? role : makeEl()), querySelectorAll: () => [], body: makeEl(), createElement: () => makeEl(), addEventListener() {} },

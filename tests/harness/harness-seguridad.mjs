@@ -2,7 +2,7 @@
 // (sobre el <script> real de index.html, modo local, DOM falso). Emails sintéticos: los fixtures reales son privados.
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { ROOT, BASELINES, indexAt } from '../lib.mjs';
+import { ROOT, BASELINES, indexAt, PILOT_SEED, legacyAsTest } from '../lib.mjs';
 // Último commit que tocó index.html antes de la Fase 5: referencia fija para "el CSV no cambia" (HEAD sería auto-comparación)
 const BASE_SHA = BASELINES.preFase5;  // index.html previo a 05-01 (ver tests/lib.mjs)
 const scriptOf = html => html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
@@ -10,7 +10,7 @@ const scriptOf = html => html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)
 function load(src) {
   const els = new Map();
   const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', textContent: '' }, { get: (t, k) => k in t ? t[k] : k === 'classList' ? { add() {}, remove() {}, toggle() {}, contains() { return false; } } : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mk(), set: (t, k, v) => (t[k] = v, true) });
-  const ls = new Map([['easylog_mode', 'local']]);
+  const ls = new Map([['easylog_mode', 'local'], PILOT_SEED]);
   const env = { prompts: [], confirms: [], answer: true, els, warns: [], lis: {} };
   const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) || els.set(id, mk()), els.get(id)),
       querySelector: sel => sel === 'input[name="role"]:checked' ? { value: 'FO' } : mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener: (t, f) => (env.lis[t] = env.lis[t] || []).push(f) },
@@ -34,8 +34,8 @@ const check = (n, ok, d = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d
 const email = (date, secs, extra = []) => date + '\n\n' + secs.map((s, i) => [
   `FlightNumber : ${s.fn ?? 'FR' + (100 + i)}`, 'Registration : EIABC', `City Pair : ${s.cp}`, `STD : ${s.off}`, `STA : ${s.on}`,
   `Airborne : ${s.off}`, `Landed : ${s.on}`, `Off Block : ${s.off}`, `On Block : ${s.on}`, 'Total Block : 02:00',
-  ...extra, '', 'Pilot Flying :', 'Take Off : VEGRIC', 'Landing : VEGRIC', ''].join('\n')).join('\n\n') +
-  '\nFlight Deck Crew :\nABC123 : CP : JOHN SMITH\nVEGRIC : FO : RICARDO VEGA\n';
+  ...extra, '', 'Pilot Flying :', 'Take Off : FOXRAY', 'Landing : FOXRAY', ''].join('\n')).join('\n\n') +
+  '\nFlight Deck Crew :\nABC123 : CP : JOHN SMITH\nFOXRAY : FO : FIRST OFFICER XRAY\n';
 
 // Analiza el HTML: nada ejecutable sin escapar y todos los argumentos (onclick estáticos y data-arg de 11-01) con formato conocido
 const ARG_OK = a => /^\d{4}-\d{2}-\d{2}$/.test(a) || /^[A-Z]{3}$/.test(a) || /^\d{4}-\d{2}$/.test(a) || /^\d+$/.test(a) || ['no', 'uk', 'excel-only'].includes(a);
@@ -148,7 +148,7 @@ check('(e) día guardado', keys.length > 0);
 check('(e) sin claves __…__ ni de >500 chars', !keys.some(k => /__.*__/.test(k) || k.length > 500), JSON.stringify(keys.filter(k => k.length > 40 || /__/.test(k)).map(k => k.slice(0, 20))));
 
 // ── (f) CSV de un email normal byte-idéntico al de BASE_SHA
-const base = load(scriptOf(indexAt(BASE_SHA)));
+const base = load(legacyAsTest(scriptOf(indexAt(BASE_SHA))));
 const normal = email('2026/10/09', [{ cp: 'STN - DUB', off: '06:00', on: '07:15' }, { cp: 'DUB - STN', off: '08:00', on: '09:10', fn: 'FR201' }]);
 const csvOf = env => env.run(`buildCSV(parseText(${JSON.stringify(normal)}).flights.map(flight => ({ flight, role: 'FO' })))`);
 // Fase 9 añade PILOT3_ID;PILOT3_NAME al final (vacías en un día normal): se quitan antes de comparar byte a byte

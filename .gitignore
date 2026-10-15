@@ -10,3 +10,6 @@
 
 # Dependencias de tests (npm ci)
 node_modules/
+
+# Palabras privadas del usuario (solo en local; las usan los hooks)
+.private-words

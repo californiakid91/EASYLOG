@@ -1,4 +1,4 @@
-# Reglas Excel Tax Year — Ricardo Vega Burgueño
+# Reglas Excel Tax Year
 
 Documento de referencia para rellenar el Excel TAX YEAR desde emails de vuelo Ryanair y el calendario de EasyLog.
 

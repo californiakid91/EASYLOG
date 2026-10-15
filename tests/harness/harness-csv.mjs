@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { GOLDEN_DIR, INDEX_PATH, readFixture } from '../lib.mjs';
+import { GOLDEN_DIR, INDEX_PATH, readFixture, PILOT_SEED, BASELINES, indexAt, legacyAsTest } from '../lib.mjs';
 
 
 const extract = html => {
@@ -36,7 +36,7 @@ function load(script) {
   const els = new Map();
   const byId = id => { if (!els.has(id)) els.set(id, makeEl()); return els.get(id); };
   const roleEl = makeEl(); roleEl.value = 'FO';
-  const ls = new Map([['easylog_mode', 'local']]);
+  const ls = new Map([['easylog_mode', 'local'], PILOT_SEED]);
   const ctx = vm.createContext({
     document: {
       getElementById: byId,
@@ -47,7 +47,7 @@ function load(script) {
     console, window: {}, navigator: { userAgent: 'node' }, location: { href: '' },
     confirm: () => true, prompt: () => null, alert: () => {},
     setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0,
-    fetch: () => Promise.reject(new Error('sin red')), Date, Math, JSON, Promise, Intl,
+    fetch: () => Promise.reject(new Error('sin red')), Date, Math, JSON, Promise, Intl, URLSearchParams,
   });
   vm.runInContext(script, ctx);
   return { ctx, run: (code, vars = {}) => { Object.assign(ctx, vars); return vm.runInContext(code, ctx); } };
@@ -130,6 +130,24 @@ for (const [k, n] of Object.entries({ '01': c01, '90': c90, '91': c91 })) {
   }));
   ok(diffs.length === 0, `golden fixture ${k}: CSV idéntico a tests/golden/csv-${k}.csv`, diffs.join(' | '));
 }
+
+// ═══ Fase 12 (AC-3): el código del piloto es un ajuste → el CSV es byte a byte el de antes (index de preFase12 con el
+// código y el nombre literales sustituidos en memoria por los sintéticos; el repo nunca los contiene) ═══
+console.log('\nFase 12: CSV idéntico al de antes del ajuste pilotCode');
+const OLD12 = load(legacyAsTest(extract(indexAt(BASELINES.preFase12))));
+const raw = (env, text, role) => env.run('buildCSV(parseText(__t).flights.map(flight => ({ flight, role: __r })))', { __t: text, __r: role });
+let cmp = 0;
+for (const k of ['01', '90', '91', '92', '93']) {
+  const t = readFixture(k + '-');
+  for (const role of ['FO', 'CPT', 'SP']) {
+    const o = raw(OLD12, t, role), n = raw(NEW, t, role); cmp++;
+    ok(o === n && n.includes('FOXRAY'), `fixture ${k} ${role}: CSV === ${BASELINES.preFase12}`, o === n ? 'sin el código sintético' : `${o.length} vs ${n.length} chars`);
+  }
+  const sp = e => e.run('detectSafetyPilot(parseText(__t).flights)', { __t: t });
+  ok(sp(OLD12) === sp(NEW), `fixture ${k}: detectSafetyPilot igual que antes (${sp(NEW)})`);
+}
+ok(cmp === 15, 'comparados 5 fixtures × 3 roles', String(cmp));
+ok(NEW.run('detectSafetyPilot(parseText(__t).flights)', { __t: readFixture('92-') }) === true, 'la fixture 92 sigue siendo SAFETY PILOT con el código sintético');
 
 // ═══ AC-2: DELAY único ═══
 console.log('\nAC-2 DELAY');

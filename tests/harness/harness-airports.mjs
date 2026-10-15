@@ -1,12 +1,12 @@
 // Pruebas del plan 04-01: AIRPORT_DB (OurAirports) — airportInfo, precedencia, sin prompts de coordenadas
 // (sobre el <script> real de index.html, modo local, DOM falso)
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url';
-import { INDEX_PATH } from '../lib.mjs';
+import { INDEX_PATH, PILOT_SEED } from '../lib.mjs';
 const html = fs.readFileSync(INDEX_PATH, 'utf8');
 const SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const els = new Map();
 const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', textContent: '' }, { get: (t, k) => k in t ? t[k] : k === 'classList' ? { add() {}, remove() {}, toggle() {}, contains() { return false; } } : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mk(), set: (t, k, v) => (t[k] = v, true) });
-const ls = new Map([['easylog_mode', 'local']]); const st = [];
+const ls = new Map([['easylog_mode', 'local'], PILOT_SEED]); const st = [];
 const confirms = []; let answer = true; const prompts = []; let promptAnswers = [];
 let curRole = 'FO';
 const win = { location: {} };
@@ -34,8 +34,8 @@ const email = (date, secs, { crew = 'ABC123 : CP : JOHN SMITH', extra = [] } = {
   `FlightNumber : ${s.fn ?? 'FR' + (100 + i)}`, `Registration : ${s.reg ?? 'EIABC'}`, `City Pair : ${s.cp}`, `STD : ${s.off}`, `STA : ${s.on}`,
   `Airborne : ${s.off}`, `Landed : ${s.on}`, `Off Block : ${s.off}`, `On Block : ${s.on}`, 'Total Block : 02:00',
   ...(s.remarks ? [`Captain Remarks : ${s.remarks}`] : []),
-  '', 'Pilot Flying :', 'Take Off : VEGRIC', 'Landing : VEGRIC', ''].join('\n')).join('\n\n') + '\n' + extra.join('\n') +
-  (crew ? `\nFlight Deck Crew :\n${crew}\nVEGRIC : FO : RICARDO VEGA\n` : '');
+  '', 'Pilot Flying :', 'Take Off : FOXRAY', 'Landing : FOXRAY', ''].join('\n')).join('\n\n') + '\n' + extra.join('\n') +
+  (crew ? `\nFlight Deck Crew :\n${crew}\nFOXRAY : FO : FIRST OFFICER XRAY\n` : '');
 const D = '2026/10/06', ISO = '2026-10-06';
 win._ukNowOverride = '2026-04-06T12:00:00Z';
 

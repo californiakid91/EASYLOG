@@ -21,7 +21,24 @@ export function readFixture(prefix) {
 
 // Commits base de los golden «versión anterior». La purga de historial del 2026-10-05 cambió los SHA:
 // cbbbb44 → fa78eeb (index.html anterior a 04-02, sin pistas) y 33ae9b9 → 6cb4a5a (anterior a 05-01).
-export const BASELINES = { preFase4: 'fa78eeb', preFase5: '6cb4a5a', preFase9: 'a4f135a', preFase10: '0819555' };
+export const BASELINES = { preFase4: 'fa78eeb', preFase5: '6cb4a5a', preFase9: 'a4f135a', preFase10: '0819555', preFase12: '30f53e6' };
+
+// ── Código de piloto sintético (fase 12): el repo es público, nunca el código ni el nombre reales del usuario ──
+export const TEST_PILOT = 'FOXRAY';
+export const TEST_PILOT_NAME = 'FIRST OFFICER XRAY';
+// Entrada de localStorage con el ajuste ya guardado: new Map([['easylog_mode', 'local'], PILOT_SEED])
+export const PILOT_SEED = ['easylog_settings_v1', JSON.stringify({ pilotCode: TEST_PILOT })];
+// index.html de antes de la fase 12 (código y nombre como literales): se DETECTAN en el propio script viejo y se
+// sustituyen en memoria por los sintéticos, sin escribirlos nunca en el repo. Si un patrón no aparece → error.
+export function legacyAsTest(script, name = TEST_PILOT_NAME) {
+  const code = (script.match(/c\.code === '([A-Z0-9]{3,10})'/) || [])[1];
+  if (!code) throw new Error('legacyAsTest: no se encuentra el código literal en el script viejo');
+  let out = script.split(code).join(TEST_PILOT); // también en textos (confirm SP): el código es una palabra única
+  const tpl = out.match(/crewLines\.push\(`(\S+) : \$\{meRole\} : ([^`]+)`\)/);
+  if (tpl) out = out.replace(tpl[0], `crewLines.push(\`${TEST_PILOT} : \${meRole} : ${name}\`)`);
+  if (out.includes(code)) throw new Error('legacyAsTest: quedan apariciones del código en el script viejo');
+  return out;
+}
 
 // index.html de un commit base, con un error claro si falta (clon superficial u otra purga de historial)
 export function indexAt(sha) {

@@ -2,12 +2,12 @@
 // Excel y comando de texto por año visible (sobre el <script> real de index.html, modo local, DOM falso, XLSX simulado).
 // Datos sintéticos; el reloj de la app se fija con window._ukNowOverride en cada caso.
 import fs from 'node:fs'; import vm from 'node:vm';
-import { INDEX_PATH, FIXED_NOW } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW, PILOT_SEED } from '../lib.mjs';
 const html = fs.readFileSync(INDEX_PATH, 'utf8');
 const SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const els = new Map();
 const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', textContent: '' }, { get: (t, k) => k in t ? t[k] : k === 'classList' ? { add() {}, remove() {}, toggle() {}, contains() { return false; } } : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mk(), set: (t, k, v) => (t[k] = v, true) });
-const ls = new Map([['easylog_mode', 'local']]); const st = []; const confirms = []; let answer = true; let lsWrites = 0;
+const ls = new Map([['easylog_mode', 'local'], PILOT_SEED]); const st = []; const confirms = []; let answer = true; let lsWrites = 0;
 const win = { location: {}, _ukNowOverride: FIXED_NOW };
 const xl = { rows: null, file: null, sheet: null };
 const XLSX = { utils: { aoa_to_sheet: rows => (xl.rows = rows, {}), encode_cell: () => 'A1', book_new: () => ({}), book_append_sheet: (wb, ws, name) => { xl.sheet = name; } }, writeFile: (wb, name) => { xl.file = name; } };

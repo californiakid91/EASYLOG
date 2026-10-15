@@ -5,7 +5,7 @@
 // Uso: node harness-sync.mjs [ruta/index.html]
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { INDEX_PATH, FIXED_NOW, readFixture, FIXTURE_DATE } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW, readFixture, FIXTURE_DATE, PILOT_SEED } from '../lib.mjs';
 
 const INDEX = process.argv[2] || INDEX_PATH;
 const html = fs.readFileSync(INDEX, 'utf8');
@@ -50,7 +50,7 @@ async function makeEnv({ mode = 'cloud' } = {}) {
   };
   env.jump = ms => { off += ms; };
 
-  let cloudDoc = { history: {}, excelData: {}, airports: {}, ukdays: {}, runways: {}, dayMap: {} };
+  let cloudDoc = { history: {}, excelData: {}, airports: {}, ukdays: {}, runways: {}, dayMap: {}, settings: { pilotCode: 'FOXRAY' } };
   env.cloudDoc = () => cloudDoc;
   env.setCloud = d => { cloudDoc = { ...cloudDoc, ...clone(d) }; };
   const applyWrite = (data, opts) => { for (const f of (opts?.mergeFields || [])) cloudDoc[f] = clone(data[f]); };
@@ -104,7 +104,7 @@ async function makeEnv({ mode = 'cloud' } = {}) {
   const els = new Map(); const byId = id => (els.has(id) || els.set(id, makeEl()), els.get(id));
   env.byId = byId;
   const role = makeEl(); role.value = 'FO';
-  const ls = new Map([['easylog_mode', mode]]);
+  const ls = new Map([['easylog_mode', mode], PILOT_SEED]);
   env.ls = ls;
   const on = (type, fn) => { (env.listeners[type] ||= []).push(fn); };
   env.dispatch = async type => { (env.listeners[type] || []).forEach(fn => fn({ persisted: true })); await flush(); };
@@ -417,7 +417,7 @@ const D = '2026-09-20', E_ISO = '2026-09-24';
   check('EP logout: _cloudWrites 0, _writesInFlight sigue en 1', E.run('_cloudWrites') === 0 && E.run('_writesInFlight') === 1);
   check('EP logout: la auto-actualización sigue bloqueada', E.J('updateBlockers()').includes('guardando en la nube'));
   E.authCb({ uid: 'u2', displayName: 'Otro', photoURL: '' }); await flush();
-  const other = { history: { [D]: { addedAt: 'X', role: 'FO', flights: [] } }, excelData: {}, airports: {}, ukdays: {}, runways: {}, dayMap: {} };
+  const other = { history: { [D]: { addedAt: 'X', role: 'FO', flights: [] } }, excelData: {}, airports: {}, ukdays: {}, runways: {}, dayMap: {}, settings: { pilotCode: 'FOXRAY' } };
   E.fire({ data: other }); await flush();
   check('EP sesión nueva: el snapshot del servidor se aplica (no se descarta)', has(E, '_cache', D) && !has(E, '_cache', E_ISO) && E.run('cloud.skipped') === false);
   E.statuses.length = 0;

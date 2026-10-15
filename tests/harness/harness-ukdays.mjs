@@ -1,11 +1,11 @@
 // Pruebas de UK Days (fase 3, plan 01) sobre el <script> real de index.html (modo local, DOM falso)
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url';
-import { INDEX_PATH, FIXED_NOW, readFixture } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW, readFixture, PILOT_SEED } from '../lib.mjs';
 const html = fs.readFileSync(INDEX_PATH, 'utf8');
 const SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const els = new Map();
 const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', textContent: '' }, { get: (t, k) => k in t ? t[k] : k === 'classList' ? { add() {}, remove() {}, toggle() {}, contains() { return false; } } : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mk(), set: (t, k, v) => (t[k] = v, true) });
-const ls = new Map([['easylog_mode', 'local']]); const st = []; const confirms = []; let answer = true;
+const ls = new Map([['easylog_mode', 'local'], PILOT_SEED]); const st = []; const confirms = []; let answer = true;
 const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) || els.set(id, mk()), els.get(id)), querySelector: () => mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener() {} },
   localStorage: { getItem: k => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) },
   window: { _ukNowOverride: FIXED_NOW }, navigator: {}, location: {}, console, Date, Math, JSON, Promise, Intl, confirm: m => (confirms.push(m), typeof answer === 'function' ? answer(m) : answer), prompt: () => null, alert: m => st.push('alert: ' + m),
@@ -23,7 +23,7 @@ const email = (date, secs) => date + '\n\n' + secs.map((s, i) => [
   `FlightNumber : FR${100 + i}`, 'Registration : EIABC', `City Pair : ${s.cp}`, `STD : ${s.std ?? s.off}`, `STA : ${s.on ?? s.off}`,
   ...(s.off ? [`Airborne : ${s.off}`] : []), ...(s.on ? [`Landed : ${s.on}`] : []),
   ...(s.off ? [`Off Block : ${s.off}`] : []), ...(s.on ? [`On Block : ${s.on}`] : []), 'Total Block : 02:00',
-  '', 'Pilot Flying :', 'Take Off : VEGRIC', 'Landing : VEGRIC', ''].join('\n')).join('\n\n');
+  '', 'Pilot Flying :', 'Take Off : FOXRAY', 'Landing : FOXRAY', ''].join('\n')).join('\n\n');
 
 // ── AC-1: fixtures anonimizadas de la auditoría (tests/fixtures; si falta una, readFixture lanza → fallo)
 const isoOf = text => { const m = text.match(/^(\d{4})\/(\d{2})\/(\d{2})/m); return m && `${m[1]}-${m[2]}-${m[3]}`; };

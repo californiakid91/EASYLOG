@@ -56,7 +56,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 - [x] Sync endurecida: sin guardas por temporizador (regla por escrituras en vuelo), «Sin confirmar · no recargues» si la nube no confirma, listener que se rearma solo, relectura del servidor al volver de segundo plano (no se escribe desde memoria vieja) — Phase 8 (08-02)
 - [x] UK Days computables: límite por año fiscal guardado en los datos del usuario, días por circunstancia excepcional con motivo (no computan, máx. 60/año), «máximo posible» con pendientes, sin «bonus»; backup con excepcionales — Phase 7 (07-02)
 - [x] UK Days «Fuera de UK»: total real de días pasados no UK (guardados + OFF de calendario), desglose trabajo / libres con desplegable, backup con el desglose; botón «UK» con confirmación — Phase 7.1 (07.1-01)
-- [x] SAFETY PILOT al pegar: 3 pilotos y VEGRIC en ningún despegue/aterrizaje → pregunta; CSV con total 0:00, Pilot 3 SELF y remarks «FRxxxx SAFETY PILOT» (importado en PilotLog con 0 errores); emails de 2025 con tabuladores se pueden pegar — Phase 9 (09-01)
+- [x] SAFETY PILOT al pegar: 3 pilotos y el usuario en ningún despegue/aterrizaje → pregunta; CSV con total 0:00, Pilot 3 SELF y remarks «FRxxxx SAFETY PILOT» (importado en PilotLog con 0 errores); emails de 2025 con tabuladores se pueden pegar — Phase 9 (09-01)
 - [x] UK Days: avisos al pegar — email que contradice una marca manual → pregunta (también al re-pegar); «⚠ el email dice …» en la lista; motivos de decisiones a mano sin instrucciones («DUTY sin email») — Phase 10 (10-01)
 - [x] Limpieza de pantalla: aviso de Google (gen_204) solo a consola con host+ruta exactos; botones con datos por data-act (tabla cerrada, sin onclick con datos); backup UK Days también al portapapeles — Phase 11 (11-01)
 - [x] Sync y datos: una escritura de una sesión anterior no bloquea la nueva (epoch) ni deja recargar con algo en cola; campos de la nube con forma rara ni rompen la app ni se borran; «Descartar copia dañada» en modo Local (texto al portapapeles + confirmación) — Phase 11 (11-02)
@@ -88,7 +88,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 
 ## Target Users
 
-**Primary:** El propio usuario — FO de Ryanair (código VEGRIC, base STN), usa la app desde iPhone (PWA) y desktop.
+**Primary:** El propio usuario — FO de Ryanair (su código de tripulante es un ajuste de sus datos desde la Fase 12; nunca en el repo; base STN), usa la app desde iPhone (PWA) y desktop.
 
 ## Constraints
 
@@ -139,7 +139,7 @@ Como piloto FO de Ryanair, pego el email del vuelo y obtengo sin errores mi logb
 | Sync = gana el último por mapa, endurecido: con escrituras en vuelo se descarta el snapshot sin hasPendingWrites; _cloudWrites solo baja al confirmar/rechazar (nunca por tiempo); al volver de >60 s sin señal no se escribe hasta releer el servidor | Dialéctica Fable (un usuario, online, un dispositivo cada vez); merge por día añadiría una base que diverge justo cuando algo falla; G6 Fable | 2026-10-11 | Active |
 | UK Days: límite = ajuste del usuario por año (en sus datos, nunca en el código; default genérico 90); computables = UK − excepcionales (máx. 60); la app registra la marca con motivo, no la valida | El criterio fiscal es del usuario y su asesor y cambia por año; el repo es público; Sch 45 para 22(6) | 2026-10-13 | Active |
 | «Fuera de UK» = días pasados no UK; trabajo = email / ruta real / DUTY-SBY-SIM-SD, resto libre; acciones de la lista con confirm | La lista «No UK» solo mostraba entradas guardadas y se leyó como total; un toque accidental en «UK» cambió un día | 2026-10-14 | Active |
-| SAFETY PILOT = día entero (3+ CP/FO y VEGRIC sin TO/LDG) con confirm; CSV sin TIME_TO/TIME_LDG y total 0 | Criterio del usuario (nunca cambio de asiento a mitad); PilotLog rechaza AIR > TOTAL si van despegue/aterrizaje (import real 27/09/2025) | 2026-10-14 | Active |
+| SAFETY PILOT = día entero (3+ CP/FO y el usuario sin TO/LDG) con confirm; CSV sin TIME_TO/TIME_LDG y total 0 | Criterio del usuario (nunca cambio de asiento a mitad); PilotLog rechaza AIR > TOTAL si van despegue/aterrizaje (import real 27/09/2025) | 2026-10-14 | Active |
 | Marca manual de UK Days contradicha por el email → confirm (Aceptar = email, Cancelar = marca), también al re-pegar idéntico; relectura tras cada confirm; avisos de la CSP: el píxel img-src www.google.com solo a consola | La marca manual ganaba en silencio (03/10/2026); re-pegar es como el usuario comprueba un día; el aviso rojo de Google alarmaba sin ser un riesgo | 2026-10-14 | Active |
 | Sesión de nube con epoch (escrituras viejas no tocan la sesión nueva; recarga bloqueada por un contador global); campo de Firestore no-objeto = dañado (no se usa, nunca se reescribe, cambiarlo = error); sin cuarentena por entrada | Disponibilidad tras logout (G8 08) y defensa en profundidad sin poder borrar datos de la nube (Fable: la cuarentena por entrada reimplementaba lo que ya había y abría un bloqueo silencioso) | 2026-10-15 | Active |
 | Año fiscal derivado de la fecha, sin estado; FLOOR 06/04/2026; año congelado a +30 días (solo el usuario escribe, con confirm) | Dialéctica Fable: un flag "closed" en Firestore añade carreras y migración; la evidencia declarada no se recalcula sola | 2026-10-06 | Active |

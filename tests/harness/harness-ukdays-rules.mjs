@@ -1,11 +1,11 @@
 // Pruebas de las reglas reales de UK Days (fase 3, plan 02) sobre el <script> real de index.html (modo local, DOM falso)
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url';
-import { INDEX_PATH, FIXED_NOW } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW, PILOT_SEED } from '../lib.mjs';
 const html = fs.readFileSync(INDEX_PATH, 'utf8');
 const SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const els = new Map();
 const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', textContent: '' }, { get: (t, k) => k in t ? t[k] : k === 'classList' ? { add() {}, remove() {}, toggle() {}, contains() { return false; } } : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mk(), set: (t, k, v) => (t[k] = v, true) });
-const ls = new Map([['easylog_mode', 'local']]); const st = []; const confirms = []; let answer = true;
+const ls = new Map([['easylog_mode', 'local'], PILOT_SEED]); const st = []; const confirms = []; let answer = true;
 const win = { location: {}, _ukNowOverride: FIXED_NOW }; // reloj fijo: independiente del año real
 const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) || els.set(id, mk()), els.get(id)), querySelector: () => mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener() {} },
   localStorage: { getItem: k => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) },
@@ -27,7 +27,7 @@ const email = (date, secs) => date + '\n\n' + secs.map((s, i) => [
   `FlightNumber : FR${100 + i}`, 'Registration : EIABC', `City Pair : ${s.cp}`, `STD : ${s.std ?? s.off}`, `STA : ${s.on ?? s.off}`,
   ...(s.off ? [`Airborne : ${s.off}`] : []), ...(s.on ? [`Landed : ${s.on}`] : []),
   ...(s.off ? [`Off Block : ${s.off}`] : []), ...(s.on ? [`On Block : ${s.on}`] : []), 'Total Block : 02:00',
-  '', 'Pilot Flying :', 'Take Off : VEGRIC', 'Landing : VEGRIC', ''].join('\n')).join('\n\n');
+  '', 'Pilot Flying :', 'Take Off : FOXRAY', 'Landing : FOXRAY', ''].join('\n')).join('\n\n');
 const now = iso => { win._ukNowOverride = iso; };
 
 // ── AC-1: R1 / R2 / R3 / sin On Block

@@ -1,7 +1,7 @@
 // Pruebas del plan 10-01: UK Days — aviso al pegar un email que contradice una marca manual + motivos de decisiones manuales
 // (sobre el <script> real de index.html, modo local, DOM falso; baseline = BASELINES.preFase10)
 import fs from 'node:fs'; import vm from 'node:vm';
-import { INDEX_PATH, FIXED_NOW, BASELINES, indexAt } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW, BASELINES, indexAt, PILOT_SEED, legacyAsTest } from '../lib.mjs';
 
 const scriptOf = html => html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 let fails = 0;
@@ -10,7 +10,7 @@ const check = (n, ok, d = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d
 function makeEnv(script) {
   const els = new Map();
   const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', textContent: '' }, { get: (t, k) => k in t ? t[k] : k === 'classList' ? { add() {}, remove() {}, toggle() {}, contains() { return false; } } : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mk(), set: (t, k, v) => (t[k] = v, true) });
-  const ls = new Map([['easylog_mode', 'local']]);
+  const ls = new Map([['easylog_mode', 'local'], PILOT_SEED]);
   const E = { st: [], confirms: [], answer: true };
   const win = { location: {}, _ukNowOverride: FIXED_NOW };
   const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) || els.set(id, mk()), els.get(id)),
@@ -25,7 +25,7 @@ function makeEnv(script) {
   E.J = c => JSON.parse(E.run(`JSON.stringify(${c} ?? null)`));
   E.html = id => ctx.document.getElementById(id).innerHTML;
   if (!E.bootError) E.run('showStatus = (t, m) => __st.push(t + ": " + m); askUnknownAirports = () => ""; var __p = persist, __n = 0; persist = () => (++__n, __p());');
-  E.reset = () => { E.run('_cache = {}; _excelData = {}; _ukdays = {}; _dayMap = {}; _settings = {}; __n = 0;'); E.st.length = 0; E.confirms.length = 0; E.answer = true; win._ukNowOverride = FIXED_NOW; };
+  E.reset = () => { E.run('_cache = {}; _excelData = {}; _ukdays = {}; _dayMap = {}; _settings = { pilotCode: "FOXRAY" }; __n = 0;'); E.st.length = 0; E.confirms.length = 0; E.answer = true; win._ukNowOverride = FIXED_NOW; };
   E.now = iso => { win._ukNowOverride = iso; };
   E.paste = t => { ctx.document.getElementById('input').value = t; E.run('addDay()'); };
   return E;
@@ -34,7 +34,7 @@ const email = (date, secs) => date + '\n\n' + secs.map((s, i) => [
   `FlightNumber : FR${100 + i}`, 'Registration : EIABC', `City Pair : ${s.cp}`, `STD : ${s.std ?? s.off}`, `STA : ${s.on ?? s.off}`,
   ...(s.off ? [`Airborne : ${s.off}`] : []), ...(s.on ? [`Landed : ${s.on}`] : []),
   ...(s.off ? [`Off Block : ${s.off}`] : []), ...(s.on ? [`On Block : ${s.on}`] : []), 'Total Block : 02:00',
-  '', 'Pilot Flying :', 'Take Off : VEGRIC', 'Landing : VEGRIC', ''].join('\n')).join('\n\n');
+  '', 'Pilot Flying :', 'Take Off : FOXRAY', 'Landing : FOXRAY', ''].join('\n')).join('\n\n');
 
 const ISO = '2026-09-20', D = '2026/09/20';
 const UKE = email(D, [{ cp: 'STN - DUB', off: '15:00', on: '16:10' }, { cp: 'DUB - STN', off: '17:00', on: '18:10' }]); // R1: UK
@@ -95,7 +95,7 @@ check('AC-3 año cerrado → el confirm lo dice; aceptar → manual con prefijo 
 E.reset(); E.now('2027-05-10T12:00:00+01:00'); E.run(`var __cf4 = confirm; confirm = m => { if (/año fiscal/.test(m)) _cache = { '${ISO}': { addedAt: 'otro', role: 'FO', flights: [] } }; return __cf4(m); };`); E.paste(UKE);
 check('G6 otro dispositivo guarda el día durante el confirm de año cerrado → no se pisa, aviso', E.J(`_cache['${ISO}'].addedAt`) === 'otro' && /otro dispositivo/.test(last(E)), last(E));
 E.run('confirm = __cf4;');
-E.reset(); setManual(E, 'no'); E.run(`_settings = { ukExceptional: { '${ISO}': { reason: 'motivo de prueba', at: 'x' } } }`); E.answer = false; E.paste(UKE);
+E.reset(); setManual(E, 'no'); E.run(`_settings = { pilotCode: 'FOXRAY', ukExceptional: { '${ISO}': { reason: 'motivo de prueba', at: 'x' } } }`); E.answer = false; E.paste(UKE);
 check('AC-3 excepcional → el confirm dice que se conserva', /circunstancia excepcional se conserva/.test(E.confirms[0] || ''), E.confirms[0]);
 E.reset(); setManual(E, 'no'); E.run('var __p2 = persist; persist = () => false;'); E.paste(UKE);
 check('AC-3 saveHistory falla → la marca manual sigue en memoria', K(E)?.manual === true && K(E)?.state === 'no', JSON.stringify(K(E)));
@@ -121,7 +121,7 @@ check('AC-5 email sin On Block → «… · email sin On Block»', K(E)?.reason 
 E.reset(); E.paste(UKE); E.run(`_ukdays = {}; _dayMap = { '${ISO}': 'off' }; ukDecidePending('${ISO}', 'no')`);
 check('AC-5 conflicto → «… · calendario (OFF) y email discrepan»', K(E)?.reason === 'decidido a mano (dormí fuera de UK) · calendario (OFF) y email discrepan', K(E)?.reason);
 // anti-deriva: los textos de los pendientes del baseline se normalizan con el ukReasonText actual
-const OLD = scriptOf(indexAt(BASELINES.preFase10));
+const OLD = legacyAsTest(scriptOf(indexAt(BASELINES.preFase10)));
 const oldDuty = OLD.match(/reason: '(DUTY en calendario sin email: pega el email)'/)?.[1];
 const oldInc = OLD.match(/reason: '(email incompleto \(sin On Block\): re-pégalo)'/)?.[1];
 const oldConf = OLD.match(/reason: `(calendario \(\$\{cal\.toUpperCase\(\)\}\) y email discrepan)`/)?.[1];

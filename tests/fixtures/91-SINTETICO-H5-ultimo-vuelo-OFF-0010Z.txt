@@ -33,8 +33,8 @@ Delay Time 2 : 00:40
 Delay Code 2 : 93
 
 Pilot Flying :
-Take Off : VEGRIC
-Landing : VEGRIC
+Take Off : FOXRAY
+Landing : FOXRAY
 
 Captain Remarks : Test remarks (anonymised).
 
@@ -82,4 +82,4 @@ Verified By : TSTCAP , CP , 2026/10/05 23:14
 
 Flight Deck Crew
 TSTCAP : CP : ALEX EXAMPLE
-VEGRIC : FO : FIRST OFFICER
+FOXRAY : FO : FIRST OFFICER XRAY

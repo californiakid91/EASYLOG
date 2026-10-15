@@ -31,8 +31,8 @@ Delay Time 1 : 00:45
 Delay Code 1 : 93
 
 Pilot Flying :
-Take Off : VEGRIC
-Landing : VEGRIC
+Take Off : FOXRAY
+Landing : FOXRAY
 
 Captain Remarks : Test remarks (anonymised).
 
@@ -141,7 +141,7 @@ Delay Time 1 : 00:05
 Delay Code 1 : 93
 
 Pilot Flying :
-Take Off : VEGRIC
+Take Off : FOXRAY
 Landing : CPTAAA
 
 Captain Remarks : Test remarks (anonymised).
@@ -151,4 +151,4 @@ Verified By : CPTAAA , CP , 2026/09/28 16:44
 Flight Deck Crew
 CPTAAA : CP : CAPTAIN ALPHA
 FOBBBB : FO : FIRST OFFICER BRAVO
-VEGRIC : FO : RICARDO VEGA BURGUENO
+FOXRAY : FO : FIRST OFFICER XRAY

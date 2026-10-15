@@ -1,7 +1,7 @@
 // Pruebas del plan 09-01: SAFETY PILOT al pegar (detección por día, confirm, rol SP, CSV con PILOT3 SELF)
 // (sobre el <script> real de index.html, modo local, DOM falso; baseline = BASELINES.preFase9)
 import fs from 'node:fs'; import vm from 'node:vm';
-import { INDEX_PATH, readFixture, BASELINES, indexAt } from '../lib.mjs';
+import { INDEX_PATH, readFixture, BASELINES, indexAt, PILOT_SEED, legacyAsTest } from '../lib.mjs';
 
 const scriptOf = html => html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 let fails = 0;
@@ -10,7 +10,7 @@ const check = (n, ok, d = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d
 function makeEnv(script) {
   const els = new Map();
   const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', textContent: '' }, { get: (t, k) => k in t ? t[k] : k === 'classList' ? { add() {}, remove() {}, toggle() {}, contains() { return false; } } : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mk(), set: (t, k, v) => (t[k] = v, true) });
-  const ls = new Map([['easylog_mode', 'local']]);
+  const ls = new Map([['easylog_mode', 'local'], PILOT_SEED]);
   const E = { st: [], confirms: [], answer: true, role: 'FO' };
   const win = { location: {}, _ukNowOverride: '2026-10-05T12:00:00+01:00' };
   const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) || els.set(id, mk()), els.get(id)),
@@ -53,12 +53,12 @@ const F92 = readFixture('92-'), F93 = readFixture('93-'), F01 = readFixture('01-
 const det = t => E.run(`detectSafetyPilot(parseText(${JSON.stringify(t)}).flights)`);
 
 // ── AC-1: detección por día
-check('AC-1 92 (VEGRIC en ningún PF, 3 pilotos) → true', det(F92) === true);
-check('AC-1 93 (caso real 12/10: VEGRIC en 2 de 4) → false', det(F93) === false);
+check('AC-1 92 (FOXRAY en ningún PF, 3 pilotos) → true', det(F92) === true);
+check('AC-1 93 (caso real 12/10: FOXRAY en 2 de 4) → false', det(F93) === false);
 check('AC-1 01 (2 pilotos) → false', det(F01) === false);
 check('AC-1 92 con un Take Off vacío → false', det(F92.replace('Take Off : CPTAAA', 'Take Off : ')) === false);
 check('AC-1 92 con un Landing vacío → false', det(F92.replace('Landing : CPTAAA', 'Landing : ')) === false);
-check('AC-1 92 con VEGRIC en un solo Landing → false', det(F92.replace('Landing : FOBBBB', 'Landing : VEGRIC')) === false);
+check('AC-1 92 con FOXRAY en un solo Landing → false', det(F92.replace('Landing : FOBBBB', 'Landing : FOXRAY')) === false);
 // Formato con tabuladores de los emails de 2025 (caso real del usuario, 27/09/2025): mismo resultado que con espacios
 const tabbed = t => t.replace(/ : /g, ' \t:\t').replace(/^(Take Off|Landing)/gm, '\t$1').replace(/FlightNumber \t:\tFR(\d)/g, 'FlightNumber \t:\tFR $1');
 const nFl = t => E.run(`parseText(${JSON.stringify(t)}).flights.length`);
@@ -75,7 +75,7 @@ check("AC-4 TIME_TOTAL/SIC/IFR '0' y TIME_PIC ''", lit('TIME_TOTAL', '0') && lit
 check("AC-4 TO/LDG '0' y PF 'FALSE'", ['TO_DAY', 'TO_NIGHT', 'LDG_DAY', 'LDG_NIGHT'].every(k => lit(k, '0')) && lit('PF', 'FALSE'));
 check('AC-4 PILOT1 = capitán', lit('PILOT1_ID', 'CPTAAA') && lit('PILOT1_NAME', 'CAPTAIN ALPHA'));
 check('AC-4 PILOT2 = el otro FO (vuele él o el CP)', lit('PILOT2_ID', 'FOBBBB') && lit('PILOT2_NAME', 'FIRST OFFICER BRAVO'), sp.map(r => r.PILOT2_ID).join(','));
-check('AC-4 PILOT3 = VEGRIC / SELF', lit('PILOT3_ID', 'VEGRIC') && lit('PILOT3_NAME', 'SELF'));
+check('AC-4 PILOT3 = FOXRAY / SELF', lit('PILOT3_ID', 'FOXRAY') && lit('PILOT3_NAME', 'SELF'));
 check('AC-4 REMARKS «<vuelo> SAFETY PILOT»', sp.every(r => r.REMARKS === `${r.FLIGHTNUMBER} SAFETY PILOT`), sp.map(r => r.REMARKS).join(' | '));
 check("AC-4 TIME_TO y TIME_LDG vacías (PilotLog rechaza AIR > TOTAL si van)", lit('TIME_TO', '') && lit('TIME_LDG', '') && fo.every(r => r.TIME_TO && r.TIME_LDG), sp.map(r => r.TIME_TO + '/' + r.TIME_LDG).join(' '));
 const SAME = ['PILOTLOG_DATE', 'FLIGHTNUMBER', 'AF_DEP', 'AF_ARR', 'TIME_DEP', 'TIME_DEPSCH', 'TIME_ARR', 'TIME_ARRSCH', 'OPERATOR',
@@ -83,14 +83,14 @@ const SAME = ['PILOTLOG_DATE', 'FLIGHTNUMBER', 'AF_DEP', 'AF_ARR', 'TIME_DEP', '
 const diffSame = sp.flatMap((r, i) => SAME.filter(k => r[k] !== fo[i][k]).map(k => `${i}:${k}`));
 check('AC-4 calzos, STD/STA, CREWLIST, FLIGHTLOG, fuel, pax, avión y pistas == mismo día con FO', diffSame.length === 0, diffSame.join(','));
 check('AC-4 calzos rellenos (no vacíos)', sp.every(r => r.TIME_DEP && r.TIME_ARR), sp.map(r => r.TIME_DEP + '-' + r.TIME_ARR).join(' '));
-// 4 en cabina: CP + 2 FO + VEGRIC → PILOT2 = el FO que vuela cada sector
+// 4 en cabina: CP + 2 FO + FOXRAY → PILOT2 = el FO que vuela cada sector
 const F4 = F92.replace('FOBBBB : FO : FIRST OFFICER BRAVO', 'FOBBBB : FO : FIRST OFFICER BRAVO\nFOCCCC : FO : FIRST OFFICER CHARLIE')
   .replace(/Take Off : FOBBBB\nLanding : CPTAAA/, 'Take Off : FOCCCC\nLanding : CPTAAA');
 const sp4 = rowsOf(E, F4, 'SP');
 check('AC-4 4 en cabina: PILOT2 = el FO que vuela cada sector', det(F4) === true && sp4.map(r => r.PILOT2_ID).join(',') === 'FOBBBB,FOBBBB,FOBBBB,FOCCCC', sp4.map(r => r.PILOT2_ID).join(','));
 
 // ── AC-4: días FO/CPT idénticos a la baseline (solo cambian PILOT3_* vacías)
-const B = makeEnv(scriptOf(indexAt(BASELINES.preFase9)));
+const B = makeEnv(legacyAsTest(scriptOf(indexAt(BASELINES.preFase9))));
 check('baseline preFase9 arranca', !B.bootError, B.bootError && String(B.bootError));
 for (const [name, t, r] of [['93', F93, 'FO'], ['01', F01, 'FO'], ['90', F90, 'FO'], ['91', F91, 'FO'], ['01 CPT', F01, 'CPT']]) {
   const n = rowsOf(E, t, r), o = rowsOf(B, t, r);

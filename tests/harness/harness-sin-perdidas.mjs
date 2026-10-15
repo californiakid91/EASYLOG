@@ -3,7 +3,7 @@
 // Uso: node harness-sin-perdidas.mjs [ruta/index.html]
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { INDEX_PATH, FIXED_NOW, readFixture, FIXTURE_DATE } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW, readFixture, FIXTURE_DATE, PILOT_SEED } from '../lib.mjs';
 
 const INDEX = process.argv[2] || INDEX_PATH;
 const html = fs.readFileSync(INDEX, 'utf8');
@@ -19,7 +19,7 @@ const check = (name, ok, detail = '') => { checks++; console.log(`${ok ? 'PASS' 
 // ── Entorno: mode 'cloud' | 'local'; auth=false → la sesión nunca se resuelve (cloud.user = null) ──
 async function makeEnv({ mode = 'cloud', auth = true, lsInit = {}, setItemThrows = () => false } = {}) {
   const env = { writes: [], statuses: [], alerts: [], confirms: 0, snapCb: null, beforeImport: null, setDocFails: false };
-  let cloudDoc = { history: {}, excelData: {}, airports: {}, ukdays: {}, runways: {}, dayMap: {} };
+  let cloudDoc = { history: {}, excelData: {}, airports: {}, ukdays: {}, runways: {}, dayMap: {}, settings: { pilotCode: 'FOXRAY' } };
   const setDoc = (_ref, data, opts) => {
     if (env.setDocFails) return Promise.reject(Object.assign(new Error('denied'), { code: 'permission-denied' }));
     env.writes.push({ data: clone(data), opts: clone(opts || {}) });
@@ -46,7 +46,7 @@ async function makeEnv({ mode = 'cloud', auth = true, lsInit = {}, setItemThrows
   }
   const els = new Map(); const byId = id => (els.has(id) || els.set(id, makeEl()), els.get(id));
   const role = makeEl(); role.value = 'FO';
-  const ls = new Map([['easylog_mode', mode], ...Object.entries(lsInit)]);
+  const ls = new Map([['easylog_mode', mode], PILOT_SEED, ...Object.entries(lsInit)]);
   env.ls = ls; env.byId = byId;
   env.nav = {}; // 11-02: los tests ponen navigator.clipboard aquí
   const ctx = vm.createContext({

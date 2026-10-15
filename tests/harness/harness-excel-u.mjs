@@ -1,12 +1,12 @@
 // Pruebas del plan 03.2-01: columnas U/UW del Excel desde UK Days, estado SD, decidir pendientes y descarga bloqueada
 // (sobre el <script> real de index.html, modo local, DOM falso, XLSX simulado)
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url';
-import { INDEX_PATH } from '../lib.mjs';
+import { INDEX_PATH, PILOT_SEED } from '../lib.mjs';
 const html = fs.readFileSync(INDEX_PATH, 'utf8');
 const SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const els = new Map();
 const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', textContent: '' }, { get: (t, k) => k in t ? t[k] : k === 'classList' ? { add() {}, remove() {}, toggle() {}, contains() { return false; } } : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mk(), set: (t, k, v) => (t[k] = v, true) });
-const ls = new Map([['easylog_mode', 'local']]); const st = []; let answer = true;
+const ls = new Map([['easylog_mode', 'local'], PILOT_SEED]); const st = []; let answer = true;
 const win = { location: {} };
 const xl = { rows: null, file: null, sheet: null };
 const XLSX = { utils: { aoa_to_sheet: rows => (xl.rows = rows, {}), encode_cell: () => 'A1', book_new: () => ({}), book_append_sheet: (wb, ws, name) => { xl.sheet = name; } }, writeFile: (wb, name) => { xl.file = name; } };
@@ -31,7 +31,7 @@ const email = (date, secs) => date + '\n\n' + secs.map((s, i) => [
   `FlightNumber : FR${100 + i}`, 'Registration : EIABC', `City Pair : ${s.cp}`, `STD : ${s.std ?? s.off}`, `STA : ${s.on ?? s.off}`,
   ...(s.off ? [`Airborne : ${s.off}`] : []), ...(s.on ? [`Landed : ${s.on}`] : []),
   ...(s.off ? [`Off Block : ${s.off}`] : []), ...(s.on ? [`On Block : ${s.on}`] : []), 'Total Block : 02:00',
-  '', 'Pilot Flying :', 'Take Off : VEGRIC', 'Landing : VEGRIC', ''].join('\n')).join('\n\n');
+  '', 'Pilot Flying :', 'Take Off : FOXRAY', 'Landing : FOXRAY', ''].join('\n')).join('\n\n');
 const cal = (iso, s) => run(`_dayMap['${iso}'] = '${s}'`);
 const UW = r => r[0][17], U = r => r[0][18];
 

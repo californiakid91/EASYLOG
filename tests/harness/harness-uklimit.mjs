@@ -3,7 +3,7 @@
 // Uso: node harness-uklimit.mjs [ruta/index.html]
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { INDEX_PATH, FIXED_NOW } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW, PILOT_SEED } from '../lib.mjs';
 
 const INDEX = process.argv[2] || INDEX_PATH;
 const html = fs.readFileSync(INDEX, 'utf8');
@@ -45,7 +45,7 @@ async function makeEnv({ mode = 'local', lsInit = {}, cloudInit = {} } = {}) {
   }
   const els = new Map(); const byId = id => (els.has(id) || els.set(id, makeEl()), els.get(id));
   const role = makeEl(); role.value = 'FO';
-  const ls = new Map([['easylog_mode', mode], ...Object.entries(lsInit)]);
+  const ls = new Map([['easylog_mode', mode], PILOT_SEED, ...Object.entries(lsInit)]);
   const loc = { href: '' };
   env.ls = ls; env.byId = byId; env.loc = loc;
   const ctx = vm.createContext({

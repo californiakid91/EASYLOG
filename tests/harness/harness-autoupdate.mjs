@@ -1,6 +1,6 @@
 // Pruebas de la auto-actualización (fase 3.1) sobre el <script> real de index.html (modo local, DOM falso, fetch/location falsos)
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url';
-import { INDEX_PATH } from '../lib.mjs';
+import { INDEX_PATH, PILOT_SEED } from '../lib.mjs';
 const html = fs.readFileSync(INDEX_PATH, 'utf8');
 const SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const LOCAL_V = /^const APP_VERSION = '([^']*)';$/m.exec(html)[1];
@@ -10,7 +10,7 @@ const els = new Map();
 const mk = () => { const cls = new Set(); const t = { value: '', dataset: {}, style: {}, innerHTML: '', textContent: '' };
   return new Proxy(t, { get: (o, k) => k in o ? o[k] : k === 'classList' ? { add: c => cls.add(c), remove: c => cls.delete(c), toggle() {}, contains: c => cls.has(c) } : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mk(), set: (o, k, v) => (o[k] = v, true) }); };
 const el = id => (els.has(id) || els.set(id, mk()), els.get(id));
-const ls = new Map([['easylog_mode', 'local']]);
+const ls = new Map([['easylog_mode', 'local'], PILOT_SEED]);
 let NOW = 1_000_000; class FakeDate extends Date { static now() { return NOW; } }
 let remoteHTML = null, fetchThrows = false, fetches = [];
 const replaced = [], listeners = {}, intervals = [];

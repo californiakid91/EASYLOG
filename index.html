@@ -757,7 +757,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.14-230928';
+const APP_VERSION = '2026.10.15-104434';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -999,15 +999,15 @@ function parseText(text) {
   return { flights, warnings };
 }
 
-// SAFETY PILOT (criterio del usuario): 3+ pilotos CP/FO en cabina y VEGRIC (FO) no sale en ningún Take Off ni Landing
-// del día → iba detrás todo el día (nunca se cambia de asiento a mitad). Sin PF completo en algún vuelo no se infiere.
-function detectSafetyPilot(flights) {
-  if (!flights || !flights.length) return false;
+// SAFETY PILOT (criterio del usuario): 3+ pilotos CP/FO en cabina y el usuario (FO, código = myCode()) no sale en ningún
+// Take Off ni Landing del día → iba detrás todo el día (nunca se cambia de asiento a mitad). Sin PF completo no se infiere.
+function detectSafetyPilot(flights, me = myCode()) {
+  if (!me || !flights || !flights.length) return false;
   const crew = (flights[0].allCrew || []).filter(c => c.role === 'CP' || c.role === 'FO');
-  if (crew.length < 3 || !crew.some(c => c.code === 'VEGRIC' && c.role === 'FO')) return false;
+  if (crew.length < 3 || !crew.some(c => c.code === me && c.role === 'FO')) return false;
   return flights.every(f => {
     const to = f.d['Take Off'] || '', ldg = f.d['Landing'] || '';
-    return to && ldg && to !== 'VEGRIC' && ldg !== 'VEGRIC';
+    return to && ldg && to !== me && ldg !== me;
   });
 }
 
@@ -1024,7 +1024,7 @@ const HEADER = [
   'PAX','FUEL','FUELUSED','DELAY',
   'AC_MAKE','AC_MODEL','AC_VARIANT','AC_REG','AC_ENGTYPE',
   'RWY_DEP','RWY_ARR', // nombres del IMPORTER (el export de PilotLog usa DEP_RWY/ARR_RWY y el importer los rechaza); al final por si acaso (AUDIT H8)
-  'PILOT3_ID','PILOT3_NAME', // SAFETY PILOT (Fase 9): VEGRIC/SELF; vacías en el resto. Al final para no mover columnas
+  'PILOT3_ID','PILOT3_NAME', // SAFETY PILOT (Fase 9): código propio/SELF; vacías en el resto. Al final para no mover columnas
 ].join(SEP);
 
 function csv(v) {
@@ -1113,7 +1113,8 @@ function nightMinutes(off, on, a, b) {
   return minToHM(night);
 }
 
-function toRow(f, r, dayOffset = 0, rwy = null) {
+function toRow(f, r, dayOffset = 0, rwy = null, me = myCode()) {
+  if (!me) throw new Error('toRow sin código de piloto'); // nunca un CSV con TO/LDG a 0 en silencio
   const isCPT   = r === 'CPT';
   const isSP    = r === 'SP'; // safety pilot: iba detrás → funciones a 0, Pilot 3 SELF (criterio del usuario)
   const d       = f.d;
@@ -1125,8 +1126,8 @@ function toRow(f, r, dayOffset = 0, rwy = null) {
   const blockMin = hmToMin(d['Total Block']);
   const airHM    = stripLeadingZero(d['Total flight'] || '');
   const flightNo = (d['FlightNumber'] || '').replace(/\s+/g, '');
-  const isMyTO  = !isSP && (d['Take Off']  || '') === 'VEGRIC';
-  const isMyLDG = !isSP && (d['Landing']   || '') === 'VEGRIC';
+  const isMyTO  = !isSP && (d['Take Off']  || '') === me;
+  const isMyLDG = !isSP && (d['Landing']   || '') === me;
 
   // ── Day/Night TO+LDG ──
   let toDay  = isMyTO  ? '1' : '0';
@@ -1146,25 +1147,27 @@ function toRow(f, r, dayOffset = 0, rwy = null) {
   const meRole = isCPT ? 'CP' : 'FO';
   const crewLines = ['Flight Deck Crew'];
   (f.allCrew || []).forEach(c => {
-    if (c.code === 'VEGRIC') return;
+    if (c.code === me) return;
     const role = c.role === 'CPT' ? 'CP' : c.role;
     crewLines.push(`${c.code} : ${role} : ${c.name}`);
   });
-  crewLines.push(`VEGRIC : ${meRole} : RICARDO VEGA BURGUENO`);
+  // La línea propia, al final como siempre, con el nombre tal como viene en el email (Fase 12)
+  const mine = (f.allCrew || []).find(c => c.code === me);
+  crewLines.push(`${me} : ${meRole} : ${mine?.name || 'SELF'}`);
   const crewList = crewLines.join('\n');
 
-  // SP: Pilot 2 = el FO que vuela este sector (sale en Take Off/Landing y no es el CP); si solo sale el CP, el primer FO ≠ VEGRIC
+  // SP: Pilot 2 = el FO que vuela este sector (sale en Take Off/Landing y no es el CP); si solo sale el CP, el primer FO ≠ el usuario
   let sp2 = null;
   if (isSP) {
     const crew = f.allCrew || [];
-    const flyer = [d['Take Off'], d['Landing']].find(c => c && c !== f.captainCode && c !== 'VEGRIC');
-    sp2 = (flyer && crew.find(c => c.code === flyer)) || crew.find(c => c.role === 'FO' && c.code !== 'VEGRIC') || null;
+    const flyer = [d['Take Off'], d['Landing']].find(c => c && c !== f.captainCode && c !== me);
+    sp2 = (flyer && crew.find(c => c.code === flyer)) || crew.find(c => c.role === 'FO' && c.code !== me) || null;
   }
-  const pilot1Id   = isCPT ? 'VEGRIC'        : f.captainCode;
+  const pilot1Id   = isCPT ? me              : f.captainCode;
   const pilot1Name = isCPT ? 'SELF'          : f.captain;
-  const pilot2Id   = isCPT ? ''              : isSP ? (sp2?.code || '') : 'VEGRIC';
+  const pilot2Id   = isCPT ? ''              : isSP ? (sp2?.code || '') : me;
   const pilot2Name = isCPT ? ''              : isSP ? (sp2?.name || '') : 'SELF';
-  const pilot3Id   = isSP ? 'VEGRIC' : '';
+  const pilot3Id   = isSP ? me : '';
   const pilot3Name = isSP ? 'SELF'   : '';
 
   const timePic = isCPT ? blockMin : '';
@@ -1235,9 +1238,12 @@ function dutyMeta(flightsWithRole) {
   return out;
 }
 
-function buildCSV(flightsWithRole) {
+// codeOverride: código escrito en el prompt que no se pudo guardar (settings dañado) → se usa solo en esta exportación
+function buildCSV(flightsWithRole, codeOverride) {
+  const me = codeOverride || myCode();
+  if (!me) throw new Error('buildCSV sin código de piloto');
   const meta = dutyMeta(flightsWithRole);
-  const rows = flightsWithRole.map(({ flight, role }, i) => toRow(flight, role, meta[i].offset, _runways[meta[i].key]));
+  const rows = flightsWithRole.map(({ flight, role }, i) => toRow(flight, role, meta[i].offset, _runways[meta[i].key], me));
   return '﻿' + HEADER + '\r\n' + rows.join('\r\n');
 }
 
@@ -1401,6 +1407,42 @@ function setUKDays(u)    { _ukdays = u; }
 function saveUKDays(u)   { setUKDays(u); return persist(); }
 function saveRunways(w)  { _runways = w; return persist(); }
 function saveSettings(st) { _settings = st; return persist(); }
+
+// Fase 12: el código de tripulante del usuario es un ajuste suyo (settings.pilotCode), nunca un literal del repo público
+const PILOT_CODE_RE = /^[A-Z0-9]{3,10}$/;
+function myCode() {
+  const c = _settings && typeof _settings === 'object' ? _settings.pilotCode : '';
+  return typeof c === 'string' && PILOT_CODE_RE.test(c) ? c : '';
+}
+// Pide el código (sugerencia opcional con su línea «CÓDIGO : FO : NOMBRE» para reconocerla) y lo guarda.
+// Devuelve { code, saved }: code '' = cancelado / inválido / nube no lista; saved false con code = usarlo solo en esta acción.
+function askPilotCode(suggest = '', line = '', opts = {}) {
+  if (!requireHydrated(opts)) return { code: '', saved: false };
+  const v = prompt(
+    'Tu código de tripulante (el que sale en «Flight Deck Crew» del email). Se guarda en tus datos y no se vuelve a pedir.' +
+    (line ? `\n\n¿Eres tú?  ${line}` : ''), suggest);
+  if (v === null || String(v).trim() === '') return { code: '', saved: false };
+  const code = String(v).trim().toUpperCase();
+  if (!PILOT_CODE_RE.test(code)) { alert('El código son de 3 a 10 letras o números, como en el email.'); return { code: '', saved: false }; }
+  if (!requireHydrated(opts)) return { code: '', saved: false }; // el prompt bloquea el tick: releer antes de escribir
+  const prev = _settings;
+  const saved = saveSettings({ ..._settings, pilotCode: code });
+  // Sin guardar no se deja en memoria: con la copia local dañada haría fallar todos los guardados siguientes
+  if (!saved) { _settings = prev; showStatus('warn', `No se ha podido guardar tu código (${code}); se usa ahora y se volverá a pedir.`); }
+  return { code, saved };
+}
+// Nombre de la fila NAME del Excel: el de la línea propia del día más reciente del año (como lo escribe el email)
+function pilotNameFor(ty) {
+  const me = myCode();
+  if (!me) return '';
+  for (const iso of dayKeys(_excelData, 'Excel').filter(k => k >= ty.start && k <= ty.end).sort().reverse()) {
+    for (const f of dayFlights(_excelData[iso])) {
+      const c = (f && Array.isArray(f.allCrew) ? f.allCrew : []).find(x => x && x.code === me && typeof x.name === 'string');
+      if (c) return c.name;
+    }
+  }
+  return '';
+}
 
 function persist() {
   const mode = getMode();
@@ -1764,6 +1806,23 @@ function addDay() {
   // A partir de aquí se pregunta y se escribe: sin la nube cargada no se toca nada (el texto se queda en el cuadro)
   if (!requireHydrated()) return;
 
+  // Fase 12: código propio (se pide una vez) y tiene que salir en la tripulación del email (si el email la trae)
+  let me = myCode();
+  if (!me) {
+    const pilots = (flights[0].allCrew || []).filter(c => c.role === 'CP' || c.role === 'FO');
+    const fo = pilots.length === 2 && pilots.filter(c => c.role === 'CP').length === 1 ? pilots.find(c => c.role === 'FO') : null;
+    me = askPilotCode(fo ? fo.code : '', fo ? `${fo.code} : FO : ${fo.name}` : '').code;
+    if (!me) { showStatus('warn', 'Sin tu código de tripulante no se guarda nada. Vuelve a pegar y escríbelo.'); return; }
+  }
+  const hasCrew = flights.some(f => (f.allCrew || []).length);
+  const inCrew = c => flights.some(f => (f.allCrew || []).some(x => x.code === c));
+  if (hasCrew && !inCrew(me)) {
+    const change = confirm(`Tu código ${me} no sale en la tripulación de este email (¿email de otra persona o código mal escrito?).\n\n¿Cambiar el código?`);
+    if (!requireHydrated()) return;
+    if (change) me = askPilotCode('', '').code;
+    if (!me || !inCrew(me)) { showStatus('err', `${me ? `Tu código ${me}` : 'Tu código'} no sale en la tripulación de este email. No se ha guardado nada.`); return; }
+  }
+
   const iso = dateRawToISO(dates[0]);
   let hist = loadHistory();
 
@@ -1826,9 +1885,9 @@ function addDay() {
   }
 
   // SAFETY PILOT: solo en un día nuevo con FO marcado; nunca en silencio. Cancelar = a los mandos (se guarda normal).
-  if (!prev && dayRole === 'FO' && detectSafetyPilot(flights)) {
+  if (!prev && dayRole === 'FO' && detectSafetyPilot(flights, me)) {
     const sp = confirm(
-      `El ${dateISOToDisplay(iso)} sois ${flights[0].allCrew.filter(c => c.role === 'CP' || c.role === 'FO').length} pilotos y VEGRIC no sale en ningún despegue ni aterrizaje.\n\n` +
+      `El ${dateISOToDisplay(iso)} sois ${flights[0].allCrew.filter(c => c.role === 'CP' || c.role === 'FO').length} pilotos y tú (${me}) no sales en ningún despegue ni aterrizaje.\n\n` +
       `¿Ibas de SAFETY PILOT los ${flights.length} vuelo${flights.length !== 1 ? 's' : ''}? (funciones 0:00, Pilot 3 SELF, remarks SAFETY PILOT)\n\n` +
       'Aceptar = safety pilot · Cancelar = a los mandos (normal)'
     );
@@ -2035,10 +2094,18 @@ function triggerDownload(csvText, filename) {
   URL.revokeObjectURL(url);
 }
 
+// Código para exportar: el guardado o, si falta, se pide (sin guardar se usa solo en esta descarga). '' = no se descarga
+function exportCode() {
+  const me = myCode() || askPilotCode('', '').code;
+  if (!me) showStatus('warn', 'Sin tu código de tripulante no se puede generar el CSV. No se ha descargado nada.');
+  return me;
+}
+
 function downloadAllCSV() {
   const list = allFlights();
   if (!list.length) { showStatus('err', 'No hay vuelos guardados.'); return; }
-  triggerDownload(buildCSV(list), `pilotlog_${new Date().toISOString().slice(0,10)}.csv`);
+  const me = exportCode(); if (!me) return;
+  triggerDownload(buildCSV(list, me), `pilotlog_${new Date().toISOString().slice(0,10)}.csv`);
   showDownloadStatus(list, `Descargados ${list.length} vuelos.`);
   // En iPhone un confirm() tras la descarga se pierde (Safari muestra el fichero): botón fijo en "Días guardados"
   _lastExport = exportSnapshot(null, list.length);
@@ -2048,7 +2115,8 @@ function downloadAllCSV() {
 function downloadMonthCSV(mk) {
   const list = flightsForMonth(mk);
   if (!list.length) return;
-  triggerDownload(buildCSV(list), `pilotlog_${mk}.csv`);
+  const me = exportCode(); if (!me) return;
+  triggerDownload(buildCSV(list, me), `pilotlog_${mk}.csv`);
   showDownloadStatus(list, `Descargados ${list.length} vuelos de ${monthLabel(mk)}.`);
   _lastExport = exportSnapshot(mk, list.length);
   renderHistory();
@@ -3617,7 +3685,7 @@ function downloadTaxExcel() {
   const allRows = [
     HEADER,
     [],
-    ['NAME','Ricardo Vega Burgueño','','',`Tax Year ${ty.start.slice(0, 4)}-${ty.end.slice(0, 4)}`],
+    ['NAME',pilotNameFor(ty),'','',`Tax Year ${ty.start.slice(0, 4)}-${ty.end.slice(0, 4)}`],
     ['','','','','','','UK DUTY TIME','','','','','','','NON UK DUTY TIME'],
     HEADER
   ];

@@ -1,12 +1,12 @@
 // Test 07.1-01 — «Fuera de UK»: total real de días pasados no UK, desglose trabajo / libres, desplegable y backup.
 // Ejecuta el <script> real de index.html en node:vm (modo local, DOM falso, reloj fijo FIXED_NOW = 05/10/2026).
 import fs from 'node:fs'; import vm from 'node:vm';
-import { INDEX_PATH, FIXED_NOW } from '../lib.mjs';
+import { INDEX_PATH, FIXED_NOW, PILOT_SEED } from '../lib.mjs';
 const html = fs.readFileSync(process.argv[2] || INDEX_PATH, 'utf8');
 const SCRIPT = html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const els = new Map();
 const mk = () => new Proxy({ value: '', dataset: {}, style: {}, innerHTML: '', textContent: '' }, { get: (t, k) => k in t ? t[k] : k === 'classList' ? { add() {}, remove() {}, toggle() {}, contains() { return false; } } : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mk(), set: (t, k, v) => (t[k] = v, true) });
-const ls = new Map([['easylog_mode', 'local']]);
+const ls = new Map([['easylog_mode', 'local'], PILOT_SEED]);
 const __confirms = []; let __answer = true;
 const win = { location: {}, _ukNowOverride: FIXED_NOW };
 const ctx = vm.createContext({ document: { getElementById: id => (els.has(id) || els.set(id, mk()), els.get(id)), querySelector: () => mk(), querySelectorAll: () => [], body: mk(), createElement: () => mk(), addEventListener() {} },
@@ -26,7 +26,7 @@ const paste = text => { ctx.document.getElementById('input').value = text; run('
 const email = (date, secs) => date + '\n\n' + secs.map((s, i) => [
   `FlightNumber : FR${100 + i}`, 'Registration : EIABC', `City Pair : ${s.cp}`, `STD : ${s.off}`, `STA : ${s.on}`,
   `Airborne : ${s.off}`, `Landed : ${s.on}`, `Off Block : ${s.off}`, `On Block : ${s.on}`, 'Total Block : 02:00',
-  '', 'Pilot Flying :', 'Take Off : VEGRIC', 'Landing : VEGRIC', ''].join('\n')).join('\n\n');
+  '', 'Pilot Flying :', 'Take Off : FOXRAY', 'Landing : FOXRAY', ''].join('\n')).join('\n\n');
 
 // ── Escenario sintético (año 2026-27; hoy = 05/10/2026, ayer = 04/10/2026)
 run('_cache = {}; _excelData = {}; _ukdays = {}; _dayMap = {};');

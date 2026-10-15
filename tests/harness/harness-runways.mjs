@@ -1,10 +1,10 @@
 // Pruebas del plan 04-02: pista en uso — motor de sugerencia, viento IEM (fetch simulado), confirmación, persistencia (local + nube) y CSV
 // (sobre el <script> real de index.html en node:vm; la versión anterior a la fase 4 sale de `git show BASELINES.preFase4:index.html` (tests/lib.mjs) para el golden y el «cliente viejo»)
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url'; import { execFileSync } from 'node:child_process';
-import { INDEX_PATH, BASELINES, indexAt } from '../lib.mjs';
+import { INDEX_PATH, BASELINES, indexAt, PILOT_SEED, legacyAsTest } from '../lib.mjs';
 const extract = html => html.match(/<script>\n([\s\S]*?)<\/script>\s*<\/body>/)[1];
 const NEW_SRC = extract(fs.readFileSync(INDEX_PATH, 'utf8'));
-const OLD_SRC = extract(indexAt(BASELINES.preFase4));
+const OLD_SRC = legacyAsTest(extract(indexAt(BASELINES.preFase4)));
 let fails = 0;
 const check = (n, ok, d = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? '  — ' + d : ''}`); if (!ok) fails++; };
 const clone = o => JSON.parse(JSON.stringify(o));
@@ -16,7 +16,7 @@ function load(src, { mode = 'local', fetchImpl, cloudDoc } = {}) {
     return new Proxy(t, { get: (o, k) => k in o ? o[k] : k === 'classList' ? { add: c => cls.add(c), remove: c => cls.delete(c), toggle: c => cls.has(c) ? cls.delete(c) : cls.add(c), contains: c => cls.has(c) }
       : k === 'querySelectorAll' ? () => [] : (k === 'closest' || k === 'querySelector') ? () => null : typeof k === 'symbol' ? undefined : () => mkEl(), set: (o, k, v) => (o[k] = v, true) }); };
   const els = new Map(); const byId = id => (els.has(id) || els.set(id, mkEl()), els.get(id));
-  const ls = new Map([['easylog_mode', mode]]);
+  const ls = new Map([['easylog_mode', mode], PILOT_SEED]);
   const fakeMods = {
     'firebase-app': { initializeApp: () => ({}) },
     'firebase-auth': { getAuth: () => ({}), setPersistence: async () => {}, browserLocalPersistence: {},
@@ -53,8 +53,8 @@ const tick = async (n = 20) => { for (let i = 0; i < n; i++) await new Promise(r
 const email = (date, secs) => date + '\n\n' + secs.map((s, i) => [
   `FlightNumber : ${s.fn ?? 'FR' + (100 + i)}`, 'Registration : EIABC', `City Pair : ${s.cp}`, `STD : ${s.std ?? s.off}`, `STA : ${s.on}`,
   `Airborne : ${s.air ?? s.off}`, `Landed : ${s.ldg ?? s.on}`, `Off Block : ${s.off}`, `On Block : ${s.on}`, 'Total Block : 02:00',
-  '', 'Pilot Flying :', 'Take Off : VEGRIC', 'Landing : VEGRIC', ''].join('\n')).join('\n\n') +
-  '\nFlight Deck Crew :\nABC123 : CP : JOHN SMITH\nVEGRIC : FO : RICARDO VEGA\n';
+  '', 'Pilot Flying :', 'Take Off : FOXRAY', 'Landing : FOXRAY', ''].join('\n')).join('\n\n') +
+  '\nFlight Deck Crew :\nABC123 : CP : JOHN SMITH\nFOXRAY : FO : FIRST OFFICER XRAY\n';
 // CSV de IEM a partir de [ 'YYYY-MM-DD HH:MM', drct, sknt ]
 const iem = (station, rows, cols = ['station', 'valid', 'drct', 'sknt']) => [cols.join(','), ...rows.map(([t, d, k]) => {
   const v = { station, valid: t, drct: d ?? '', sknt: k ?? '' }; return cols.map(c => v[c]).join(','); })].join('\n');

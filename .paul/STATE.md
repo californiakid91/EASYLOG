@@ -140,7 +140,7 @@ Branch: main
 Last session: 2026-10-15
 Stopped at: Milestone v0.3 Pegar sin sorpresas complete
 Next action: /paul:milestone (definir v0.4); el usuario comprueba en el iPhone (pendiente desde 2026-10-15 tarde) el prompt del código y el primer CSV en PilotLog
-Resume file: .paul/MILESTONES.md
+Resume file: .paul/HANDOFF-2026-10-15-v0.3-cerrado.md
 
 ---
 *STATE.md — Updated after every significant action*

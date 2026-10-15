@@ -73,6 +73,14 @@ const last = E => E.st[E.st.length - 1] || '';
   E.promptAns = () => { E.ls.set('easylog_mode', 'cloud'); E.run('cloud.hydrated = false'); return TEST_PILOT; };
   E.paste(F01);
   check('AC-1 nube no lista tras el prompt → nada guardado', !E.lsSettings().pilotCode && E.days().length === 0 && E.run('myCode()') === '', last(E));
+  check('G6 … y el aviso de la nube no queda tapado por «Sin tu código»', !/Sin tu código/.test(last(E)), last(E));
+}
+{
+  // Exportar sin código con la nube no lista: lo dice requireHydrated, sin prompt ni descarga (hay un día guardado)
+  const E = makeEnv({ seed: true }); E.paste(F01);
+  E.run('_settings = {}'); E.ls.set('easylog_mode', 'cloud'); E.run('cloud.hydrated = false');
+  E.clear(); E.promptAns = TEST_PILOT; E.run('downloadAllCSV()');
+  check('G6 exportar con la nube no lista → sin prompt, sin descarga y sin «Sin tu código»', E.days().length === 1 && E.prompts.length === 0 && E.dl.length === 0 && !E.st.some(x => /Sin tu código/.test(x)) && /nube/.test(E.st.join(' ')), E.st.join(' | '));
 }
 {
   // saveSettings falla (copia local de la configuración dañada): el código se usa en este pegado y se avisa

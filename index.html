@@ -757,7 +757,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.15-104434';
+const APP_VERSION = '2026.10.15-105223';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -1415,16 +1415,17 @@ function myCode() {
   return typeof c === 'string' && PILOT_CODE_RE.test(c) ? c : '';
 }
 // Pide el código (sugerencia opcional con su línea «CÓDIGO : FO : NOMBRE» para reconocerla) y lo guarda.
-// Devuelve { code, saved }: code '' = cancelado / inválido / nube no lista; saved false con code = usarlo solo en esta acción.
+// Devuelve { code, saved, blocked }: code '' = cancelado / inválido; blocked = la nube no está lista (requireHydrated ya avisó);
+// saved false con code = usarlo solo en esta acción.
 function askPilotCode(suggest = '', line = '', opts = {}) {
-  if (!requireHydrated(opts)) return { code: '', saved: false };
+  if (!requireHydrated(opts)) return { code: '', saved: false, blocked: true };
   const v = prompt(
     'Tu código de tripulante (el que sale en «Flight Deck Crew» del email). Se guarda en tus datos y no se vuelve a pedir.' +
     (line ? `\n\n¿Eres tú?  ${line}` : ''), suggest);
   if (v === null || String(v).trim() === '') return { code: '', saved: false };
   const code = String(v).trim().toUpperCase();
   if (!PILOT_CODE_RE.test(code)) { alert('El código son de 3 a 10 letras o números, como en el email.'); return { code: '', saved: false }; }
-  if (!requireHydrated(opts)) return { code: '', saved: false }; // el prompt bloquea el tick: releer antes de escribir
+  if (!requireHydrated(opts)) return { code: '', saved: false, blocked: true }; // el prompt bloquea el tick: releer antes de escribir
   const prev = _settings;
   const saved = saveSettings({ ..._settings, pilotCode: code });
   // Sin guardar no se deja en memoria: con la copia local dañada haría fallar todos los guardados siguientes
@@ -1811,7 +1812,9 @@ function addDay() {
   if (!me) {
     const pilots = (flights[0].allCrew || []).filter(c => c.role === 'CP' || c.role === 'FO');
     const fo = pilots.length === 2 && pilots.filter(c => c.role === 'CP').length === 1 ? pilots.find(c => c.role === 'FO') : null;
-    me = askPilotCode(fo ? fo.code : '', fo ? `${fo.code} : FO : ${fo.name}` : '').code;
+    const a = askPilotCode(fo ? fo.code : '', fo ? `${fo.code} : FO : ${fo.name}` : '');
+    if (a.blocked) return; // requireHydrated ya dejó su aviso: no taparlo
+    me = a.code;
     if (!me) { showStatus('warn', 'Sin tu código de tripulante no se guarda nada. Vuelve a pegar y escríbelo.'); return; }
   }
   const hasCrew = flights.some(f => (f.allCrew || []).length);
@@ -1819,7 +1822,7 @@ function addDay() {
   if (hasCrew && !inCrew(me)) {
     const change = confirm(`Tu código ${me} no sale en la tripulación de este email (¿email de otra persona o código mal escrito?).\n\n¿Cambiar el código?`);
     if (!requireHydrated()) return;
-    if (change) me = askPilotCode('', '').code;
+    if (change) { const a = askPilotCode('', ''); if (a.blocked) return; me = a.code; }
     if (!me || !inCrew(me)) { showStatus('err', `${me ? `Tu código ${me}` : 'Tu código'} no sale en la tripulación de este email. No se ha guardado nada.`); return; }
   }
 
@@ -2096,8 +2099,10 @@ function triggerDownload(csvText, filename) {
 
 // Código para exportar: el guardado o, si falta, se pide (sin guardar se usa solo en esta descarga). '' = no se descarga
 function exportCode() {
-  const me = myCode() || askPilotCode('', '').code;
-  if (!me) showStatus('warn', 'Sin tu código de tripulante no se puede generar el CSV. No se ha descargado nada.');
+  if (myCode()) return myCode();
+  const a = askPilotCode('', '');
+  const me = a.code;
+  if (!me && !a.blocked) showStatus('warn', 'Sin tu código de tripulante no se puede generar el CSV. No se ha descargado nada.');
   return me;
 }
 

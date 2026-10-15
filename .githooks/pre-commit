@@ -8,15 +8,22 @@ set -euo pipefail
 # ningún fichero STAGED (añadido/modificado/renombrado) puede contener una de esas palabras; se muestra solo fichero:línea.
 # Los ficheros históricos que ya las tenían (forward-only, no se reescriben) están en .githooks/private-words-exempt.
 if [ -s .private-words ]; then
-  mapfile -t STAGED < <(git diff --cached --name-only --diff-filter=ACMR)
-  if [ -s .githooks/private-words-exempt ]; then
-    mapfile -t STAGED < <(printf '%s\n' "${STAGED[@]}" | grep -v -x -F -f .githooks/private-words-exempt || true)
-  fi
-  if [ "${#STAGED[@]}" -gt 0 ] && [ -n "${STAGED[0]}" ]; then
-    HITS=$(LC_ALL=C.UTF-8 git grep --cached -I -i -n -F -f .private-words -- "${STAGED[@]}" | cut -d: -f1,2 || true)
-    if [ -n "$HITS" ]; then
+  PW=$(mktemp); trap 'rm -f "$PW"' EXIT
+  grep -v -x '[[:space:]]*' .private-words > "$PW" || true   # sin líneas vacías (casarían con todo)
+  STAGED=()
+  while IFS= read -r -d '' f; do                           # -z: rutas con espacios o no-ASCII, sin comillas
+    if [ -s .githooks/private-words-exempt ] && grep -q -x -F -- "$f" .githooks/private-words-exempt; then continue; fi
+    STAGED+=("$f")
+  done < <(git diff --cached --name-only -z --diff-filter=ACMR)
+  if [ -s "$PW" ] && [ "${#STAGED[@]}" -gt 0 ]; then
+    set +e
+    OUT=$(LC_ALL=C.UTF-8 git --literal-pathspecs grep --cached -I -i -n -F -f "$PW" -- "${STAGED[@]}")
+    RC=$?
+    set -e
+    if [ "$RC" -gt 1 ]; then echo "pre-commit: no se ha podido comprobar .private-words (git grep = $RC); commit abortado." >&2; exit 1; fi
+    if [ "$RC" -eq 0 ]; then
       echo "pre-commit: hay datos personales (lista de .private-words) en lo que vas a commitear:" >&2
-      echo "$HITS" >&2
+      printf '%s\n' "$OUT" | cut -d: -f1,2 >&2
       exit 1
     fi
   fi

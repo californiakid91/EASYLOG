@@ -2,7 +2,11 @@
 # Fase 12: el mensaje de commit no puede llevar datos personales (.private-words, solo en local). Sin la lista → nada.
 set -euo pipefail
 [ -s .private-words ] || exit 0
-if LC_ALL=C.UTF-8 grep -q -i -F -f .private-words -- "$1"; then
-  echo "commit-msg: el mensaje contiene una palabra privada (.private-words); cámbialo." >&2
-  exit 1
-fi
+PW=$(mktemp); trap 'rm -f "$PW"' EXIT
+grep -v -x '[[:space:]]*' .private-words > "$PW" || true   # sin líneas vacías (casarían con todo)
+[ -s "$PW" ] || exit 0
+set +e
+LC_ALL=C.UTF-8 grep -q -i -F -f "$PW" -- "$1"; RC=$?
+set -e
+if [ "$RC" -eq 0 ]; then echo "commit-msg: el mensaje contiene una palabra privada (.private-words); cámbialo." >&2; exit 1; fi
+if [ "$RC" -gt 1 ]; then echo "commit-msg: no se ha podido comprobar .private-words (grep = $RC)." >&2; exit 1; fi

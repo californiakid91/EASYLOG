@@ -139,15 +139,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - Fase 5: la CSP lleva 'unsafe-inline' (53 onclick) → no frena ejecución de XSS, solo salida de datos; residuales documentados en 05-02-SUMMARY
 
 ### Git State
-Last commit: Fase 13.1 (edbed0b) — prod = v2026.10.15-231555
+Last commit: Fase 14 (81daee6) — prod = v2026.11.11-223758 (verificado con curl)
 Branch: main
 
 ## Session Continuity
 
 Last session: 2026-11-11
-Stopped at: Phase 14 complete (14-01 desplegado); v0.4 3/3
+Stopped at: Phase 14 complete (81daee6 desplegado, prod 2026.11.11-223758); v0.4 3/3
 Next action: /paul:complete-milestone (v0.4); pendiente usuario: primer CSV en PilotLog (CREWLIST, TO/LDG)
-Resume file: .paul/phases/14-vuelo-otra-fecha/14-01-SUMMARY.md
+Resume file: .paul/HANDOFF-2026-11-11-fase14-cerrada.md
 
 ---
 *STATE.md — Updated after every significant action*

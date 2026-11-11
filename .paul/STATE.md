@@ -5,29 +5,29 @@
 See: .paul/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Pego el email del vuelo y obtengo sin errores logbook PilotLog, Excel Tax Year y UK Days.
-**Current focus:** v0.4 Datos y fiscal — Fase 14 lista para planificar
+**Current focus:** v0.4 Datos y fiscal — 3/3 fases completas, listo para cerrar el milestone
 
 ## Current Position
 
 Version: v0.3.0
 Milestone: v0.4 Datos y fiscal (v0.4.0)
-Phase: 14 (3 de 3) — Mismo vuelo pegado con otra fecha
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-16 — Phase 13.1 complete (edbed0b, prod 2026.10.15-231555), ready for Phase 14
+Phase: 14 (3 de 3) — Mismo vuelo pegado con otra fecha — Complete
+Plan: 14-01 complete
+Status: Milestone v0.4 completo, listo para /paul:complete-milestone
+Last activity: 2026-11-11 — Phase 14 complete (aviso otra fecha + nº de vuelo del Excel)
 
 Progress:
 - v0.1 Datos fiables: [██████████] 100% ✓
 - v0.2 Seguridad y robustez: [██████████] 100% ✓
 - v0.3 Pegar sin sorpresas: [██████████] 100% ✓
-- v0.4 Datos y fiscal: [███████░░░] 67%
+- v0.4 Datos y fiscal: [██████████] 100% ✓
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete - ready for next PLAN]
+  ✓        ✓        ✓     [Loop complete - milestone v0.4 complete]
 ```
 
 ## Accumulated Context
@@ -74,6 +74,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 13 (usuario 2026-10-15): SBY + email → manda la regla del email; SIM/SD sin email → pendiente siempre (todo 2026/27, re-decidir); UW sin vuelos: SBY = 1, SIM/SD/DUTY = día anterior UK Day (1) / No UK (vacío); SIM puede ser fuera de base (BGY, MAD…)
 - 13-01 (aplicado): ukDayStatus — conflicto solo OFF/SIM/SD + email; SIM/SD sin email → pending kind 'cal-ask' (después de `if (e)`/`if (email)`); excelUWPrevDay(iso) para SIM/SD/DUTY sin vuelos; ukDecidePending en año congelado = confirm + requireHydrated + re-check pending; ukReasonText normaliza «· SIM en calendario»; harness-sby-uw
 - 13.1 (usuario 2026-10-16): ayer (Londres) nunca es pendiente hasta pasadas 24 h (todos los tipos); pendingUKDays filtra iso < londonYesterdayISO; ukGraceCount(now, ty) = ayer pendiente en el año → máximo posible, nota «Fuera de UK» y backup; ukPastDays sin cambios; borde 06/04 aceptado
+- 14-01 (aplicado; Fable + G6): sectorSig = normFlightNo + City Pair + matrícula sin guiones + Off Block (sin On Block); sameFlightOtherDates recorre historial ∪ _excelData (isoKeys + dayFlights, sin console.warn), excluye la fecha pegada y los sectores ya en ella (prev); confirm tras otherDevice y antes de if (prev), luego requireHydrated + changedMeanwhile; texto: PilotLog puede duplicar, Excel duplica, quitar de lista Y Excel; normFlightNo: FR solo si /^\d+[A-Z]?$/ (RKxxxx y …P tal cual) — solo Excel, CSV intacto; tests con sectores sintéticos en varias fechas deben variar matrícula/calzos
 - _runways = mapa propio (localStorage + campo Firestore `runways`); clave duty|vuelo|DEP-ARR(#n)
 
 ### Deferred Issues
@@ -85,7 +86,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Barra «Hay una versión nueva» (fija abajo) tapa el final del botón de exportar mientras está visible → padding-bottom al body cuando se muestra | 03.1 checkpoint | XS | — |
 | UK Days: reconstrucción de tax years anteriores desde el plan ROCS (2024/25 falta plan abr–dic 2024) | Phase 2 | M | — |
 | Regla de rol al re-pegar (rol guardado manda) → revisar al ascender a CPT | 03.2-02 | XS | ascenso |
-| Mismo vuelo pegado con OTRA fecha (PilotLog lo duplicaría) no se detecta | 03.2-02 | S | — |
+| Barrido en la app de sectores ya guardados en dos fechas (hoy solo se avisa al pegar; revisión única 2026-11-11 con el Excel del usuario: 0) | 14-01 | XS | si aparece |
+| e2e-csp: Node 22 en este WSL no llega a internet (autoselección de familia IP) → `NODE_OPTIONS=--network-family-autoselection-attempt-timeout=2000`; meterlo en pre-push o lib.mjs | 14-01 | XS | — |
 | Pistas exactas: FR24 API (token + 9 $/mes) o ADS-B adsb.lol vía proxy (sin CORS) — decisión del usuario | 04 dialéctica | M | si el usuario lo pide |
 | Preferente de pista única por aeropuerto (sin franja horaria/flujo) | 04 dialéctica | S | — |
 | Auto-actualización baja index.html entero cada 5 min (+32 KB DB) → fetch con cache:'no-cache' (304) | 04 Fable | XS | — |
@@ -142,10 +144,10 @@ Branch: main
 
 ## Session Continuity
 
-Last session: 2026-10-15
-Stopped at: Phase 13.1 complete (G6 aplicado, desplegado); 13/04 marcado UK por el usuario (54/90)
-Next action: /paul:plan 14; el usuario comprueba en el iPhone (pendiente desde 2026-10-15 tarde) el prompt del código y el primer CSV en PilotLog
-Resume file: .paul/HANDOFF-2026-10-16-fase13.1-cerrada.md
+Last session: 2026-11-11
+Stopped at: Phase 14 complete (14-01 desplegado); v0.4 3/3
+Next action: /paul:complete-milestone (v0.4); pendiente usuario: primer CSV en PilotLog (CREWLIST, TO/LDG)
+Resume file: .paul/phases/14-vuelo-otra-fecha/14-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

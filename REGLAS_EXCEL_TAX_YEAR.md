@@ -14,8 +14,9 @@ Documento de referencia para rellenar el Excel TAX YEAR desde emails de vuelo Ry
 
 ## Columna FLIGHT NO
 
-- Días de vuelo: `FR` + número de vuelo, ej. `FR1234`
-- El prefijo `FR` se añade automáticamente si no está en el email
+- Días de vuelo: el número del email, ej. `FR1234`
+- El prefijo `FR` se añade solo si el email trae dígitos (con, como mucho, una letra final): `1234` → `FR1234`, `1234P` → `FR1234P`
+- Prefijos de otra compañía del grupo (`RKxxxx` = Ryanair UK) y sufijos (`P` = positioning) se dejan tal cual: nunca `FRRK…`
 - Días OFF: `OFF`
 - Días STBY: `SBY`
 - Días SIM: `SIM`

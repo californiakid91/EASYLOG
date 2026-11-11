@@ -79,9 +79,11 @@ run(`_excelData['2026-10-02'] = { role: 'FO', flights: parseText(${JSON.stringif
 run('backfillUKDays()');
 check('(iv) backfill no recalcula una rule:* de un año congelado', E('2026-10-01')?.route === 'XXX→STN' && E('2026-10-01')?.state === 'uk', JSON.stringify(E('2026-10-01')));
 check('(iv) backfill no crea entradas en un año congelado', E('2026-10-02') === null);
+run(`delete _excelData['2026-10-02']`); // 14-01: mismos sectores sintéticos en otra fecha avisarían (no es lo que mide este caso)
 answer = true; paste(ukTrip('2026/11/03'));
 check('(iv) pegar un día nuevo de 2026-27 congelado → confirm "ya está cerrado" y entrada manual', confirms.length === 1 && /2026-27 ya está cerrado/.test(confirms[0]) && E('2026-11-03')?.manual === true && E('2026-11-03')?.state === 'uk' && /año cerrado/.test(E('2026-11-03')?.reason), JSON.stringify(E('2026-11-03')));
-answer = false; paste(ukTrip('2026/11/04'));
+confirms.length = 0; answer = false; paste(ukTrip('2026/11/04').replace(/Off Block : 15:00/, 'Off Block : 15:05').replace(/Off Block : 17:00/, 'Off Block : 17:05')); // 14-01: otros calzos, si no avisaría «otra fecha»
+check('(iv) cancelar → el confirm cancelado es el de año cerrado', confirms.length === 1 && /2026-27 ya está cerrado/.test(confirms[0]), JSON.stringify(confirms));
 check('(iv) cancelar → nada guardado (historial, Excel ni UK Days)', !inHist('2026-11-04') && !inExcel('2026-11-04') && E('2026-11-04') === null && /Cancelado/.test(st.at(-1)), st.at(-1));
 run('backfillUKDays()');
 check('(iv) tras cancelar, backfill tampoco la crea', E('2026-11-04') === null);

@@ -126,7 +126,7 @@ reset(); paste(email(D, SECS)); paste(email(D, SECS, { crew: 'ABC123 : CP : John
 check('mismo capitán con otra grafía del nombre → idéntico', confirms.length === 0 && /ya está en la lista/.test(last()), last());
 
 // ── AC-6: sin regresiones
-reset(); paste(email(D, SECS)); paste(email('2026/10/07', SECS));
+reset(); paste(email(D, SECS)); paste(email('2026/10/07', SECS.map(s => ({ ...s, reg: 'EIXYZ' })))); // otra matrícula: rotación normal (14-01)
 check('día nuevo → se añade como antes', H('2026-10-07')?.flights?.length === 2 && confirms.length === 0 && /2 vuelos añadidos/.test(last()), last());
 reset(); paste(email(D, SECS) + '\n' + email('2026/10/07', SECS));
 check('paste multi-día → error como antes', /Pega solo uno a la vez/.test(last()) && H(ISO) === null, last());

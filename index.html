@@ -757,7 +757,7 @@
 
 <script>
 // Versión de la app: la reescribe .githooks/pre-commit en cada commit que toca index.html (no editar a mano el formato)
-const APP_VERSION = '2026.10.15-231555';
+const APP_VERSION = '2026.11.11-223758';
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // ─── Airports IATA → {lat, lon} (degrees, +N/+E). Used for night TO/LDG. ──────
@@ -1845,6 +1845,20 @@ function addDay() {
     return flightsKey(now.flights || []) !== flightsKey(prev.flights || []);
   };
   const otherDevice = () => showStatus('warn', `El ${dateISOToDisplay(iso)} se ha guardado desde otro dispositivo mientras preguntaba. No se ha guardado nada: vuelve a pegarlo.`);
+  // Fase 14: un sector ya guardado en OTRA fecha se duplicaría en el Excel (y quizá en PilotLog y UK Days) → se pregunta antes de escribir
+  const others = sameFlightOtherDates(iso, flights, prev ? prev.flights : []);
+  if (others.length) {
+    const ok = confirm(
+      '⚠ Estos vuelos ya están guardados en otra fecha:\n\n' +
+      others.map(o => `${dateISOToDisplay(o.iso)}: ${o.nums.join(', ')}`).join('\n') + '\n\n' +
+      'Si guardas los dos días: en PilotLog puede salir dos veces, y en el Excel Tax Year se cuenta dos veces (y puede sumar un UK Day).\n\n' +
+      'Si la buena es la otra fecha: cancela, quita ese día de la lista Y del Excel y revisa su UK Day.\n\n' +
+      `¿Guardar también el ${dateISOToDisplay(iso)}?`
+    );
+    if (!ok) { showStatus('warn', 'Cancelado. No se ha guardado nada.'); return; }
+    if (!requireHydrated()) return;
+    if (changedMeanwhile()) { otherDevice(); return; }
+  }
   if (prev) {
     const day = dateISOToDisplay(iso);
     const crewLines = crewDiff(prev.flights, flights);
@@ -1993,6 +2007,37 @@ function flightsKey(flights) {
   return JSON.stringify((flights || []).map(f => normFlightD(f.d))
     .map((n, i) => [n, i]).sort((a, b) => (a[0].FlightNumber || '').localeCompare(b[0].FlightNumber || '') || a[1] - b[1])
     .map(([n]) => CMP_KEYS.filter(k => k in n).map(k => [k, n[k]])));
+}
+// Número de vuelo: sin espacios y en mayúsculas; «FR» solo si son dígitos (con, como mucho, una letra final: 1234P = positioning).
+// Otros prefijos (RKxxxx = Ryanair UK) se dejan tal cual.
+function normFlightNo(v) {
+  const n = String(v ?? '').replace(/\s+/g, '').toUpperCase();
+  return /^\d+[A-Z]?$/.test(n) ? 'FR' + n : n;
+}
+// Firma de un sector para reconocerlo en otra fecha: número + ruta + matrícula + Off Block (sin On Block: un email
+// corregido en el calzo de llegada sigue siendo el mismo vuelo). null si falta algo → nunca avisa.
+function sectorSig(f) {
+  const d = f?.d || {};
+  const get = key => { const k = Object.keys(d).find(x => x.replace(/\s+/g, ' ').trim() === key); return k ? d[k] : ''; };
+  const num = normFlightNo(get('FlightNumber'));
+  const cp = normVal(get('City Pair')).replace(/\s+/g, '');
+  const reg = normVal(get('Registration')).replace(/[\s-]+/g, '');
+  const off = normVal(get('Off Block'));
+  return num && cp && reg && off ? [num, cp, reg, off].join('|') : null;
+}
+// Días (≠ iso) de la lista o del Excel que ya tienen alguno de estos sectores (excepto los que ya estaban en iso)
+function sameFlightOtherDates(iso, flights, prevFlights) {
+  const already = new Set((prevFlights || []).map(sectorSig).filter(Boolean));
+  const want = new Map();
+  (flights || []).forEach(f => { const s = sectorSig(f); if (s && !already.has(s) && !want.has(s)) want.set(s, normFlightNo(f.d?.FlightNumber)); });
+  if (!want.size) return [];
+  const hist = loadHistory(), byDay = new Map();
+  [hist, _excelData].forEach(src => Object.keys(src || {}).forEach(k => {
+    if (k === iso || !ISO_RE.test(k)) return;
+    const fs = dayFlights(src[k]); if (!fs) return;
+    fs.forEach(f => { const s = sectorSig(f); if (s && want.has(s)) { const set = byDay.get(k) || new Set(); set.add(want.get(s)); byDay.set(k, set); } });
+  }));
+  return [...byDay.keys()].sort().map(k => ({ iso: k, nums: [...byDay.get(k)] }));
 }
 // Capitán y tripulación no cuentan para «vuelos distintos», pero van al CSV (PILOT1, CREWLIST): si cambian, se pregunta
 function crewDiff(oldF, newF) {
@@ -3648,7 +3693,7 @@ function excelRowsForDay(iso) {
       const offB = f.d?.['Off Block']      || '';
       const onB  = f.d?.['On Block']       || '';
       const fNoRaw = (f.d?.['FlightNumber'] || f.d?.['Flight Number'] || '').replace(/\s+/g,'');
-      const fNo  = fNoRaw && !fNoRaw.toUpperCase().startsWith('FR') ? 'FR' + fNoRaw : fNoRaw;
+      const fNo  = normFlightNo(fNoRaw);
 
       const r = new Array(22).fill('');
       r[0] = serial;
